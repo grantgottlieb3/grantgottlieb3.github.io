@@ -82,10 +82,10 @@
 
     .hint{position:absolute;left:12px;bottom:12px;font-size:12px;opacity:.85;background:rgba(255,255,255,.75);padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb}
 
-    .profile{position:fixed;top:0;left:0;width:320px;max-width:85vw;height:100%;background:rgba(255,255,255,.96);border-right:1px solid #cbd5e1;box-shadow:4px 0 22px rgba(0,0,0,.08);transform:translateX(-100%);transition:transform .20s ease;z-index:120;display:flex;flex-direction:column}
+    .profile{position:fixed;top:0;left:0;width:340px;max-width:90vw;height:100%;background:rgba(255,255,255,.96);border-right:1px solid #cbd5e1;box-shadow:4px 0 22px rgba(0,0,0,.08);transform:translateX(-100%);transition:transform .20s ease;z-index:120;display:flex;flex-direction:column}
     .profile.open{transform:translateX(0)}
     .profile-header{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
-    .profile-body{padding:16px;overflow:auto}
+    .profile-body{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
     .level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .level-btn{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:10px;font-weight:700;cursor:pointer}
     .level-btn.active{border-color:var(--azul);background:#eff6ff}
@@ -98,6 +98,9 @@
     .bubble .b-title{font-weight:800}
     .bubble .b-msg{margin:0}
     .bubble .b-close{margin-left:auto;border:none;background:transparent;cursor:pointer;font-size:16px;line-height:1;color:#7f1d1d}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .input, .select{border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;font-size:14px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   </style>
 </head>
 <body>
@@ -116,9 +119,33 @@
       <strong>Perfil</strong>
     </div>
     <div class="profile-body">
-      <div style="margin-bottom:10px;font-weight:700">Nivel de español (MCER)</div>
-      <div class="level-grid" id="levelGrid"></div>
-      <div class="small">Este nivel ajusta el registro, la dificultad y la velocidad de todas las escenas.</div>
+      <div class="field">
+        <div style="font-weight:700">Nivel de español (MCER)</div>
+        <div class="level-grid" id="levelGrid"></div>
+        <div class="small">Este nivel ajusta el registro, la dificultad y la velocidad de todas las escenas.</div>
+      </div>
+
+      <div class="card">
+        <h3>Config (OpenRouter)</h3>
+        <div class="field">
+          <label for="apiKey">API Key</label>
+          <input id="apiKey" class="input" type="password" placeholder="or_************************" autocomplete="off">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="modelSel">Modelo</label>
+            <select id="modelSel" class="select"></select>
+          </div>
+          <div class="field">
+            <label for="temp">Temperatura</label>
+            <input id="temp" class="input" type="number" step="0.1" min="0" max="2" value="0.7">
+          </div>
+        </div>
+        <div class="actions" style="margin-top:8px">
+          <button id="saveCfg" class="btn secondary">Guardar</button>
+        </div>
+        <div class="small">Nota: clave visible en el navegador (solo para piloto).</div>
+      </div>
     </div>
   </aside>
 
@@ -168,10 +195,31 @@
 <script>
 'use strict';
 
-/* ============== CONFIG ============== */
-const API_URL = 'https://<your-username>.pythonanywhere.com/generate_children'; // <- replace when ready
+/* =======================
+   QUICK CONFIG (edit here)
+   ======================= */
+// Default model & key (override via UI). For pilot, you can paste your key here, or use the left "Config" box.
+const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-oss-120b:free'; // e.g., 'openrouter/auto', 'anthropic/claude-3.5-sonnet', 'google/gemini-1.5-flash-latest', 'openai/gpt-4o-mini'
+const DEFAULT_OPENROUTER_API_KEY = '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';              // 'or_************************'
+// Optional: set your site/app name for OpenRouter analytics
+const OPENROUTER_APP_TITLE = 'study-abroad-assistant'; // shown as X-Title
+// Optional: your site URL for Referer (helps OpenRouter allow requests)
+const OPENROUTER_REFERER = window.location.origin;
 
-/* ============== CONSTANTS ============== */
+/* Model catalog for dropdown (add/remove freely) */
+const MODEL_OPTIONS = [
+  'openrouter/auto',
+  'anthropic/claude-3.5-sonnet',
+  'anthropic/claude-3.5-haiku',
+  'google/gemini-1.5-flash-latest',
+  'google/gemini-1.5-pro-latest',
+  'openai/gpt-4o-mini',
+  'openai/gpt-4o',
+  'meta-llama/llama-3.1-70b-instruct',
+  'meta-llama/llama-3.1-8b-instruct',
+];
+
+/* ============== CONSTANTS (app) ============== */
 const STATUS = { COMPLETED:'completed', AVAILABLE:'available', LOCKED:'locked' };
 const BRANCHES = [
   {key:'travel',  label:'Viajes'},
@@ -194,6 +242,9 @@ const MIN_RAD_GAP = 160;
 /* Storage */
 const STORAGE_KEY = 'immersionTreeStory_ALTBRANCH';
 const LEVEL_STORAGE_KEY = 'cefrLevel';
+const OR_MODEL_KEY = 'or_model';
+const OR_APIKEY_KEY = 'or_api_key';
+const OR_TEMP_KEY = 'or_temp';
 
 /* ============== DOM HOOKS ============== */
 const viewport   = document.getElementById('viewport');
@@ -211,6 +262,10 @@ const copyBtn    = document.getElementById('copy');
 const doneBtn    = document.getElementById('complete');
 const toggleBtn  = document.getElementById('drawerToggle');
 const bubbleWrap = document.getElementById('bubbleWrap');
+const apiKeyEl   = document.getElementById('apiKey');
+const modelSelEl = document.getElementById('modelSel');
+const tempEl     = document.getElementById('temp');
+const saveCfgBtn = document.getElementById('saveCfg');
 
 /* ============== UTILS ============== */
 const rad = d => d*Math.PI/180;
@@ -226,8 +281,7 @@ function uniqueId(prefix){ return `${prefix}_${Math.random().toString(36).slice(
 /* Bubble (toast) */
 let bubbleTimer=null;
 function showBubble(message, title='Error al generar el prompt'){
-  const wrap = bubbleWrap;
-  wrap.innerHTML = `
+  bubbleWrap.innerHTML = `
     <div class="bubble">
       <div>
         <div class="b-title">${title}</div>
@@ -235,17 +289,25 @@ function showBubble(message, title='Error al generar el prompt'){
       </div>
       <button class="b-close" aria-label="Cerrar">×</button>
     </div>`;
-  wrap.style.display='block';
-  const close = ()=>{ wrap.style.display='none'; wrap.innerHTML=''; if(bubbleTimer){clearTimeout(bubbleTimer); bubbleTimer=null;} };
-  wrap.querySelector('.b-close').addEventListener('click', close);
+  bubbleWrap.style.display='block';
+  const close = ()=>{ bubbleWrap.style.display='none'; bubbleWrap.innerHTML=''; if(bubbleTimer){clearTimeout(bubbleTimer); bubbleTimer=null;} };
+  bubbleWrap.querySelector('.b-close').addEventListener('click', close);
   if(bubbleTimer){ clearTimeout(bubbleTimer); }
   bubbleTimer = setTimeout(close, 5000);
 }
 
-/* ============== PROFILE ============== */
+/* ============== PROFILE (CEFR + Config) ============== */
 const LEVELS = ['A1','A2','B1','B2','C1','C2'];
 function getLevel(){ return localStorage.getItem(LEVEL_STORAGE_KEY) || 'B1'; }
 function setLevel(v){ localStorage.setItem(LEVEL_STORAGE_KEY, v); }
+function getModel(){ return localStorage.getItem(OR_MODEL_KEY) || DEFAULT_OPENROUTER_MODEL; }
+function getApiKey(){ return localStorage.getItem(OR_APIKEY_KEY) || DEFAULT_OPENROUTER_API_KEY; }
+function getTemp(){ const t = parseFloat(localStorage.getItem(OR_TEMP_KEY)); return Number.isFinite(t) ? t : 0.7; }
+function setCfg({model, apiKey, temp}){
+  if(model) localStorage.setItem(OR_MODEL_KEY, model);
+  if(typeof apiKey==='string') localStorage.setItem(OR_APIKEY_KEY, apiKey);
+  if(typeof temp!=='undefined') localStorage.setItem(OR_TEMP_KEY, String(temp));
+}
 (function initProfile(){
   LEVELS.forEach(l=>{
     const b=document.createElement('button');
@@ -265,6 +327,20 @@ function setLevel(v){ localStorage.setItem(LEVEL_STORAGE_KEY, v); }
   rail.addEventListener('mouseleave', ()=>{ closeT = setTimeout(close, 180); });
   profile.addEventListener('mouseenter', ()=>{ if(closeT){ clearTimeout(closeT); closeT=null; } });
   profile.addEventListener('mouseleave', ()=>{ closeT = setTimeout(close, 120); });
+
+  // Config panel
+  MODEL_OPTIONS.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m; opt.textContent=m;
+    if(m===getModel()) opt.selected=true;
+    modelSelEl.appendChild(opt);
+  });
+  apiKeyEl.value = getApiKey();
+  tempEl.value = getTemp();
+  saveCfgBtn.addEventListener('click', ()=>{
+    setCfg({ model: modelSelEl.value, apiKey: apiKeyEl.value.trim(), temp: parseFloat(tempEl.value) || 0.7 });
+    showBubble('Configuración guardada.', 'OK');
+  });
 })();
 
 /* ============== PROMPT & HTML HELPERS ============== */
@@ -294,10 +370,7 @@ const h = {
 };
 
 /* ============== STATE ============== */
-/** Node:
- * { id, title, desc, objective, infoHTML, branch, role, goal, context, youHave,
- *   depth, parentId|null, angle, status, summary }
- */
+/** Node shape documented previously */
 let state = null;
 const podsById = new Map();
 let RADII = new Map();
@@ -315,7 +388,7 @@ function loadState(){
   return { nodes: seedRing1() };
 }
 
-/* ============== SEED RING 1 (minimal hard-coding kept) ============== */
+/* ============== SEED RING 1 (initial six) ============== */
 function seedRing1(){
   const mk = (branch, title, desc, objective, role, goal, infoHTML, summary)=>({
     id:`${branch}_1`, title, desc, objective, infoHTML, branch, role, goal,
@@ -352,14 +425,9 @@ function seedRing1(){
   return seeds;
 }
 
-/* ============== STORY HELPERS ============== */
+/* ============== STORY HELPERS & RULES ============== */
 function parentOf(node){ return node.parentId ? state.nodes.find(n=>n.id===node.parentId) : null; }
-function pathChain(nodeId){
-  const chain = [];
-  let cur = state.nodes.find(n=>n.id===nodeId);
-  while(cur){ chain.unshift(cur); cur = parentOf(cur); }
-  return chain;
-}
+function pathChain(nodeId){ const chain=[]; let cur=state.nodes.find(n=>n.id===nodeId); while(cur){ chain.unshift(cur); cur=parentOf(cur);} return chain; }
 function storyContextFor(parent){
   const chain = pathChain(parent.id);
   return {
@@ -368,14 +436,9 @@ function storyContextFor(parent){
     previous: chain.slice(-3).map(n=>({title:n.title, summary:n.summary || n.desc || ''}))
   };
 }
+function desiredChildrenCount(depth){ return (depth % 2 === 1) ? 2 : 1; }
 
-/* ============== BRANCHING RULE ============== */
-function desiredChildrenCount(depth){
-  // odd depths (1,3,5,...) -> 2 kids, even depths (2,4,6,...) -> 1 kid
-  return (depth % 2 === 1) ? 2 : 1;
-}
-
-/* ============== LAYOUT (OUTWARD FORKS + SMART SPACING) ============== */
+/* ============== LAYOUT ============== */
 function computeRadii(){
   RADII.clear();
   const maxDepth = Math.max(1, ...state.nodes.map(n=>n.depth));
@@ -393,78 +456,47 @@ function computeRadii(){
 }
 function ringRadius(depth){ return RADII.get(depth) || (R1 + (depth-1)*DR_BASE); }
 function positionOf(node){ return polarAt(ringRadius(node.depth), node.angle); }
-
-function spreadFor(depth){
-  const base = 16;
-  const decay = Math.min(10, (depth-2)*2);
-  return Math.max(8, base - decay);
-}
+function spreadFor(depth){ const base=16, decay=Math.min(10, (depth-2)*2); return Math.max(8, base - decay); }
 function initialAnglesForDepth(d){
-  const nodes = state.nodes.filter(n=>n.depth===d);
-  if(!nodes.length) return;
-
+  const nodes = state.nodes.filter(n=>n.depth===d); if(!nodes.length) return;
   const byParent = new Map();
-  nodes.forEach(n=>{
-    const p = parentOf(n);
-    const key = p ? p.id : `root_${n.id}`;
-    if(!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key).push(n);
-  });
+  nodes.forEach(n=>{ const p=parentOf(n); const key=p?p.id:`root_${n.id}`; if(!byParent.has(key)) byParent.set(key, []); byParent.get(key).push(n); });
   const spread = spreadFor(d);
-
   byParent.forEach(children=>{
     children.sort((a,b)=>a.id.localeCompare(b.id));
-    const p = parentOf(children[0]);
-    const base = p ? p.angle : 0;
-    if(children.length===1){
-      children[0].angle = base;
-    }else{
-      children[0].angle = base - spread;
-      children[1].angle = base + spread;
-    }
+    const p = parentOf(children[0]); const base = p ? p.angle : 0;
+    if(children.length===1){ children[0].angle = base; }
+    else { children[0].angle = base - spread; children[1].angle = base + spread; }
   });
 }
 function enforceMinGapAtDepth(d){
   const nodes = state.nodes.filter(n=>n.depth===d).map(n=>n);
   if(nodes.length <= 1) return;
-
   const r = ringRadius(d);
   const minArc = POD_D + ARC_PAD;
   const minDeg = deg(minArc / r);
-
   nodes.forEach(n=> n.angle = clampAngle(n.angle));
   nodes.sort((a,b)=> a.angle - b.angle);
-
   for(let i=1; i<nodes.length; i++){
     const prev = nodes[i-1], cur = nodes[i];
     const gap = cur.angle - prev.angle;
     if(gap < minDeg){ cur.angle = prev.angle + minDeg; }
   }
-
   const first = nodes[0], last = nodes[nodes.length-1];
   let wrapGap = (first.angle + 360) - last.angle;
   if(wrapGap < minDeg){
     const deficit = (minDeg - wrapGap);
     const adjust = deficit / nodes.length;
-    for(let i=1;i<nodes.length;i++){
-      nodes[i].angle -= adjust*i;
-    }
+    for(let i=1;i<nodes.length;i++){ nodes[i].angle -= adjust*i; }
     nodes.forEach(n=> n.angle = clampAngle(n.angle));
   }
 }
 function recomputeLayout(){
   const d1 = state.nodes.filter(n=>n.depth===1).sort((a,b)=>a.id.localeCompare(b.id));
-  if(d1.length){
-    const step = 360/d1.length;
-    d1.forEach((n,i)=> n.angle = ANG_START + i*step);
-  }
+  if(d1.length){ const step = 360/d1.length; d1.forEach((n,i)=> n.angle = ANG_START + i*step); }
   computeRadii();
-
   const maxDepth = Math.max(1, ...state.nodes.map(n=>n.depth));
-  for(let d=2; d<=maxDepth; d++){
-    initialAnglesForDepth(d);
-    enforceMinGapAtDepth(d);
-  }
+  for(let d=2; d<=maxDepth; d++){ initialAnglesForDepth(d); enforceMinGapAtDepth(d); }
 }
 
 /* ============== RENDER ============== */
@@ -562,7 +594,7 @@ copyBtn.addEventListener('click', async ()=>{
   }
 });
 
-/* Defaults for API normalization (lightweight, not “content fallback”) */
+/* Defaults for API normalization */
 function defaultGoal(branch){
   return ({
     travel:'definir trayecto óptimo',
@@ -595,61 +627,117 @@ function guessRole(branch){
   }[branch] || 'personaje');
 }
 
-doneBtn.addEventListener('click', async ()=>{
-  if(!active || active.status===STATUS.LOCKED) return;
-
-  // Mark completed
-  const idx = state.nodes.findIndex(n=>n.id===active.id);
-  if(idx>=0) state.nodes[idx].status = STATUS.COMPLETED;
-
-  // Determine desired child count
-  const want = desiredChildrenCount(active.depth);
-  const existing = state.nodes.filter(n=>n.parentId===active.id);
-  const missing = Math.max(0, want - existing.length);
-
-  // Attempt to create missing children via API only
-  if(missing > 0){
-    try{
-      const created = await createChildren(active, missing);
-      created.forEach(c=> state.nodes.push(c));
-    }catch(err){
-      // Roll back completion? keep as completed but inform user
-      showBubble('No se pudo generar el siguiente paso. Inténtalo de nuevo más tarde o revisa la API.');
-    }
-  }
-
-  // Unlock any children that exist for this parent
-  state.nodes.filter(n=>n.parentId===active.id).forEach(ch=> ch.status=STATUS.AVAILABLE);
-
-  saveState();
-  renderAll();
-  panel.classList.remove('open');
-});
-
-/* ============== API INTEGRATION (NO FALLBACK) ============== */
+/* ============== OpenRouter LLM Integration (no backend) ============== */
 async function createChildren(parent, countNeeded){
   const desired = Math.max(1, Math.min(2, countNeeded));
-  const res = await fetch(API_URL, {
+  const model = getModel();
+  const apiKey = getApiKey();
+  const temperature = getTemp();
+
+  if(!apiKey){
+    throw new Error('OpenRouter API key not set');
+  }
+
+  // Build strict JSON instruction
+  const schemaHint = {
+    children: [
+      {
+        title: "string (required, short, Spanish)",
+        desc: "string (1-2 sentences)",
+        objective: "string",
+        infoHTML: "string (optional HTML, safe)",
+        branch: "one of: travel | food | daily | culture | social | school",
+        role: "string (speaker role, e.g., camarero/a)",
+        goal: "string",
+        context: "string",
+        youHave: "string",
+        tasks: ["string", "string"],
+        summary: "string"
+      }
+    ]
+  };
+
+  const req = {
+    parent: { id: parent.id, title: parent.title, branch: parent.branch, depth: parent.depth },
+    level: getLevel(),
+    story: storyContextFor(parent),
+    desired_count: desired
+  };
+
+  const sys = `
+Eres un generador de escenas para una app de inmersión de español (Madrid).
+Devuelve EXCLUSIVAMENTE un JSON válido (sin texto extra, sin \`\`\`).
+Debes devolver exactamente "desired_count" hijos en "children".
+Los títulos deben ser cortos, naturales y en español peninsular.
+Mantén continuidad lógica con el contexto y la rama.
+Formato de salida: ${JSON.stringify(schemaHint)}
+`.trim();
+
+  const user = `
+Datos:
+${JSON.stringify(req, null, 2)}
+
+Instrucciones:
+- Idioma: español (Madrid), natural y claro.
+- No incluyas marcas de formato (markdown).
+- Responde SOLO con JSON { "children": [...] } y con exactamente ${desired} elementos.
+`.trim();
+
+  const body = {
+    model,
+    temperature,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: user }
+    ]
+  };
+
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({
-      parent: { id: parent.id, title: parent.title, branch: parent.branch, depth: parent.depth },
-      level: getLevel(),
-      story: storyContextFor(parent),
-      learner: { pace:"normal", strengths:[], needs:[] },
-      desired_count: desired
-    })
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': OPENROUTER_REFERER,
+      'X-Title': OPENROUTER_APP_TITLE
+    },
+    body: JSON.stringify(body)
   });
+
   if(!res.ok){
-    throw new Error(`API error: ${res.status}`);
+    const errText = await res.text().catch(()=>String(res.status));
+    throw new Error(`OpenRouter error ${res.status}: ${errText}`);
   }
+
   const data = await res.json();
-  const arr = Array.isArray(data.children) ? data.children.slice(0, desired) : [];
-  if(arr.length < desired){
-    throw new Error('API returned fewer children than requested');
+  const content = data?.choices?.[0]?.message?.content || '';
+
+  // Extract JSON safely (LLMs sometimes wrap or add noise)
+  const json = extractFirstJsonObject(content);
+  if(!json) throw new Error('Respuesta LLM sin JSON válido');
+
+  if(!Array.isArray(json.children)) throw new Error('JSON sin "children" array');
+  if(json.children.length !== desired) throw new Error('Conteo distinto a desired_count');
+
+  const depth = parent.depth + 1;
+  return json.children.map((src,i)=> normalizeChild(src||{}, parent, depth, i));
+}
+
+function extractFirstJsonObject(text){
+  // Try a quick direct parse first
+  try{
+    const obj = JSON.parse(text);
+    return obj && typeof obj === 'object' ? obj : null;
+  }catch{}
+  // Fallback: find first {...} block heuristically
+  const start = text.indexOf('{');
+  const end   = text.lastIndexOf('}');
+  if(start === -1 || end === -1 || end <= start) return null;
+  const snippet = text.slice(start, end+1);
+  try{
+    return JSON.parse(snippet);
+  }catch{
+    return null;
   }
-  const depth = parent.depth+1;
-  return arr.map((src,i)=> normalizeChild(src||{}, parent, depth, i));
 }
 
 function normalizeChild(src, parent, depth, indexHint){
@@ -670,6 +758,36 @@ function normalizeChild(src, parent, depth, indexHint){
     depth, parentId: parent.id, angle: parent.angle, status: STATUS.LOCKED
   };
 }
+
+/* ============== COMPLETE ACTION (no fallback) ============== */
+doneBtn.addEventListener('click', async ()=>{
+  if(!active || active.status===STATUS.LOCKED) return;
+
+  // Mark completed
+  const idx = state.nodes.findIndex(n=>n.id===active.id);
+  if(idx>=0) state.nodes[idx].status = STATUS.COMPLETED;
+
+  // Need new children?
+  const want = desiredChildrenCount(active.depth);
+  const existing = state.nodes.filter(n=>n.parentId===active.id);
+  const missing = Math.max(0, want - existing.length);
+
+  if(missing > 0){
+    try{
+      const created = await createChildren(active, missing);
+      created.forEach(c=> state.nodes.push(c));
+    }catch(err){
+      showBubble((err && err.message) ? err.message : 'Fallo desconocido al generar.', 'Error al generar el prompt');
+    }
+  }
+
+  // Unlock any children that exist for this parent
+  state.nodes.filter(n=>n.parentId===active.id).forEach(ch=> ch.status=STATUS.AVAILABLE);
+
+  saveState();
+  renderAll();
+  panel.classList.remove('open');
+});
 
 /* ============== CAMERA ============== */
 let scale=0.95,
