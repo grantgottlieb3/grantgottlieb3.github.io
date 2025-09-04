@@ -16,17 +16,46 @@
     a { text-decoration: none; color: inherit; }
     a:hover, a:focus { text-decoration: none; opacity: 0.95; }
 
-    /* Only project cards become full-card links (not every link inside cards) */
+    /* Only project cards become full-card links */
     .project > a { display: block; color: inherit; }
 
     /* Buttons keep their look */
     a.button { color: #fff !important; }
     .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
+    .button.ghost:hover { background: var(--accent-2); }
 
-    /* Headshot size: ~2–3x larger than before, responsive */
+    /* Headshot size (keep your current scaling) */
     .hero .headshot { width: 220px; height: 220px; }
     @media (min-width: 900px) {
       .hero .headshot { width: 320px; height: 320px; }
+    }
+
+    /* Replace gray squares with a finished icon tile */
+    .item .logo {
+      width: 42px; height: 42px; border-radius: 12px;
+      position: relative; overflow: hidden;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.6) 0%, rgba(255,255,255,0) 55%),
+        linear-gradient(135deg, #eef2ff, #e8ecf5);
+      box-shadow: var(--shadow);
+    }
+    .item .logo::after {
+      content: "";
+      position: absolute; inset: 0; margin: auto;
+      width: 20px; height: 20px; opacity: 0.9;
+      /* simple checkmark icon centered */
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2367788a" d="M20 6L9 17l-5-5"/></svg>') center/20px 20px no-repeat;
+    }
+
+    /* Dark mode adjustment for the logo tile gradient */
+    @media (prefers-color-scheme: dark) {
+      .item .logo {
+        background:
+          radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 55%),
+          linear-gradient(135deg, #1a2333, #121a28);
+      }
+      .item .logo::after { opacity: 0.85; }
     }
   </style>
 </head>
@@ -160,14 +189,14 @@
           </a>
         </article>
 
-        <!-- HEV -->
+        <!-- HEV (now links to consolidated page with 3 related projects) -->
         <article class="card project">
-          <a href="project-parallel-hev.html">
-            <div class="thumb"><img src="hev.jpg" alt="Hybrid Electric Vehicle project"></div>
+          <a href="project-hev.html">
+            <div class="thumb"><img src="hev.jpg" alt="Hybrid Electric Vehicle projects"></div>
             <div class="content">
-              <h3>Hybrid Electric Vehicle Analysis</h3>
-              <p>MATLAB/Simulink study of power split, SOC behavior, and fuel economy across standard drive cycles.</p>
-              <div class="tags"><span class="tag">Simulink</span><span class="tag">Controls</span><span class="tag">Modeling</span></div>
+              <h3>Hybrid Electric Vehicle — Projects Suite</h3>
+              <p>Three linked studies: parallel HEV simulation, PMAC motor drive controls, and Li-ion battery performance.</p>
+              <div class="tags"><span class="tag">Simulink</span><span class="tag">Controls</span><span class="tag">Energy</span></div>
             </div>
           </a>
         </article>
@@ -195,6 +224,18 @@
             </div>
           </a>
         </article>
+
+        <!-- NEW: Spanish Immersion -->
+        <article class="card project">
+          <a href="project-spanish.html">
+            <div class="thumb"><img src="spanish.png" alt="Spanish immersion website placeholder"></div>
+            <div class="content">
+              <h3>Spanish Immersion — Conversational Web App</h3>
+              <p>Apple-clean UI that uses AI to create unique dialogues for learners who can’t study abroad.</p>
+              <div class="tags"><span class="tag">Web</span><span class="tag">AI</span><span class="tag">Spanish</span></div>
+            </div>
+          </a>
+        </article>
       </div>
     </section>
 
@@ -206,7 +247,7 @@
       <div class="card item">
         <div class="logo"></div>
         <div>
-          <!-- Now using buttons -->
+          <!-- Buttons -->
           <p style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <a class="button" href="mailto:grantgottlieb27@gmail.com">Email Me</a>
             <a class="button ghost" href="https://www.linkedin.com/in/grant-gottlieb-74867a24b/" target="_blank" rel="noopener">LinkedIn</a>

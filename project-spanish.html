@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Madrid Immersion — Alternating Branch Tree</title>
+  <style>
+    :root{
+      --rojo:#d9042b; --oro:#ffd100; --azul:#1e3a8a;
+      --green:#22c55e; --blue:#3b82f6; --text:#0b1220;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:
+        radial-gradient(circle at 20% -10%,#fff7e0 0%,#fff3c2 40%,#ffeaa0 70%),
+        linear-gradient(135deg, rgba(217,4,43,.06), rgba(255,209,0,.06) 45%, rgba(217,4,43,.06));
+    }
+
+    header{
+      max-width:1200px;margin:0 auto;padding:10px 16px;
+      display:flex;justify-content:space-between;align-items:center;
+      border-bottom:1px solid #d1d5db;border-radius:0 0 12px 12px;box-shadow:0 6px 16px rgba(0,0,0,.06);
+      position:relative; background:rgba(255,255,255,.65); backdrop-filter:blur(8px);
+      user-select:none;
+    }
+    header:before, header:after{ content:""; position:absolute; left:0; right:0; height:4px; }
+    header:before{ top:0; background:var(--rojo); border-radius:0 0 6px 6px;}
+    header:after{ bottom:0; background:var(--oro); border-radius:6px 6px 0 0;}
+    .flag{width:16px;height:16px;border-radius:999px;background:linear-gradient(#d9042b,#ffd100,#d9042b);box-shadow:0 0 6px rgba(0,0,0,.35)}
+    .legend{display:flex;gap:12px;align-items:center;font-size:13px;opacity:.9}
+    .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+    .dot.green{background:var(--green)} .dot.blue{background:var(--blue)} .dot.black{background:#111827}
+    .subtag{font-size:12px;opacity:.85}
+
+    .viewport{position:relative; height: calc(100vh - 64px); overflow:hidden}
+    .world{position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; width:3000px;height:3000px}
+    .azulejos{position:absolute; inset:0; pointer-events:none; opacity:.22;
+      background-image:
+        radial-gradient(circle at 25% 25%, rgba(30,58,138,.18) 2px, transparent 3px),
+        radial-gradient(circle at 75% 75%, rgba(30,58,138,.18) 2px, transparent 3px);
+      background-size:48px 48px; mix-blend-mode:multiply;}
+
+    .hub{position:absolute;left:1500px;top:1500px;transform:translate(-50%,-50%);width:220px;height:220px;border-radius:24px;backdrop-filter: blur(6px);background:rgba(255,255,255,.7);box-shadow:0 10px 30px rgba(0,0,0,.12);outline:3px solid #c7d2fe;display:flex;align-items:center;justify-content:center;z-index:2}
+    .hub:after{content:"Madrid"; font-weight:800; letter-spacing:.3px; color:#0b1220; opacity:.8}
+
+    .pod{position:absolute;transform:translate(-50%,-50%);width:96px;height:96px;border-radius:9999px;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;font-size:12px;box-shadow:0 8px 22px rgba(0,0,0,.12);transition:transform .2s ease, box-shadow .2s ease; z-index:3}
+    .pod:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 14px 30px rgba(0,0,0,.16)}
+    .pod .ttl{font-weight:700;line-height:1.15}
+    .completed{background:#22c55e;color:#03320f;outline:4px solid #bbf7d0}
+    .available{background:#3b82f6;color:#06122a;outline:4px solid #bfdbfe;cursor:pointer}
+    .locked{background:#0b1220;color:#e5e7eb;outline:4px solid #475569;cursor:pointer;opacity:.6}
+
+    .links{position:absolute;left:0;top:0}
+    .links line{stroke:#9aa9c7;stroke-width:2;opacity:.65; z-index:1}
+
+    .sidepanel{position:fixed;top:0;right:0;width:540px;height:100%;background:rgba(255,255,255,.92);border-left:1px solid #cbd5e1;box-shadow:-4px 0 22px rgba(0,0,0,.08);transform:translateX(100%);transition:transform .25s ease;z-index:100;display:flex;flex-direction:column;color:#0b1220}
+    .sidepanel.open{transform:translateX(0)}
+    .sidepanel-header{padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.75)}
+    .badge{font-size:12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:4px 8px;opacity:.95}
+    .sidepanel-body{padding:16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;background:
+      linear-gradient(180deg, rgba(255,255,255,.0), rgba(255,255,255,.18)),
+      repeating-linear-gradient(90deg, rgba(30,58,138,.045), rgba(30,58,138,.045) 24px, transparent 24px, transparent 48px)}
+    .chev{border:none;background:#eef2ff;color:#111827;border-left:1px solid #c7d2fe;width:32px;height:48px;border-radius:10px 0 0 10px;position:absolute;left:-32px;top:12px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+    .card{border:1px solid #e5e7eb;background:#ffffff;border-radius:14px;padding:12px;box-shadow:0 6px 14px rgba(0,0,0,.05)}
+    .card h3{margin:0 0 8px 0;font-size:13px;letter-spacing:.3px;color:#0b1220;text-transform:uppercase}
+    .card p{margin:0 0 6px 0}
+    .sub{font-size:12px;opacity:.85}
+    .list{list-style:none;padding-left:0;margin:0}
+    .list li{padding:6px 0;border-bottom:1px dashed #e5e7eb}
+    .list li:last-child{border-bottom:0}
+    .table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:13px}
+    .table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.3px;text-align:left;opacity:.7}
+    .table tbody tr{background:#fff;border:1px solid #e5e7eb}
+    .table td, .table th{padding:8px 10px}
+    .tip{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 10px;font-size:12px}
+
+    .btn{appearance:none;border:1px solid #1e3a8a;background:#1e3a8a;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}
+    .actions{display:flex;gap:8px;justify-content:flex-end}
+    .btn.primary{background:#1e3a8a;border-color:#1e3a8a}
+    .btn.secondary{background:#22c55e;color:#ffffff;border:1px solid #16a34a}
+
+    .hint{position:absolute;left:12px;bottom:12px;font-size:12px;opacity:.85;background:rgba(255,255,255,.75);padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb}
+
+    .profile{position:fixed;top:0;left:0;width:320px;max-width:85vw;height:100%;background:rgba(255,255,255,.96);border-right:1px solid #cbd5e1;box-shadow:4px 0 22px rgba(0,0,0,.08);transform:translateX(-100%);transition:transform .20s ease;z-index:120;display:flex;flex-direction:column}
+    .profile.open{transform:translateX(0)}
+    .profile-header{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+    .profile-body{padding:16px;overflow:auto}
+    .level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .level-btn{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:10px;font-weight:700;cursor:pointer}
+    .level-btn.active{border-color:var(--azul);background:#eff6ff}
+    .small{font-size:12px;opacity:.85;margin-top:8px}
+    .profile-rail{position:fixed;left:0;top:0;width:10px;height:100%;z-index:119;background:rgba(30,58,138,.25);border-right:1px solid rgba(30,58,138,.45);cursor:ew-resize}
+
+    /* Bubble (toast) */
+    .bubble-wrap{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:999}
+    .bubble{display:flex;align-items:flex-start;gap:10px;max-width:560px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d;padding:10px 12px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
+    .bubble .b-title{font-weight:800}
+    .bubble .b-msg{margin:0}
+    .bubble .b-close{margin-left:auto;border:none;background:transparent;cursor:pointer;font-size:16px;line-height:1;color:#7f1d1d}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;align-items:center;gap:10px">
+      <strong>Madrid Immersion</strong><div class="flag"></div>
+      <span 
