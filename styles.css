@@ -1,0 +1,173 @@
+
+/* ======================================================================
+   Grant Gottlieb — Personal Site
+   styles.css
+   - Apple-inspired clean aesthetic using system fonts and generous white space
+   - Easy theming via CSS variables (see :root)
+   - Responsive layout with a single column that expands into grids
+   - No frameworks required
+   ====================================================================== */
+
+:root {
+  /* ---- Brand palette (tweak freely) ---- */
+  --bg: #ffffff;
+  --text: #0b1221;
+  --muted: #5b6473;
+  --accent: #0c6cf2;        /* primary accent (links, buttons) */
+  --accent-2: #1118270d;    /* subtle background tint */
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --shadow: 0 10px 30px rgba(11,18,33,0.05);
+
+  /* ---- Typography ---- */
+  --font-sans: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif;
+  --radius: 18px;
+  --maxw: 1100px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0f17;
+    --text: #eef1f7;
+    --muted: #a7afbd;
+    --accent: #4da3ff;
+    --accent-2: #101623;
+    --card: #111827;
+    --border: #1f2937;
+    --shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { padding: 0; margin: 0; }
+body {
+  background: linear-gradient(180deg, var(--bg) 0%, var(--accent-2) 120%);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+/* ---- Header / Nav ---- */
+.header {
+  position: sticky; top: 0; z-index: 999;
+  backdrop-filter: saturate(180%) blur(8px);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 14px 0;
+}
+.brand {
+  font-weight: 800; letter-spacing: -0.3px; font-size: 18px;
+}
+.nav a {
+  color: var(--text); text-decoration: none; opacity: 0.85;
+  padding: 8px 12px; border-radius: 10px;
+}
+.nav a:hover, .nav a:focus { opacity: 1; background: var(--accent-2); }
+.nav .right { display: flex; gap: 6px; align-items: center; }
+
+/* ---- Utils ---- */
+.badge {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 999px; font-size: 12px; color: var(--muted);
+  background: var(--card);
+}
+.button {
+  background: var(--text);
+  color: white; border: none; border-radius: 999px;
+  padding: 10px 16px; font-weight: 600; cursor: pointer;
+  transition: transform .06s ease, box-shadow .2s ease, opacity .2s ease;
+  box-shadow: var(--shadow);
+}
+.button.secondary {
+  background: var(--accent);
+}
+.button.ghost {
+  background: transparent; color: var(--text); border: 1px solid var(--border);
+}
+.button:hover { transform: translateY(-1px); opacity: 0.95; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ---- Hero ---- */
+.hero {
+  display: grid; grid-template-columns: 1fr; gap: 28px; align-items: center;
+  padding: 48px 0;
+}
+.hero .title { font-size: clamp(32px, 5vw, 54px); line-height: 1.1; letter-spacing: -0.8px; }
+.hero .subtitle { color: var(--muted); font-size: clamp(16px, 2.6vw, 20px); }
+.hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero .headshot {
+  width: 140px; height: 140px; border-radius: 22px; overflow: hidden; border: 1px solid var(--border);
+  background: var(--accent-2); display:flex; align-items:center; justify-content:center;
+}
+.hero .headshot img { width: 100%; height: 100%; object-fit: cover; }
+
+@media (min-width: 900px) {
+  .hero { grid-template-columns: 1.4fr 1fr; }
+  .hero .headshot { justify-self: end; width: 190px; height: 190px; }
+}
+
+/* ---- Sections ---- */
+section { padding: 24px 0 10px; }
+.section-title {
+  display:flex; align-items:center; justify-content:space-between; gap: 12px;
+  margin: 12px 0 16px;
+}
+.section-title h2 {
+  font-size: 22px; margin: 0;
+}
+.section-title .line { flex:1; height: 1px; background: var(--border); }
+
+/* ---- Grids ---- */
+.grid {
+  display: grid; grid-template-columns: 1fr; gap: 16px;
+}
+@media (min-width: 720px) { .grid.cols-2 { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px) { .grid.cols-3 { grid-template-columns: repeat(3, 1fr); } }
+
+/* ---- Experience & Education cards ---- */
+.item {
+  padding: 18px; display:flex; gap: 14px; align-items:flex-start;
+}
+.item .logo { width: 42px; height: 42px; border-radius: 10px; background: var(--accent-2); }
+.item h3 { font-size: 16px; margin: 0 0 4px; }
+.item .meta { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.item ul { margin: 10px 0 0 18px; padding: 0; }
+.item li { margin: 6px 0; }
+
+/* ---- Project cards ---- */
+.project {
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.project .thumb { aspect-ratio: 16/9; background: var(--accent-2); border-bottom: 1px solid var(--border); }
+.project .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.project .content { padding: 16px; }
+.project h3 { margin: 0 0 6px; font-size: 16px; }
+.project .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top: 8px; }
+.tag { font-size: 12px; border:1px solid var(--border); padding:4px 8px; border-radius: 999px; color: var(--muted); }
+
+/* ---- Footer ---- */
+.footer {
+  padding: 48px 0 64px; color: var(--muted); font-size: 14px;
+  display:flex; justify-content:space-between; gap: 16px; flex-wrap: wrap;
+  border-top: 1px dashed var(--border);
+}
+
+code.inline { background: var(--accent-2); padding: 2px 6px; border-radius: 6px; }
+a { color: var(--accent); }
+a.button { color: #fff; text-decoration: none; }

@@ -1,783 +1,302 @@
+
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Madrid Immersion — Alternating Branch Tree</title>
-  <style>
-    :root{
-      --rojo:#d9042b; --oro:#ffd100; --azul:#1e3a8a;
-      --green:#22c55e; --blue:#3b82f6; --text:#0b1220;
-    }
-    html,body{height:100%}
-    body{
-      margin:0; color:var(--text);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:
-        radial-gradient(circle at 20% -10%,#fff7e0 0%,#fff3c2 40%,#ffeaa0 70%),
-        linear-gradient(135deg, rgba(217,4,43,.06), rgba(255,209,0,.06) 45%, rgba(217,4,43,.06));
-    }
-
-    header{
-      max-width:1200px;margin:0 auto;padding:10px 16px;
-      display:flex;justify-content:space-between;align-items:center;
-      border-bottom:1px solid #d1d5db;border-radius:0 0 12px 12px;box-shadow:0 6px 16px rgba(0,0,0,.06);
-      position:relative; background:rgba(255,255,255,.65); backdrop-filter:blur(8px);
-      user-select:none;
-    }
-    header:before, header:after{ content:""; position:absolute; left:0; right:0; height:4px; }
-    header:before{ top:0; background:var(--rojo); border-radius:0 0 6px 6px;}
-    header:after{ bottom:0; background:var(--oro); border-radius:6px 6px 0 0;}
-    .flag{width:16px;height:16px;border-radius:999px;background:linear-gradient(#d9042b,#ffd100,#d9042b);box-shadow:0 0 6px rgba(0,0,0,.35)}
-    .legend{display:flex;gap:12px;align-items:center;font-size:13px;opacity:.9}
-    .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
-    .dot.green{background:var(--green)} .dot.blue{background:var(--blue)} .dot.black{background:#111827}
-    .subtag{font-size:12px;opacity:.85}
-
-    .viewport{position:relative; height: calc(100vh - 64px); overflow:hidden}
-    .world{position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; width:3000px;height:3000px}
-    .azulejos{position:absolute; inset:0; pointer-events:none; opacity:.22;
-      background-image:
-        radial-gradient(circle at 25% 25%, rgba(30,58,138,.18) 2px, transparent 3px),
-        radial-gradient(circle at 75% 75%, rgba(30,58,138,.18) 2px, transparent 3px);
-      background-size:48px 48px; mix-blend-mode:multiply;}
-
-    .hub{position:absolute;left:1500px;top:1500px;transform:translate(-50%,-50%);width:220px;height:220px;border-radius:24px;backdrop-filter: blur(6px);background:rgba(255,255,255,.7);box-shadow:0 10px 30px rgba(0,0,0,.12);outline:3px solid #c7d2fe;display:flex;align-items:center;justify-content:center;z-index:2}
-    .hub:after{content:"Madrid"; font-weight:800; letter-spacing:.3px; color:#0b1220; opacity:.8}
-
-    .pod{position:absolute;transform:translate(-50%,-50%);width:96px;height:96px;border-radius:9999px;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;font-size:12px;box-shadow:0 8px 22px rgba(0,0,0,.12);transition:transform .2s ease, box-shadow .2s ease; z-index:3}
-    .pod:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 14px 30px rgba(0,0,0,.16)}
-    .pod .ttl{font-weight:700;line-height:1.15}
-    .completed{background:#22c55e;color:#03320f;outline:4px solid #bbf7d0}
-    .available{background:#3b82f6;color:#06122a;outline:4px solid #bfdbfe;cursor:pointer}
-    .locked{background:#0b1220;color:#e5e7eb;outline:4px solid #475569;cursor:pointer;opacity:.6}
-
-    .links{position:absolute;left:0;top:0}
-    .links line{stroke:#9aa9c7;stroke-width:2;opacity:.65; z-index:1}
-
-    .sidepanel{position:fixed;top:0;right:0;width:540px;height:100%;background:rgba(255,255,255,.92);border-left:1px solid #cbd5e1;box-shadow:-4px 0 22px rgba(0,0,0,.08);transform:translateX(100%);transition:transform .25s ease;z-index:100;display:flex;flex-direction:column;color:#0b1220}
-    .sidepanel.open{transform:translateX(0)}
-    .sidepanel-header{padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.75)}
-    .badge{font-size:12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:4px 8px;opacity:.95}
-    .sidepanel-body{padding:16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;background:
-      linear-gradient(180deg, rgba(255,255,255,.0), rgba(255,255,255,.18)),
-      repeating-linear-gradient(90deg, rgba(30,58,138,.045), rgba(30,58,138,.045) 24px, transparent 24px, transparent 48px)}
-    .chev{border:none;background:#eef2ff;color:#111827;border-left:1px solid #c7d2fe;width:32px;height:48px;border-radius:10px 0 0 10px;position:absolute;left:-32px;top:12px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.08)}
-    .card{border:1px solid #e5e7eb;background:#ffffff;border-radius:14px;padding:12px;box-shadow:0 6px 14px rgba(0,0,0,.05)}
-    .card h3{margin:0 0 8px 0;font-size:13px;letter-spacing:.3px;color:#0b1220;text-transform:uppercase}
-    .card p{margin:0 0 6px 0}
-    .sub{font-size:12px;opacity:.85}
-    .list{list-style:none;padding-left:0;margin:0}
-    .list li{padding:6px 0;border-bottom:1px dashed #e5e7eb}
-    .list li:last-child{border-bottom:0}
-    .table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:13px}
-    .table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.3px;text-align:left;opacity:.7}
-    .table tbody tr{background:#fff;border:1px solid #e5e7eb}
-    .table td, .table th{padding:8px 10px}
-    .tip{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 10px;font-size:12px}
-
-    .btn{appearance:none;border:1px solid #1e3a8a;background:#1e3a8a;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}
-    .actions{display:flex;gap:8px;justify-content:flex-end}
-    .btn.primary{background:#1e3a8a;border-color:#1e3a8a}
-    .btn.secondary{background:#22c55e;color:#ffffff;border:1px solid #16a34a}
-
-    .hint{position:absolute;left:12px;bottom:12px;font-size:12px;opacity:.85;background:rgba(255,255,255,.75);padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb}
-
-    .profile{position:fixed;top:0;left:0;width:320px;max-width:85vw;height:100%;background:rgba(255,255,255,.96);border-right:1px solid #cbd5e1;box-shadow:4px 0 22px rgba(0,0,0,.08);transform:translateX(-100%);transition:transform .20s ease;z-index:120;display:flex;flex-direction:column}
-    .profile.open{transform:translateX(0)}
-    .profile-header{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
-    .profile-body{padding:16px;overflow:auto}
-    .level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .level-btn{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:10px;font-weight:700;cursor:pointer}
-    .level-btn.active{border-color:var(--azul);background:#eff6ff}
-    .small{font-size:12px;opacity:.85;margin-top:8px}
-    .profile-rail{position:fixed;left:0;top:0;width:10px;height:100%;z-index:119;background:rgba(30,58,138,.25);border-right:1px solid rgba(30,58,138,.45);cursor:ew-resize}
-
-    /* Bubble (toast) */
-    .bubble-wrap{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:999}
-    .bubble{display:flex;align-items:flex-start;gap:10px;max-width:560px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d;padding:10px 12px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
-    .bubble .b-title{font-weight:800}
-    .bubble .b-msg{margin:0}
-    .bubble .b-close{margin-left:auto;border:none;background:transparent;cursor:pointer;font-size:16px;line-height:1;color:#7f1d1d}
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grant Gottlieb — Mechanical Engineer</title>
+  <meta name="description" content="Personal site and portfolio for Grant Gottlieb, Mechanical Engineering alum of Purdue University.">
+  <!--
+    HOW TO EDIT THIS SITE
+    - Everything is plain HTML/CSS/JS. Search for 'EDIT ME' comments.
+    - Replace placeholder images in /assets with your own (keep filenames or update src attributes below).
+    - Add new projects by duplicating a .project card in the Projects section.
+    - Feel free to customize colors in styles.css (CSS variables at top).
+  -->
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="assets/headshot-placeholder.svg">
 </head>
 <body>
-  <header>
-    <div style="display:flex;align-items:center;gap:10px">
-      <strong>Madrid Immersion</strong><div class="flag"></div>
-      <span class="subtag">vive y habla como en España</span>
+  <!-- ======================= Header / Navigation ======================= -->
+  <header class="header">
+    <div class="container nav">
+      <div class="left">
+        <span class="brand">Grant Gottlieb</span>
+      </div>
+      <nav class="right">
+        <a href="#about">About</a>
+        <a href="#experience">Experience</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+        <!-- Optional theme toggle button (see script.js for instructions)
+        <button id="themeToggle" class="button ghost">Toggle theme</button> -->
+      </nav>
     </div>
-    <div class="legend"><span class="dot green"></span>completado <span class="dot blue"></span>disponible <span class="dot black"></span>bloqueado</div>
   </header>
 
-  <div class="profile-rail" id="profileRail" aria-hidden="false" title="Perfil"></div>
-  <aside class="profile" id="profile">
-    <div class="profile-header"><strong>Perfil</strong></div>
-    <div class="profile-body">
-      <div style="margin-bottom:10px;font-weight:700">Nivel de español (MCER)</div>
-      <div class="level-grid" id="levelGrid"></div>
-      <div class="small">Este nivel ajusta el registro, la dificultad y la velocidad de todas las escenas.</div>
-    </div>
-  </aside>
-
-  <div class="viewport" id="viewport">
-    <div class="world" id="world">
-      <div class="azulejos"></div>
-      <svg class="links" id="links" width="3000" height="3000"></svg>
-      <div class="hub"></div>
-    </div>
-    <div class="hint">Rueda para acercar/alejar · Arrastra para moverte · Doble clic para centrar</div>
-  </div>
-
-  <aside class="sidepanel" id="sidepanel">
-    <button class="chev" id="drawerToggle" title="Cerrar">⟶</button>
-    <div class="sidepanel-header">
-      <div id="panel-title" style="font-weight:700;font-size:16px">Escenario</div>
-      <span class="badge" id="panel-branch">Rama</span>
-    </div>
-    <div class="sidepanel-body">
-      <section class="card">
-        <h3>Descripción</h3>
-        <p id="panel-desc"></p>
-        <p id="panel-objective" class="sub"></p>
-      </section>
-      <section class="card" id="panel-info-wrap" style="display:none">
-        <h3>Información útil</h3>
-        <div id="panel-info"></div>
-      </section>
-      <section class="card" id="panel-locked" style="display:none">
-        <h3>Estado</h3>
-        <p id="panel-locked-text" style="margin:0"></p>
-      </section>
-      <section class="card" id="panel-actions">
-        <h3>Prompt</h3>
-        <p style="margin:0 0 8px 0">Pulsa <strong>Copiar prompt</strong> y pégalo en ChatGPT. <span class="pill">Personaje: <span id="panel-character" style="font-weight:700"></span></span></p>
-        <div class="actions">
-          <button class="btn primary" id="copy">Copiar prompt</button>
-          <button class="btn secondary" id="complete">Hecho</button>
-        </div>
-      </section>
-    </div>
-  </aside>
-
-  <div class="bubble-wrap" id="bubbleWrap" style="display:none"></div>
-
-<script>
-'use strict';
-
-/* ========= OPENROUTER INFORMATION ========= */
-const OPENROUTER_MODEL = 'openai/gpt-oss-20b:free';
-const OPENROUTER_API_KEY = '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';
-const OPENROUTER_APP_TITLE = 'Study Assistant'; // shown as X-Title
-const OPENROUTER_REFERER = 'https://grantgottlieb3.github.io';
-const TEMPERATURE = 0.7;
-/* ================================================================ */
-
-const STATUS = { COMPLETED:'completed', AVAILABLE:'available', LOCKED:'locked' };
-const BRANCHES = [
-  {key:'travel',  label:'Viajes'},
-  {key:'food',    label:'Comida y bebida'},
-  {key:'daily',   label:'Vida diaria'},
-  {key:'culture', label:'Cultura española'},
-  {key:'social',  label:'Vida social'},
-  {key:'school',  label:'Escuela'},
-];
-const branchLabel = k => (BRANCHES.find(b=>b.key===k)||{}).label || k;
-
-/* Geometry */
-const CX=1500, CY=1500;
-const R1=340, DR_BASE=220, POD_R=56;
-const POD_D = 2*POD_R;
-const ANG_START = -90;
-const ARC_PAD = 22;
-const MIN_RAD_GAP = 160;
-
-/* Storage (scene only; no API info stored) */
-const STORAGE_KEY = 'immersionTreeStory_ALTBRANCH';
-const LEVEL_STORAGE_KEY = 'cefrLevel';
-
-/* DOM */
-const viewport   = document.getElementById('viewport');
-const world      = document.getElementById('world');
-const linksSvg   = document.getElementById('links');
-const profile    = document.getElementById('profile');
-const levelGrid  = document.getElementById('levelGrid');
-const panel      = document.getElementById('sidepanel');
-const pTitle     = document.getElementById('panel-title');
-const pBranch    = document.getElementById('panel-branch');
-const pDesc      = document.getElementById('panel-desc');
-const pObj       = document.getElementById('panel-objective');
-const pChar      = document.getElementById('panel-character');
-const copyBtn    = document.getElementById('copy');
-const doneBtn    = document.getElementById('complete');
-const toggleBtn  = document.getElementById('drawerToggle');
-const bubbleWrap = document.getElementById('bubbleWrap');
-
-/* Utils */
-const rad = d => d*Math.PI/180;
-const deg = r => r*180/Math.PI;
-const clampAngle = a => ((a % 360)+360)%360;
-const polarAt=(r,degA)=>({x:CX + r*Math.cos(rad(degA)), y:CY + r*Math.sin(rad(degA))});
-function trimToEdge(a,b,rs=POD_R,re=POD_R){
-  const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-  return {x1:a.x+ux*rs, y1:a.y+uy*rs, x2:b.x-ux*re, y2:b.y-uy*re};
-}
-function uniqueId(prefix){ return `${prefix}_${Math.random().toString(36).slice(2,8)}`; }
-
-/* Bubble */
-let bubbleTimer=null;
-function showBubble(message, title='Error al generar el prompt'){
-  bubbleWrap.innerHTML = `
-    <div class="bubble">
+  <main class="container">
+    <!-- =============================== Hero =============================== -->
+    <section class="hero" id="home">
       <div>
-        <div class="b-title">${title}</div>
-        <p class="b-msg">${message}</p>
+        <div class="badge">Mechanical Engineer • Problem Solver • Builder</div>
+        <h1 class="title">Designing solutions at the intersection of mechanics, electronics, and human need.</h1>
+        <p class="subtitle">
+          Purdue University Mechanical Engineering graduate; currently a Sales Engineer at Ryan Fireprotection through the Orr Fellowship.
+          Building a portfolio to showcase projects, systems thinking, and hands-on prototyping.
+        </p>
+        <div class="actions">
+          <!-- EDIT ME: replace link with your latest resume if you host one in the repo -->
+          <a href="#" class="button secondary">Download Resume (add link)</a>
+          <a href="#contact" class="button">Contact Me</a>
+          <a href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener" class="button ghost">LinkedIn</a>
+        </div>
       </div>
-      <button class="b-close" aria-label="Cerrar">×</button>
-    </div>`;
-  bubbleWrap.style.display='block';
-  const close = ()=>{ bubbleWrap.style.display='none'; bubbleWrap.innerHTML=''; if(bubbleTimer){clearTimeout(bubbleTimer); bubbleTimer=null;} };
-  bubbleWrap.querySelector('.b-close').addEventListener('click', close);
-  if(bubbleTimer){ clearTimeout(bubbleTimer); }
-  bubbleTimer = setTimeout(close, 5200);
-}
+      <div class="headshot card">
+        <!-- EDIT ME: replace with your headshot (try 1200x1200 or larger for best quality) -->
+        <img src="assets/headshot-placeholder.svg" alt="Grant Gottlieb headshot placeholder">
+      </div>
+    </section>
 
-/* Profile (CEFR) */
-const LEVELS = ['A1','A2','B1','B2','C1','C2'];
-function getLevel(){ return localStorage.getItem(LEVEL_STORAGE_KEY) || 'B1'; }
-function setLevel(v){ localStorage.setItem(LEVEL_STORAGE_KEY, v); }
-(function initProfile(){
-  LEVELS.forEach(l=>{
-    const b=document.createElement('button');
-    b.className='level-btn'; b.textContent=l;
-    if(getLevel()===l) b.classList.add('active');
-    b.addEventListener('click', ()=>{
-      Array.from(levelGrid.children).forEach(x=>x.classList.remove('active'));
-      b.classList.add('active'); setLevel(l);
-    });
-    levelGrid.appendChild(b);
-  });
-  const rail  = document.getElementById('profileRail');
-  let closeT=null;
-  const open = ()=> profile.classList.add('open');
-  const close= ()=> profile.classList.remove('open');
-  rail.addEventListener('mouseenter', open);
-  rail.addEventListener('mouseleave', ()=>{ closeT = setTimeout(close, 180); });
-  profile.addEventListener('mouseenter', ()=>{ if(closeT){ clearTimeout(closeT); closeT=null; } });
-  profile.addEventListener('mouseleave', ()=>{ closeT = setTimeout(close, 120); });
-})();
+    <!-- =============================== About ============================== -->
+    <section id="about">
+      <div class="section-title">
+        <h2>About</h2><div class="line"></div>
+      </div>
+      <div class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Who I am</h3>
+          <p>
+            I'm an engineer who loves creative problem solving, rapid iteration, and turning ideas into working hardware.
+            While my current Sales Engineer role develops client-facing and systems skills, I'm actively expanding a portfolio
+            that reflects why I chose engineering: building, testing, and improving real products.
+          </p>
+          <p>
+            Strengths include CAD (SolidWorks, Siemens NX, Creo), prototyping (3D printing, microcontrollers), and practical experimentation.
+            I’m also conversational in Spanish and passionate about service and mentorship.
+          </p>
+        </div>
+      </div>
+    </section>
 
-/* Prompt helper */
-function buildPrompt(spec){
-  const {role, context, tasks=[], goal, youHave} = spec||{};
-  const lvl = getLevel();
-  return [
-    `Nivel del jugador (MCER): ${lvl}. Ajusta registro y dificultad a este nivel.`,
-    `Eres un asistente de inmersión en español (Madrid). Tu rol: ${role||'personaje'}. Habla natural, cercano; usa coloquialismos comunes (vale, venga, oye).`,
-    goal?`Objetivo: ${goal}.`:'',
-    youHave?`Inventario: ${youHave}.`:'',
-    context?`Contexto: ${context}.`:'',
-    tasks.length?`Guía: ${tasks.map((t,i)=>`${i+1}. ${t}`).join(' ')}`:'',
-    `Estilo: respuestas de 1–2 frases; corrige lo justo cuando sea útil.`,
-    `Importante: reconoce el encargo pero no inicies la charla hasta que yo hable.`,
-    `Mínimo 4–6 turnos antes de evaluar. Cierra con decisión clara.`,
-    `Al final: “¡Objetivo conseguido! Puedes avanzar.” y luego “Mejoras y consejos” (3–6 puntos).`
-  ].filter(Boolean).join('\n');
-}
+    <!-- ============================ Experience ============================ -->
+    <section id="experience">
+      <div class="section-title">
+        <h2>Experience</h2><div class="line"></div>
+      </div>
 
-/* State */
-let state = null;
-const podsById = new Map();
-let RADII = new Map();
-function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const s = JSON.parse(raw);
-      if(Array.isArray(s.nodes)) return s;
-    }
-  }catch(e){}
-  return { nodes: seedRing1() };
-}
+      <div class="grid">
+        <!-- Ryan Fireprotection / Orr Fellowship -->
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>Sales Engineer — Ryan Fireprotection (Orr Fellow)</h3>
+            <div class="meta">Jun 2025 – Present · Indianapolis, IN</div>
+            <p>
+              Early-career role focused on client solutions, scope definition, and cross-functional coordination.
+              I'm using this time to sharpen communication and business skills while continuing to build a technical portfolio for future engineering roles.
+            </p>
+          </div>
+        </article>
 
-/* Seeds */
-const h = {
-  list:(arr)=>`<ul class="list">${arr.map(x=>`<li>${x}</li>`).join('')}</ul>`,
-  table:(head, rows)=>`
-    <table class="table">
-      <thead><tr>${head.map(th=>`<th>${th}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(r=>`<tr>${r.map(td=>`<td>${td}</td>`).join('')}</tr>`).join('')}</tbody>
-    </table>`
-};
-function seedRing1(){
-  const mk = (branch, title, desc, objective, role, goal, infoHTML, summary)=>({
-    id:`${branch}_1`, title, desc, objective, infoHTML, branch, role, goal,
-    depth:1, status:STATUS.AVAILABLE, summary, parentId:null, angle:0
-  });
-  const seeds = [
-    mk('travel','Llegada y control','Barajas: pasaporte, maletas y salida a tu alojamiento.','Pasar control y elegir transporte.','personal del aeropuerto','pasar control y elegir transporte',
-      h.table(['Paso','Qué decir','Tip'],[
-        ['Pasaporte','“Buenos días, vengo por turismo, 14 días.”','Dirección del alojamiento'],
-        ['Equipaje','Recogida en cinta','Revisa etiqueta'],
-        ['Salida','Metro/Tren/Taxi','Compara tiempo/precio'],
-      ]),'Aterrizas y decides cómo llegar a tu piso.'),
-    mk('food','Café sin líos','Pides como un local.','Hacer un pedido claro (café + algo).','barista','pedido natural y sin dudas',
-      h.table(['Bebida','Cómo pedir','Notas'],[
-        ['Café con leche','“En vaso, por favor.”','Leches: entera/soja/avena'],
-        ['Cortado','“Para tomar aquí.”','Más intenso'],
-        ['Caña','“Una caña.”','Cerveza pequeña'],
-      ]),'Primer pedido sin tropiezos.'),
-    mk('daily','Nuevo piso, nueva compa','Conoces a tu compa y acordáis normas.','Presentarte y pactar 3 normas simples.','compañera/o de piso','romper el hielo y acordar normas',
-      h.list(['Presentación breve','Normas: limpieza, ruido, visitas']),'Te mudas y pones orden en casa.'),
-    mk('culture','Coloquio y flamenco','Aprendes expresiones y planeas un tablao.','Entender 3 expresiones y qué es un “tablao”.','amiga madrileña','aprender expresiones y planear un tablao',
-      h.list(['“¡Qué guay!”, “me pilla fatal”, “estar a tope”','Tablao: cante, toque, baile']),'Descubres jerga local y arte.'),
-    mk('social','Quedar para un bar','Concretáis una quedada.','Fijar día, hora y lugar.','nuevo amigo','cerrar plan sin ambigüedades',
-      h.list(['Zonas: Malasaña, La Latina, Lavapiés','Punto: bar o salida de Metro']),'Primer plan social en la ciudad.'),
-    mk('school','Primera clase','Te presentas y conoces el programa.','Presentarte 30–45 s y entender el programa.','profesora','hacer primera presentación sólida',
-      h.table(['Tema','Ejemplo','Nota'],[
-        ['Presentación','“Soy…, vengo de…, estudio…”','Despacio y claro'],
-        ['Programa','temas/fechas/evaluación','Pregunta dudas'],
-        ['Recursos','campus, tutorías','Anota horario'],
-      ]),'Arrancas el curso con buen pie.')
-  ];
-  const step = 360 / seeds.length;
-  seeds.forEach((n,i)=> n.angle = ANG_START + i*step);
-  return seeds;
-}
+        <!-- Owens Corning -->
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>Mechanical Design Engineer Intern — Owens Corning</h3>
+            <div class="meta">May 2024 – Aug 2024 · West Chicago, IL</div>
+            <ul>
+              <li>Developed a patent-pending electromechanical solution to automatically unlatch residential doors.</li>
+              <li>Coordinated and led design reviews with stakeholders; delivered BOM, instructions, and a working prototype.</li>
+              <li>CAD: parametric housings for electronics (SolidWorks); rapid prototyping via 3D printing.</li>
+            </ul>
+          </div>
+        </article>
 
-/* Story helpers */
-function parentOf(node){ return node.parentId ? state.nodes.find(n=>n.id===node.parentId) : null; }
-function pathChain(nodeId){
-  const chain = [];
-  let cur = state.nodes.find(n=>n.id===nodeId);
-  while(cur){ chain.unshift(cur); cur = parentOf(cur); }
-  return chain;
-}
-function storyContextFor(parent){
-  const chain = pathChain(parent.id);
-  return {
-    arc: chain[0]?.branch || 'general',
-    act: parent.depth + 1,
-    previous: chain.slice(-3).map(n=>({title:n.title, summary:n.summary || n.desc || ''}))
-  };
-}
-function desiredChildrenCount(depth){ return (depth % 2 === 1) ? 2 : 1; }
+        <!-- BorgWarner -->
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>R&D Engineer Intern — BorgWarner</h3>
+            <div class="meta">May 2023 – Aug 2023 · Kokomo, IN</div>
+            <ul>
+              <li>Improved manufacturing processes for the VIPER inverter using SMT and reflow soldering.</li>
+              <li>Designed and fabricated 100+ adaptable storage devices to support small-scale production.</li>
+              <li>Performed assembly analysis and experiments to reduce variability and improve build accuracy.</li>
+            </ul>
+          </div>
+        </article>
+      </div>
 
-/* Layout */
-function computeRadii(){
-  RADII.clear();
-  const maxDepth = Math.max(1, ...state.nodes.map(n=>n.depth));
-  RADII.set(1, R1);
-  for(let d=2; d<=maxDepth; d++){
-    const prev = RADII.get(d-1);
-    const nOnRing = state.nodes.filter(n=>n.depth===d).length || 1;
-    const base = R1 + (d-1)*DR_BASE;
-    const neededCirc = nOnRing * (POD_D + ARC_PAD);
-    const rFromCount = neededCirc / (2*Math.PI);
-    const r = Math.max(base, prev + MIN_RAD_GAP, rFromCount);
-    RADII.set(d, r);
-  }
-}
-function ringRadius(depth){ return RADII.get(depth) || (R1 + (depth-1)*DR_BASE); }
-function positionOf(node){ return polarAt(ringRadius(node.depth), node.angle); }
-function spreadFor(depth){ const base=16, decay=Math.min(10, (depth-2)*2); return Math.max(8, base - decay); }
-function initialAnglesForDepth(d){
-  const nodes = state.nodes.filter(n=>n.depth===d);
-  if(!nodes.length) return;
-  const byParent = new Map();
-  nodes.forEach(n=>{
-    const p = parentOf(n);
-    const key = p ? p.id : `root_${n.id}`;
-    if(!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key).push(n);
-  });
-  const spread = spreadFor(d);
-  byParent.forEach(children=>{
-    children.sort((a,b)=>a.id.localeCompare(b.id));
-    const p = parentOf(children[0]);
-    const base = p ? p.angle : 0;
-    if(children.length===1){
-      children[0].angle = base;
-    }else{
-      children[0].angle = base - spread;
-      children[1].angle = base + spread;
-    }
-  });
-}
-function enforceMinGapAtDepth(d){
-  const nodes = state.nodes.filter(n=>n.depth===d).map(n=>n);
-  if(nodes.length <= 1) return;
-  const r = ringRadius(d);
-  const minArc = POD_D + ARC_PAD;
-  const minDeg = deg(minArc / r);
-  nodes.forEach(n=> n.angle = clampAngle(n.angle));
-  nodes.sort((a,b)=> a.angle - b.angle);
-  for(let i=1; i<nodes.length; i++){
-    const prev = nodes[i-1], cur = nodes[i];
-    const gap = cur.angle - prev.angle;
-    if(gap < minDeg){ cur.angle = prev.angle + minDeg; }
-  }
-  const first = nodes[0], last = nodes[nodes.length-1];
-  let wrapGap = (first.angle + 360) - last.angle;
-  if(wrapGap < minDeg){
-    const deficit = (minDeg - wrapGap);
-    const adjust = deficit / nodes.length;
-    for(let i=1;i<nodes.length;i++){ nodes[i].angle -= adjust*i; }
-    nodes.forEach(n=> n.angle = clampAngle(n.angle));
-  }
-}
-function recomputeLayout(){
-  const d1 = state.nodes.filter(n=>n.depth===1).sort((a,b)=>a.id.localeCompare(b.id));
-  if(d1.length){
-    const step = 360/d1.length;
-    d1.forEach((n,i)=> n.angle = ANG_START + i*step);
-  }
-  computeRadii();
-  const maxDepth = Math.max(1, ...state.nodes.map(n=>n.depth));
-  for(let d=2; d<=maxDepth; d++){
-    initialAnglesForDepth(d);
-    enforceMinGapAtDepth(d);
-  }
-}
+      <div class="section-title" style="margin-top:28px;">
+        <h2>Education</h2><div class="line"></div>
+      </div>
+      <div class="grid">
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>Purdue University — B.S. Mechanical Engineering</h3>
+            <div class="meta">Aug 2021 – May 2025 · Minor: Spanish for the Professions</div>
+            <p>Activities: Pi Kappa Phi, PUDM, Spanish Club, IM Sports, Purdue Special Olympics.</p>
+          </div>
+        </article>
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>Universidad Nebrija — Madrid, Spain</h3>
+            <div class="meta">May 2022 – Jul 2022</div>
+            <p>Six-week immersion program; final project selected to promote study abroad.</p>
+          </div>
+        </article>
+      </div>
 
-/* Render */
-function drawLink(a,b){
-  const {x1,y1,x2,y2} = trimToEdge(a,b);
-  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
-  l.setAttribute('x1',x1); l.setAttribute('y1',y1);
-  l.setAttribute('x2',x2); l.setAttribute('y2',y2);
-  linksSvg.appendChild(l);
-}
-function clearRender(){
-  podsById.forEach(el=>el.remove());
-  podsById.clear();
-  while(linksSvg.firstChild) linksSvg.removeChild(linksSvg.firstChild);
-}
-function renderAll(){
-  clearRender();
-  recomputeLayout();
+      <div class="section-title" style="margin-top:28px;">
+        <h2>Selected Skills & Awards</h2><div class="line"></div>
+      </div>
+      <div class="grid cols-3">
+        <div class="card item">
+          <div class="logo"></div>
+          <div>
+            <h3>Technical Skills</h3>
+            <p>SolidWorks, Siemens NX, Creo, Autodesk Inventor, MATLAB, Python, C, Microsoft Office.</p>
+            <p class="meta">Spanish proficiency.</p>
+          </div>
+        </div>
+        <div class="card item">
+          <div class="logo"></div>
+          <div>
+            <h3>Awards</h3>
+            <ul>
+              <li>People’s Choice Toy Design Award (Purdue ME).</li>
+              <li>IFC Philanthropist of the Year.</li>
+              <li>Pi Kappa Phi Outstanding Philanthropy Chair (National).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card item">
+          <div class="logo"></div>
+          <div>
+            <h3>Service & Leadership</h3>
+            <ul>
+              <li>Spanish Service Volunteer, Murdock Elementary (mentor for ELL students).</li>
+              <li>Philanthropy Chair — The Ability Experience: $40k raised; campus-wide coordination.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  state.nodes.forEach(n=>{
-    if(n.parentId){
-      const p = parentOf(n); if(p) drawLink(positionOf(p), positionOf(n));
-    } else {
-      drawLink({x:CX,y:CY}, positionOf(n));
-    }
-  });
+    <!-- ============================== Projects ============================== -->
+    <section id="projects">
+      <div class="section-title">
+        <h2>Projects</h2><div class="line"></div>
+      </div>
+      <div class="grid cols-3">
 
-  state.nodes.forEach(n=>{
-    const p = positionOf(n);
-    const pod = document.createElement('div');
-    pod.className = `pod ${n.status}`;
-    pod.style.left = p.x+'px'; pod.style.top = p.y+'px';
-    pod.innerHTML = `<div class="ttl">${n.title}</div>`;
-    pod.addEventListener('click',(ev)=>{ ev.stopPropagation(); openPanel(n); });
-    world.appendChild(pod); podsById.set(n.id, pod);
-  });
+        <!-- TEMPLATE: Duplicate a .project card to add more. Keep thumbs 16:9. -->
+        <!-- Senior design: Precision Transport Packaging (EDIT ME) -->
+        <article class="card project">
+          <div class="thumb">
+            <!-- EDIT ME: replace image -->
+            <img src="assets/project-1.svg" alt="Precision transport packaging placeholder">
+          </div>
+          <div class="content">
+            <h3>Precision Transport Packaging — Senior Design</h3>
+            <p>
+              Clean-room friendly, shock- and thermal-attenuating packaging system for high-value components.
+              <em>EDIT ME: Add a 2–3 sentence summary, your role (e.g., systems/CAD/test), key results, and 1–2 photos/renderings.</em>
+            </p>
+            <div class="tags">
+              <span class="tag">CAD</span><span class="tag">DFM</span><span class="tag">Testing</span>
+            </div>
+          </div>
+        </article>
 
-  applyCamera();
-}
+        <!-- HEV projects (3 in one course) -->
+        <article class="card project">
+          <div class="thumb">
+            <img src="assets/project-2.svg" alt="Hybrid Electric Vehicle project placeholder">
+          </div>
+          <div class="content">
+            <h3>Hybrid Electric Vehicle Projects (x3)</h3>
+            <p>
+              <em>EDIT ME: Summarize each mini-project (e.g., energy modeling, drivetrain simulation, controller tuning), tools used, and outcomes.</em>
+            </p>
+            <div class="tags">
+              <span class="tag">Modeling</span><span class="tag">Controls</span><span class="tag">MATLAB</span>
+            </div>
+          </div>
+        </article>
 
-/* Panel & actions */
-let active = null;
-function openPanel(n){
-  active = n;
-  pTitle.textContent = n.title || '(sin título)';
-  pBranch.textContent = branchLabel(n.branch);
-  pDesc.textContent = n.desc || '';
-  pObj.textContent  = n.objective ? `Objetivo: ${n.objective}` : '';
+        <!-- FEA projects -->
+        <article class="card project">
+          <div class="thumb">
+            <img src="assets/project-3.svg" alt="Finite element analysis project placeholder">
+          </div>
+          <div class="content">
+            <h3>Finite Element Analysis Projects</h3>
+            <p>
+              <em>EDIT ME: Brief the parts analyzed, boundary conditions, solver(s) used, and what decisions your analysis influenced.</em>
+            </p>
+            <div class="tags">
+              <span class="tag">Ansys</span><span class="tag">FEA</span><span class="tag">Validation</span>
+            </div>
+          </div>
+        </article>
 
-  const infoWrap = document.getElementById('panel-info-wrap');
-  const pInfo    = document.getElementById('panel-info');
-  const locked   = document.getElementById('panel-locked');
+        <!-- Starship Delivery Robot -->
+        <article class="card project">
+          <div class="thumb">
+            <img src="assets/project-4.svg" alt="Starship delivery robot toy project">
+          </div>
+          <div class="content">
+            <h3>Starship Delivery Robot — Wi‑Fi RC Toy</h3>
+            <p>
+              Remote-controlled toy replica of campus robots using Arduino, DC/servo motors, and custom linkages designed in PTC Creo.
+              <!-- Optional: add short demo video link -->
+            </p>
+            <div class="tags"><span class="tag">Arduino</span><span class="tag">PTC Creo</span><span class="tag">Mechanisms</span></div>
+          </div>
+        </article>
 
-  if(n.status===STATUS.LOCKED){
-    infoWrap.style.display='none';
-    document.getElementById('panel-actions').style.display='none';
-    locked.style.display='block';
-    const parent = parentOf(n);
-    document.getElementById('panel-locked-text').textContent =
-      `Bloqueado. Completa primero “${parent?parent.title:'los prerrequisitos'}”.`;
-  } else {
-    locked.style.display='none';
-    document.getElementById('panel-actions').style.display='block';
-    pChar.textContent = n.role || 'personaje';
-    if(n.infoHTML){ infoWrap.style.display='block'; pInfo.innerHTML=n.infoHTML; }
-    else { infoWrap.style.display='none'; pInfo.innerHTML=''; }
-  }
-  panel.classList.add('open'); toggleBtn.textContent='⟶'; toggleBtn.title='Cerrar';
-}
-world.addEventListener('click', (e)=>{
-  if(panel.classList.contains('open') && !(e.target.closest && e.target.closest('.pod'))){
-    panel.classList.remove('open');
-  }
-});
-toggleBtn.addEventListener('click', ()=>{
-  if(panel.classList.contains('open')){ panel.classList.remove('open'); toggleBtn.textContent='⟵'; toggleBtn.title='Abrir'; }
-  else { panel.classList.add('open'); toggleBtn.textContent='⟶'; toggleBtn.title='Cerrar'; }
-});
-copyBtn.addEventListener('click', async ()=>{
-  if(!active || active.status===STATUS.LOCKED) return;
-  const text = buildPrompt({
-    role: active.role, context: active.context, tasks: active.tasks||[],
-    goal: active.goal, youHave: active.youHave
-  });
-  try{
-    await navigator.clipboard.writeText(text);
-    copyBtn.textContent='¡Copiado!';
-    setTimeout(()=>copyBtn.textContent='Copiar prompt', 900);
-  }catch{
-    const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t);
-    t.select(); document.execCommand('copy'); document.body.removeChild(t);
-  }
-});
+        <!-- ShoeShield -->
+        <article class="card project">
+          <div class="thumb">
+            <img src="assets/project-5.svg" alt="ShoeShield product placeholder">
+          </div>
+          <div class="content">
+            <h3>ShoeShield — Product Development</h3>
+            <p>
+              Iterative design and prototyping to slow athletic footwear deterioration; Siemens NX CAD and expo presentation to faculty/industry.
+            </p>
+            <div class="tags"><span class="tag">Product Design</span><span class="tag">Siemens NX</span><span class="tag">Prototyping</span></div>
+          </div>
+        </article>
 
-/* OpenRouter */
-async function openrouterFetch(body){
-  const headers = {
-    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-    'Content-Type': 'application/json',
-    // Attribution; keep both just in case
-    'HTTP-Referer': OPENROUTER_REFERER,
-    'Referer': OPENROUTER_REFERER,
-    'X-Title': OPENROUTER_APP_TITLE
-  };
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method:'POST', headers, body: JSON.stringify(body)
-  });
-  if(!res.ok){
-    const t = await res.text().catch(()=>String(res.status));
-    throw new Error(`OpenRouter error ${res.status}: ${t}`);
-  }
-  return res.json();
-}
+      </div>
+    </section>
 
-async function testOpenRouterKey(){
-  const res = await fetch('https://openrouter.ai/api/v1/credits', {
-    headers: { 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }
-  });
-  if(!res.ok){
-    const t = await res.text().catch(()=>String(res.status));
-    throw new Error(`Prueba clave (${res.status}): ${t}`);
-  }
-  return res.json();
-}
+    <!-- ============================== Contact ============================== -->
+    <section id="contact">
+      <div class="section-title">
+        <h2>Contact</h2><div class="line"></div>
+      </div>
+      <div class="card item">
+        <div class="logo"></div>
+        <div>
+          <!-- EDIT ME: Update email and any other links. -->
+          <p>Best way to reach me: <a href="mailto:grantgottlieb27@gmail.com">grantgottlieb27@gmail.com</a></p>
+          <p>Also on <a href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener">LinkedIn</a>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
 
-async function createChildren(parent, countNeeded){
-  const desired = Math.max(1, Math.min(2, countNeeded));
-  if(!OPENROUTER_API_KEY || !OPENROUTER_API_KEY.startsWith('sk-or-v1-')){
-    throw new Error('API key no configurada o en formato incorrecto (debe empezar por sk-or-v1-).');
-  }
-  const schemaHint = {
-    children: [
-      {
-        title: "string (requerido, breve, español peninsular)",
-        desc: "string (1–2 frases)",
-        objective: "string",
-        infoHTML: "string (HTML opcional, seguro)",
-        branch: "travel | food | daily | culture | social | school",
-        role: "string (p. ej., camarero/a)",
-        goal: "string",
-        context: "string",
-        youHave: "string",
-        tasks: ["string", "string"],
-        summary: "string"
-      }
-    ]
-  };
-  const req = {
-    parent: { id: parent.id, title: parent.title, branch: parent.branch, depth: parent.depth },
-    level: getLevel(),
-    story: storyContextFor(parent),
-    desired_count: desired
-  };
-  const sys = `
-Eres un generador de escenas para una app de inmersión de español (Madrid).
-Devuelve EXCLUSIVAMENTE un JSON válido (sin texto extra, sin \`\`\`).
-Debes devolver exactamente "desired_count" hijos en "children".
-Los títulos deben ser cortos, naturales y en español peninsular.
-Mantén continuidad lógica con el contexto y la rama.
-Formato de salida: ${JSON.stringify(schemaHint)}
-`.trim();
-  const user = `
-Datos:
-${JSON.stringify(req, null, 2)}
+  <footer class="container footer">
+    <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+    <div>Built with clean HTML/CSS/JS. Deployed on GitHub Pages.</div>
+  </footer>
 
-Instrucciones:
-- Idioma: español (Madrid), natural y claro.
-- No incluyas marcas de formato (markdown).
-- Responde SOLO con JSON { "children": [...] } y con exactamente ${desired} elementos.
-`.trim();
-  const body = {
-    model: OPENROUTER_MODEL,
-    temperature: TEMPERATURE,
-    messages: [
-      { role: "system", content: sys },
-      { role: "user", content: user }
-    ]
-  };
-  const data = await openrouterFetch(body);
-  const content = data?.choices?.[0]?.message?.content || '';
-  const json = extractFirstJsonObject(content);
-  if(!json) throw new Error('Respuesta LLM sin JSON válido');
-  if(!Array.isArray(json.children)) throw new Error('JSON sin "children" array');
-  if(json.children.length !== desired) throw new Error('Conteo distinto a desired_count');
-
-  const depth = parent.depth + 1;
-  return json.children.map((src,i)=> normalizeChild(src||{}, parent, depth, i));
-}
-function extractFirstJsonObject(text){
-  try{ const obj = JSON.parse(text); return obj && typeof obj === 'object' ? obj : null; }catch{}
-  const start = text.indexOf('{'); const end = text.lastIndexOf('}');
-  if(start === -1 || end === -1 || end <= start) return null;
-  try{ return JSON.parse(text.slice(start, end+1)); }catch{ return null; }
-}
-function defaultGoal(branch){
-  return ({
-    travel:'definir trayecto óptimo',
-    food:'cerrar pedido sin líos',
-    daily:'resolver gestión',
-    culture:'cerrar plan cultural',
-    social:'cerrar quedada',
-    school:'demostrar comprensión'
-  }[branch] || 'progresar');
-}
-function defaultObjective(branch, depth){
-  const o = {
-    travel:'Replanificar y confirmar ruta.',
-    food:'Elegir 1 plato y 1 bebida.',
-    daily:'Cerrar gestión sin errores.',
-    culture:'Ajustar plan y horarios.',
-    social:'Acordar detalles concretos.',
-    school:'Estructurar explicación breve.'
-  };
-  return o[branch] || `Avanzar (nivel ${depth}).`;
-}
-function guessRole(branch){
-  return ({
-    travel:'agente de información',
-    food:'camarero/a',
-    daily:'dependiente',
-    culture:'amiga madrileña',
-    social:'nuevo amigo',
-    school:'profesora'
-  }[branch] || 'personaje');
-}
-function normalizeChild(src, parent, depth, indexHint){
-  const cleanTitle = (src.title || (indexHint===0 ? 'Opción A' : 'Opción B')).replace(/^Act(o|) ?\d+:\s*/i,'').trim();
-  return {
-    id: uniqueId(`${parent.branch}_${depth}_${indexHint}`),
-    title: cleanTitle,
-    desc: src.desc || `Nueva situación tras “${parent.title}”.`,
-    objective: src.objective || defaultObjective(parent.branch, depth),
-    infoHTML: src.infoHTML || '',
-    branch: src.branch || parent.branch,
-    role: src.role || guessRole(parent.branch),
-    goal: src.goal || defaultGoal(parent.branch),
-    context: src.context || `Vienes de: ${parent.title}.`,
-    youHave: src.youHave || '',
-    tasks: Array.isArray(src.tasks)?src.tasks:[],
-    summary: src.summary || `Continúa la historia desde “${parent.title}”.`,
-    depth, parentId: parent.id, angle: parent.angle, status: STATUS.LOCKED
-  };
-}
-
-/* Complete action (no fallback) */
-doneBtn.addEventListener('click', async ()=>{
-  if(!active || active.status===STATUS.LOCKED) return;
-
-  const idx = state.nodes.findIndex(n=>n.id===active.id);
-  if(idx>=0) state.nodes[idx].status = STATUS.COMPLETED;
-
-  const want = desiredChildrenCount(active.depth);
-  const existing = state.nodes.filter(n=>n.parentId===active.id);
-  const missing = Math.max(0, want - existing.length);
-
-  if(missing > 0){
-    try{
-      const created = await createChildren(active, missing);
-      created.forEach(c=> state.nodes.push(c));
-    }catch(err){
-      showBubble((err && err.message) ? err.message : 'Fallo desconocido al generar.', 'Error al generar el prompt');
-    }
-  }
-
-  state.nodes.filter(n=>n.parentId===active.id).forEach(ch=> ch.status=STATUS.AVAILABLE);
-
-  saveState();
-  renderAll();
-  panel.classList.remove('open');
-});
-
-/* Camera */
-let scale=0.95,
-    originX=-1500+viewport.clientWidth/2,
-    originY=-1500+viewport.clientHeight/2;
-function applyCamera(){
-  world.style.transform=`translate(${originX}px,${originY}px) scale(${scale})`;
-}
-viewport.addEventListener('wheel', e=>{
-  e.preventDefault();
-  const d=Math.sign(e.deltaY)*-0.03;
-  const ns=Math.min(2.5,Math.max(0.35,scale+d));
-  if(ns===scale) return;
-  const r=viewport.getBoundingClientRect();
-  const px=(e.clientX-r.left),py=(e.clientY-r.top);
-  const wx=(px-originX)/scale,wy=(py-originY)/scale;
-  originX=px-wx*ns; originY=py-wy*ns; scale=ns; applyCamera();
-},{passive:false});
-let dragging=false,sx=0,sy=0,ox=0,oy=0;
-viewport.addEventListener('mousedown',e=>{dragging=true;sx=e.clientX;sy=e.clientY;ox=originX;oy=originY});
-window.addEventListener('mousemove',e=>{if(!dragging)return;originX=ox+(e.clientX-sx);originY=oy+(e.clientY-sy);applyCamera()});
-window.addEventListener('mouseup',()=>dragging=false);
-viewport.addEventListener('touchstart',e=>{if(e.touches.length===1){dragging=true;sx=e.touches[0].clientX;sy=e.touches[0].clientY;ox=originX;oy=originY}}, {passive:true});
-viewport.addEventListener('touchmove',e=>{if(dragging&&e.touches.length===1){originX=ox+(e.touches[0].clientX-sx);originY=oy+(e.touches[0].clientY-sy);applyCamera()}}, {passive:true});
-viewport.addEventListener('touchend',()=>dragging=false);
-viewport.addEventListener('dblclick',()=>{originX=-1500+viewport.clientWidth/2;originY=-1500+viewport.clientHeight/2;scale=1.05;applyCamera()});
-
-/* Boot */
-(function boot(){
-  // Quick key sanity check (optional; shows a bubble on success or error)
-  testOpenRouterKey()
-    .then(()=> showBubble('Clave OK: conexión con OpenRouter verificada.', 'OK'))
-    .catch(err => showBubble(err?.message || 'No se pudo verificar la clave.'));
-
-  state = loadState();
-  saveState();
-  renderAll();
-})();
-
-/* Panel open on click */
-let activeNode=null;
-function openPanelById(id){
-  const n = state.nodes.find(x=>x.id===id);
-  if(n) openPanel(n);
-}
-function openPanel(n){
-  active = n;
-  pTitle.textContent = n.title || '(sin título)';
-  pBranch.textContent = branchLabel(n.branch);
-  pDesc.textContent = n.desc || '';
-  pObj.textContent  = n.objective ? `Objetivo: ${n.objective}` : '';
-  const infoWrap = document.getElementById('panel-info-wrap');
-  const pInfo    = document.getElementById('panel-info');
-  const locked   = document.getElementById('panel-locked');
-  if(n.status===STATUS.LOCKED){
-    infoWrap.style.display='none';
-    document.getElementById('panel-actions').style.display='none';
-    locked.style.display='block';
-    const parent = parentOf(n);
-    document.getElementById('panel-locked-text').textContent = `Bloqueado. Completa primero “${parent?parent.title:'los prerrequisitos'}”.`;
-  } else {
-    locked.style.display='none';
-    document.getElementById('panel-actions').style.display='block';
-    pChar.textContent = n.role || 'personaje';
-    if(n.infoHTML){ infoWrap.style.display='block'; pInfo.innerHTML=n.infoHTML; }
-    else { infoWrap.style.display='none'; pInfo.innerHTML=''; }
-  }
-  panel.classList.add('open'); toggleBtn.textContent='⟶'; toggleBtn.title='Cerrar';
-}
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
