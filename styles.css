@@ -171,3 +171,8 @@ section { padding: 24px 0 10px; }
 code.inline { background: var(--accent-2); padding: 2px 6px; border-radius: 6px; }
 a { color: var(--accent); }
 a.button { color: #fff; text-decoration: none; }
+
+/* Small media frame */
+.media-small { width: min(420px, 100%); margin: 0 auto; }
+.media-el { width: 100%; height: auto; border-radius: 12px; display: block; }
+
