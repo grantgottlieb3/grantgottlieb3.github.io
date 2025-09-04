@@ -123,16 +123,28 @@
   </section>
   
   <!-- =============================== Gallery =============================== -->
+  <!-- Replace your entire Gallery section with this -->
   <section id="gallery">
     <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
-    <div class="grid cols-3">
-      <!-- Replace with images or keep placeholders -->
-      <video class="video-frame" controls playsinline poster="edwin-pov.jpeg">
-        <source src="edwin-pov.jpeg" type="video/jpeg">
-        Your browser does not support the video tag.
-      </video>
+    <div class="card item" style="padding:16px;">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <figure class="media-small">
+          <video class="media-el" controls playsinline preload="metadata" poster="edwin-pov.jpg">
+            <!-- Put your real file here -->
+            <source src="edwin-pov.mp4" type="video/mp4">
+            <!-- Optional secondary format -->
+            <!-- <source src="edwin-pov.webm" type="video/webm"> -->
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+            Short POV demo of Edwin
+          </figcaption>
+        </figure>
+      </div>
     </div>
   </section>
+
 </main>
 
 <footer class="container footer">
