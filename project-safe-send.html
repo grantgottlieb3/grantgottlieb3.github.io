@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Safe Send — Precision Transport Packaging | Grant Gottlieb</title>
+  <meta name="description" content="Clean-room friendly, shock/thermal/vibration attenuating packaging system with sensing and data logging." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/headshot-placeholder.svg" />
+</head>
+<body>
+<header class="header">
+  <div class="container nav">
+    <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
+    <nav class="right">
+      <a href="index.html#projects">← Back to Projects</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero" id="top">
+    <div>
+      <div class="badge">Senior Design • Product + Test • 2024–25</div>
+      <h1 class="title">Safe Send — Precision Transport Packaging</h1>
+      <p class="subtitle">
+        Clean-room compatible packaging that protects high-value assemblies from shock, vibration, heat, and humidity while logging the trip. 
+        Validated via drop, vibration, and thermal tests; designed for manufacturability and rental business model. <!-- Source: :contentReference[oaicite:0]{index=0} -->
+      </p>
+      <div class="actions">
+        <!-- EDIT ME: add your PDF to /assets/pdfs/ and update href -->
+        <a class="button secondary" href="assets/pdfs/FDR-Safe-Send.pdf" target="_blank" rel="noopener">Download Final Design Review (PDF)</a>
+        <a class="button" href="#gallery">See Gallery</a>
+      </div>
+    </div>
+    <div class="headshot card">
+      <!-- EDIT ME: hero image 1600x900 -->
+      <img src="safesend.png" alt="Safe Send assembled prototype">
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Overview</h2><div class="line"></div></div>
+    <div class="card item">
+      <div class="logo"></div>
+      <div>
+        <p>
+          We built a two-box isolation system: an outer framed shell with panels and a suspended inner payload box using springs and wire-rope isolators.
+          An Arduino-based logger (dual ADXL373 accelerometers + DHT22 sensors) captures acceleration, temperature, and humidity to an SD card. 
+          Finite-element shock modeling informed spring choice and damping; design changes between CDR and FDR improved sealing and wiring. :contentReference[oaicite:1]{index=1}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>My Role & Tools</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <div class="card item"><div class="logo"></div><div><h3>Responsibilities</h3>
+        <ul>
+          <li>Isolation system CAD & build; assembly/jigs and 3D-printed mounts.</li>
+          <li>ANSYS transient structural setup for 1 m drop scenario and spring sizing.</li>
+          <li>Instrumentation wiring, data logging workflow, and validation test planning.</li>
+        </ul></div></div>
+      <div class="card item"><div class="logo"></div><div><h3>Tools</h3>
+        <p>SolidWorks, Ansys Mechanical, Arduino, SPI sensors, 3D printing, waterjet, 80/20 extrusion.</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div><h3>Key Requirements</h3>
+        <p><strong>&lt; 15 g</strong> inner box @ 1 m drop; <strong>&lt; 0.5 °C/min</strong> at 45 °C gradient; vibration attenuation &gt;3 dB ≥10 Hz; track shock/thermal/humidity. :contentReference[oaicite:2]{index=2}</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Results</h2><div class="line"></div></div>
+    <div class="grid cols-2">
+      <div class="card item"><div class="logo"></div><div>
+        <h3>Shock</h3>
+        <p>Inner box peak acceleration <strong>13.1 g</strong> (spec met) vs outer 16.2 g in 1 m drop tests. :contentReference[oaicite:3]{index=3}</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div>
+        <h3>Thermal</h3>
+        <p>At 35 °C gradient, inner box rise ~<strong>0.033 °C/min</strong>; projected 0.042 °C/min at 45 °C (spec met). :contentReference[oaicite:4]{index=4}</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div>
+        <h3>Vibration</h3>
+        <p>Attenuation 5–15 dB beyond 20 Hz; PSD peak near 5 Hz; overall target achieved at higher bands. :contentReference[oaicite:5]{index=5}</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div>
+        <h3>Manufacturing & Cost</h3>
+        <p>Refined toward injection-molded ABS frame; est. unit cost ~$135.87 at volume; rental model outlined. :contentReference[oaicite:6]{index=6}</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <!-- EDIT ME: replace images (16:9 if possible) -->
+      <img class="card" src="assets/project-safe-send-1.jpg" alt="Frame & panels in assembly">
+      <img class="card" src="assets/project-safe-send-2.jpg" alt="Isolation hardware and inner box">
+      <img class="card" src="assets/project-safe-send-3.jpg" alt="Test setup and data logs">
+    </div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+  <div>Sources: Senior Design FDR slides. :contentReference[oaicite:7]{index=7}</div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>

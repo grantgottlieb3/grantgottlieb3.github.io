@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parallel Hybrid Electric Vehicle Analysis | Grant Gottlieb</title>
+  <meta name="description" content="Simulink-based analysis of a parallel HEV across UDDS, HWFET, and US06 drive cycles." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/headshot-placeholder.svg" />
+</head>
+<body>
+<header class="header">
+  <div class="container nav">
+    <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
+    <nav class="right"><a href="index.html#projects">← Back to Projects</a></nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <div class="badge">Vehicle Systems • Simulation • 2025</div>
+      <h1 class="title">Parallel Hybrid Electric Vehicle — Drive-Cycle Analysis</h1>
+      <p class="subtitle">
+        Built a MATLAB/Simulink model to study power split, SOC behavior, and fuel economy on UDDS (city), HWFET (highway), and US06 (aggressive) cycles. :contentReference[oaicite:8]{index=8}
+      </p>
+      <div class="actions">
+        <!-- EDIT ME: add your PDF to /assets/pdfs/ and update link -->
+        <a class="button secondary" href="assets/pdfs/Analysis of Parallel Hybrid Electric Vehicle.pdf" target="_blank" rel="noopener">Read Report (PDF)</a>
+        <a class="button" href="#gallery">See Plots</a>
+      </div>
+    </div>
+    <div class="headshot card">
+      <!-- EDIT ME: representative image -->
+      <img src="hev.jpg" alt="HEV Simulink model collage">
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Model Overview</h2><div class="line"></div></div>
+    <div class="card item">
+      <div class="logo"></div>
+      <div>
+        <p>
+          The model integrates an ICE and electric machine with CVT ratio logic and a supervisory function block that allocates
+          engine/electric power and maintains SOC near 0.5. The controller enforces minimum engine speed and power limits and
+          uses regenerative braking when possible. :contentReference[oaicite:9]{index=9}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Key Findings</h2><div class="line"></div></div>
+    <div class="grid cols-2">
+      <div class="card item"><div class="logo"></div><div>
+        <h3>US06 (Aggressive)</h3>
+        <p>Lowest fuel economy (~26.9 mpg) driven by high drag and power demand; SOC may exceed target due to heavy regen events. :contentReference[oaicite:10]{index=10}</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div>
+        <h3>UDDS (City)</h3>
+        <p>Best fuel economy (~31.8 mpg) thanks to low-speed electric assist and frequent regen; SOC ends near ~0.61. :contentReference[oaicite:11]{index=11}</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div>
+        <h3>HWFET (Highway)</h3>
+        <p>~29.9 mpg; reduced regen opportunities and higher aero losses at speed. :contentReference[oaicite:12]{index=12}</p>
+      </div></div>
+      <div class="card item"><div class="logo"></div><div>
+        <h3>Energy Balance</h3>
+        <p>Supplied engine + ESS energy ≈ sum of acceleration, drag, and rolling losses (first-law check). :contentReference[oaicite:13]{index=13}</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <!-- EDIT ME: export plot images and replace -->
+      <img class="card" src="assets/project-hev-1.jpg" alt="Top-level Simulink diagram">
+      <img class="card" src="assets/project-hev-2.jpg" alt="US06 power split plot">
+      <img class="card" src="assets/project-hev-3.jpg" alt="UDDS SOC/time plot">
+    </div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+  <div>Source: Parallel HEV report. :contentReference[oaicite:14]{index=14}</div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>

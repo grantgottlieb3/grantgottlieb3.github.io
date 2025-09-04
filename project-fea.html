@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finite Element Analysis Labs — Heat & Stress | Grant Gottlieb</title>
+  <meta name="description" content="3D stress/thermal stress through-silicon via model and finned heat sink heat-transfer analyses." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/headshot-placeholder.svg" />
+</head>
+<body>
+<header class="header">
+  <div class="container nav">
+    <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
+    <nav class="right"><a href="index.html#projects">← Back to Projects</a></nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <div class="badge">FEA • Heat Transfer • Stress • 2024</div>
+      <h1 class="title">Finite Element Analysis Labs</h1>
+      <p class="subtitle">
+        Sequential heat-to-stress workflows and steady-state conduction problems: TSV thermal mismatch stresses and a fin heat-sink study with boundary variations. :contentReference[oaicite:28]{index=28}:contentReference[oaicite:29]{index=29}
+      </p>
+      <div class="actions">
+        <!-- EDIT ME: add PDFs to /assets/pdfs/ and link -->
+        <a class="button secondary" href="assets/pdfs/ME489-LAB5-solution-2024.pdf" target="_blank" rel="noopener">TSV Thermal Stress (PDF)</a>
+        <a class="button ghost" href="assets/pdfs/Lab4-report-heatsink.pdf" target="_blank" rel="noopener">Heat Sink Report (PDF)</a>
+      </div>
+    </div>
+    <div class="headshot card">
+      <!-- EDIT ME -->
+      <img src="assets/project-fea-hero.jpg" alt="FEA cross-section view">
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>TSV Thermal Mismatch (3D)</h2><div class="line"></div></div>
+    <div class="card item"><div class="logo"></div><div>
+      <p>
+        Modeled copper via in silicon/ceramic substrate with tie constraints and encastre perimeter. Ran:
+        (1) uniform ΔT thermal stress, (2) heat-transfer with side faces at 20 °C and a 60 °C via end, then 
+        (3) imported temperature field into stress analysis. Reported through-thickness and in-plane shear stresses on cut sections. :contentReference[oaicite:30]{index=30}
+      </p>
+    </div></div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Heat Sink (Steady State)</h2><div class="line"></div></div>
+    <div class="card item"><div class="logo"></div><div>
+      <p>
+        Built encapsulated CPU model and copper fin heat sink; explored top/bottom thermal BCs and body heat-flux loading, then 
+        introduced defective attachment area. Reported CPU temperatures and NT11 heat-flux vectors; example CPU temps: ~23.1 °C and ~34 °C cases. :contentReference[oaicite:31]{index=31}
+      </p>
+    </div></div>
+  </section>
+
+  <section id="gallery">
+    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <!-- EDIT ME: add contour images -->
+      <img class="card" src="assets/project-fea-1.jpg" alt="TSV stress contours">
+      <img class="card" src="assets/project-fea-2.jpg" alt="Heat sink temperature field">
+      <img class="card" src="assets/project-fea-3.jpg" alt="Heat flux vectors">
+    </div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+  <div>Sources: ME489 Lab reports. :contentReference[oaicite:32]{index=32}:contentReference[oaicite:33]{index=33}</div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
