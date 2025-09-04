@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edwin — Next Generation Smart Door | Grant Gottlieb</title>
+  <meta name="description" content="High-level overview of a patent-pending smart door concept with passive authentication." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/headshot-placeholder.svg" />
+
+  <!-- Match index formatting -->
+  <style>
+    /* Links look like normal text unless buttons */
+    a { text-decoration: none; color: inherit; }
+    a:hover, a:focus { opacity: 0.95; }
+    a.button { color: #fff !important; }
+    .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
+    .button.ghost:hover { background: var(--accent-2); }
+
+    /* Donut icon tiles (transparent, uniform) */
+    .item .logo {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 0; box-shadow: none;
+    }
+    .item .logo::after {
+      content: ""; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--text); background: transparent; display: block;
+    }
+
+    /* Gray placeholders for missing media */
+    .blank-gray { background: #eef1f5; border: 1px dashed var(--border); }
+    .thumb.blank-gray, .video-frame.blank-gray { aspect-ratio: 16/9; }
+    .video-frame { width: 100%; border-radius: var(--radius-xl, 16px); }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="container nav">
+    <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
+    <nav class="right"><a href="index.html#projects">← Back to Projects</a></nav>
+  </div>
+</header>
+
+<main class="container">
+  <!-- =============================== Hero =============================== -->
+  <section class="hero" id="top">
+    <div>
+      <div class="badge">Mechanical Design • Product Development • Collaboration</div>
+      <h1 class="title">Edwin — Next Generation Smart Door</h1>
+      <p class="subtitle">
+        High-level, patent-pending concept: a hands-free entry experience that can authenticate a resident and actuate the door hardware while preserving normal, manual operation.
+      </p>
+      <div class="actions">
+        <a class="button secondary" href="#demo">Watch Demo</a>
+        <a class="button ghost" href="#overview">Overview</a>
+        <a class="button ghost" href="#gallery">Gallery</a>
+      </div>
+    </div>
+    <div class="headshot card">
+      <!-- If edwin.png isn’t present yet, swap the <img> for the gray box below. -->
+      <!-- <div class="headshot card blank-gray" role="img" aria-label="Edwin hero placeholder"></div> -->
+      <img src="edwin.png" alt="Edwin smart door concept">
+    </div>
+  </section>
+
+  <!-- =============================== Overview =============================== -->
+  <section id="overview">
+    <div class="section-title"><h2>Overview</h2><div class="line"></div></div>
+    <article class="card item">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <p>
+          This project explores a next-generation residential entry system designed for convenience and safety. The prototype integrates
+          passive user authentication with a discrete actuation mechanism to unlatch and re-secure the door, while keeping everyday
+          manual use familiar and unchanged.
+        </p>
+        <p>
+          Due to its patent-pending nature, detailed mechanisms, component selections, and control logic are intentionally omitted here.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <!-- =============================== Role & Collaboration =============================== -->
+  <section>
+    <div class="section-title"><h2>My Role & Collaboration</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Mechanical Focus</h3>
+          <ul>
+            <li>Fixture and packaging concepts for door-jamb integration.</li>
+            <li>Rapid prototypes and fit checks for mechanism clearances.</li>
+            <li>Assembly approach prioritizing serviceability.</li>
+          </ul>
+        </div>
+      </article>
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Cross-Functional</h3>
+          <ul>
+            <li>Worked closely with electrical and software teammates.</li>
+            <li>Aligned physical constraints with sensing and control needs.</li>
+            <li>Iterated based on bench testing and user-flow reviews.</li>
+          </ul>
+        </div>
+      </article>
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Guiding Principles</h3>
+          <ul>
+            <li>Safety, reliability, and unobtrusive operation.</li>
+            <li>Preserve normal door use; minimal user burden.</li>
+            <li>Respect privacy and enable local processing.</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =============================== Demo =============================== -->
+  <section id="demo">
+    <div class="section-title"><h2>Demo</h2><div class="line"></div></div>
+    <div class="card item">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <!-- EDIT ME: Replace the gray box with either an embedded video or a local MP4 -->
+        <!-- Option B: Local MP4 placed in /assets/videos/edwin-demo.mp4 -->
+        <video class="video-frame" controls playsinline poster="edwin-pov.jpeg">
+          <source src="edwin-pov.jpeg" type="video/jpeg">
+          Your browser does not support the video tag.
+        </video>
+        <div class="video-frame blank-gray" role="img" aria-label="Demo video placeholder"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================== Gallery =============================== -->
+  <section id="gallery">
+    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <!-- Replace with images or keep placeholders -->
+      <div class="thumb blank-gray card" role="img" aria-label="Concept sketch placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Prototype detail placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Bench test setup placeholder"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+  <div>Built with clean HTML/CSS/JS.</div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
