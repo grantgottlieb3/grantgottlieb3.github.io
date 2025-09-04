@@ -4,15 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Grant Gottlieb — Mechanical Engineer</title>
-  <meta name="description" content="Portfolio of engineering projects by Grant Gottlieb, Purdue ME graduate.">
+  <meta name="description" content="Personal site and portfolio for Grant Gottlieb, Mechanical Engineering alum of Purdue University.">
+
+  <!-- Base styles -->
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="assets/headshot-placeholder.svg">
+
+  <!-- Link style overrides (no underline, not blue) -->
+  <style>
+    /* make all links look like normal text unless they’re buttons */
+    a { text-decoration: none; color: inherit; }
+    a:hover, a:focus { text-decoration: none; opacity: 0.95; }
+    /* ensure card/project links fill the card and keep normal text color */
+    .project a, .card a { display: block; color: inherit; }
+    /* buttons still look like buttons */
+    a.button { color: #fff !important; }
+  </style>
 </head>
 <body>
   <!-- ======================= Header / Navigation ======================= -->
   <header class="header">
     <div class="container nav">
-      <div class="left"><span class="brand">Grant Gottlieb</span></div>
+      <div class="left">
+        <span class="brand">Grant Gottlieb</span>
+      </div>
       <nav class="right">
         <a href="#about">About</a>
         <a href="#experience">Experience</a>
@@ -29,29 +44,39 @@
         <div class="badge">Mechanical Engineer • Problem Solver </div>
         <h1 class="title">Designing solutions at the intersection of mechanics, electronics, and human need.</h1>
         <p class="subtitle">
-          Purdue Mechanical Engineering graduate; currently a Sales Engineer at Ryan Fireprotection through Orr Fellowship.
+          Purdue University Mechanical Engineering graduate; currently a Sales Engineer at Ryan Fireprotection through Orr Fellowship.
+          Building a portfolio to showcase projects, systems thinking, and hands-on prototyping.
         </p>
         <div class="actions">
-          <a href="#" class="button secondary">Download Resume (add link)</a>
+          <!-- EDIT ME: replace link with your latest resume if you host one in the repo -->
+          <a href="#" class="button secondary">Download Resume</a>
           <a href="#contact" class="button">Contact Me</a>
-          <a href="https://www.linkedin.com/in/grant-gottlieb-74867a24b/" target="_blank" rel="noopener" class="button ghost">LinkedIn</a>
+          <a href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener" class="button ghost">LinkedIn</a>
         </div>
       </div>
       <div class="headshot card">
-        <!-- EDIT ME: replace with your headshot -->
+        <!-- EDIT ME: replace with your headshot (try 1200x1200 or larger for best quality) -->
         <img src="orrheadshot.JPEG" alt="Grant Gottlieb headshot">
       </div>
     </section>
 
     <!-- =============================== About ============================== -->
     <section id="about">
-      <div class="section-title"><h2>About</h2><div class="line"></div></div>
+      <div class="section-title">
+        <h2>About</h2><div class="line"></div>
+      </div>
       <div class="card item">
-        <div class="logo"></div>
+        <div class="logo" aria-hidden="true"></div>
         <div>
           <h3>Who I am</h3>
           <p>
-            I'm an engineer who thrives on creativity, problem solving, and hands-on experience.
+            I'm an engineer who loves creative problem solving, rapid iteration, and turning ideas into working hardware.
+            While my current Sales Engineer role develops client-facing and systems skills, I'm actively expanding a portfolio
+            that reflects why I chose engineering: building, testing, and improving real products.
+          </p>
+          <p>
+            Strengths include CAD (SolidWorks, Siemens NX, Creo), prototyping (3D printing, microcontrollers), and practical experimentation.
+            I’m also conversational in Spanish and passionate about service and mentorship.
           </p>
         </div>
       </div>
@@ -59,27 +84,71 @@
 
     <!-- ============================ Experience ============================ -->
     <section id="experience">
-      <div class="section-title"><h2>Experience</h2><div class="line"></div></div>
+      <div class="section-title">
+        <h2>Experience</h2><div class="line"></div>
+      </div>
+
       <div class="grid">
+        <!-- Ryan Fireprotection / Orr Fellowship -->
         <article class="card item">
-          <div class="logo"></div>
+          <div class="logo" aria-hidden="true"></div>
           <div>
             <h3>Sales Engineer — Ryan Fireprotection (Orr Fellow)</h3>
-            <div class="meta">2025 – Present</div>
+            <div class="meta">Jun 2025 – Present · Indianapolis, IN</div>
+            <p>
+              Early-career role focused on client solutions, scope definition, and cross-functional coordination.
+              I'm using this time to sharpen communication and business skills while continuing to build a technical portfolio.
+            </p>
           </div>
         </article>
+
+        <!-- Owens Corning -->
         <article class="card item">
-          <div class="logo"></div>
+          <div class="logo" aria-hidden="true"></div>
           <div>
             <h3>Mechanical Design Engineer Intern — Owens Corning</h3>
-            <div class="meta">2024</div>
+            <div class="meta">May 2024 – Aug 2024 · West Chicago, IL</div>
+            <ul>
+              <li>Developed a patent-pending electromechanical solution to automatically unlatch residential doors.</li>
+              <li>Coordinated and led design reviews with stakeholders; delivered BOM, instructions, and a working prototype.</li>
+              <li>CAD: parametric housings for electronics (SolidWorks); rapid prototyping via 3D printing.</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- BorgWarner -->
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>R&D Engineer Intern — BorgWarner</h3>
+            <div class="meta">May 2023 – Aug 2023 · Kokomo, IN</div>
+            <ul>
+              <li>Improved manufacturing processes for the VIPER inverter using SMT and reflow soldering.</li>
+              <li>Designed and fabricated 100+ adaptable storage devices to support small-scale production.</li>
+              <li>Performed assembly analysis and experiments to reduce variability and improve build accuracy.</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+
+      <div class="section-title" style="margin-top:28px;">
+        <h2>Education</h2><div class="line"></div>
+      </div>
+      <div class="grid">
+        <article class="card item">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h3>Purdue University — B.S. Mechanical Engineering</h3>
+            <div class="meta">Aug 2021 – May 2025 · Minor: Spanish for the Professions</div>
+            <p>Activities: Pi Kappa Phi, PUDM, Spanish Club, IM Sports, Purdue Special Olympics.</p>
           </div>
         </article>
         <article class="card item">
-          <div class="logo"></div>
+          <div class="logo" aria-hidden="true"></div>
           <div>
-            <h3>R&D Engineer Intern — BorgWarner</h3>
-            <div class="meta">2023</div>
+            <h3>Universidad Nebrija — Madrid, Spain</h3>
+            <div class="meta">May 2022 – Jul 2022</div>
+            <p>Six-week immersion program; final project selected to promote study abroad.</p>
           </div>
         </article>
       </div>
@@ -87,55 +156,55 @@
 
     <!-- ============================== Projects ============================== -->
     <section id="projects">
-      <div class="section-title"><h2>Projects</h2><div class="line"></div></div>
+      <div class="section-title">
+        <h2>Projects</h2><div class="line"></div>
+      </div>
+
       <div class="grid cols-3">
-        <!-- Each project links to its own page -->
+        <!-- Safe Send (Senior Design) -->
         <article class="card project">
           <a href="project-safe-send.html">
             <div class="thumb"><img src="safesend.png" alt="Safe Send project"></div>
             <div class="content">
               <h3>Safe Send — Precision Transport Packaging</h3>
-              <p>Cleanroom-certified packaging solution with shock, vibration, and thermal protection :contentReference[oaicite:0]{index=0}.</p>
+              <p>Cleanroom-friendly packaging with shock, vibration, and thermal protection; instrumented and validated.</p>
+              <div class="tags"><span class="tag">CAD</span><span class="tag">Ansys</span><span class="tag">Testing</span></div>
             </div>
           </a>
         </article>
 
+        <!-- HEV (single project page) -->
         <article class="card project">
           <a href="project-parallel-hev.html">
-            <div class="thumb"><img src="hev.jpg" alt="Hybrid Electric Vehicle"></div>
+            <div class="thumb"><img src="hev.jpg" alt="Hybrid Electric Vehicle project"></div>
             <div class="content">
-              <h3>Parallel Hybrid Electric Vehicle Analysis</h3>
-              <p>Simulink-based study of hybrid drive cycles, power split, and fuel economy :contentReference[oaicite:1]{index=1}.</p>
+              <h3>Hybrid Electric Vehicle Analysis</h3>
+              <p>MATLAB/Simulink study of power split, SOC behavior, and fuel economy across standard drive cycles.</p>
+              <div class="tags"><span class="tag">Simulink</span><span class="tag">Controls</span><span class="tag">Modeling</span></div>
             </div>
           </a>
         </article>
 
+        <!-- Starship Delivery Robot (restored) -->
         <article class="card project">
-          <a href="project-pmac.html">
-            <div class="thumb"><img src="fea.png" alt="PMAC motor drive"></div>
+          <a href="project-starship.html">
+            <div class="thumb"><img src="starship.png" alt="Starship delivery robot toy"></div>
             <div class="content">
-              <h3>Permanent Magnet AC Motor Drive</h3>
-              <p>Modeled torque response and PWM control with third-harmonic injection :contentReference[oaicite:2]{index=2}.</p>
+              <h3>Starship Delivery Robot — Wi-Fi RC Toy</h3>
+              <p>Arduino-based RC replica with DC/servo actuation and custom linkages modeled in PTC Creo.</p>
+              <div class="tags"><span class="tag">Arduino</span><span class="tag">Mechanisms</span><span class="tag">PTC Creo</span></div>
             </div>
           </a>
         </article>
 
-        <article class="card project">
-          <a href="project-battery.html">
-            <div class="thumb"><img src="battery.png" alt="Battery performance"></div>
-            <div class="content">
-              <h3>Lithium-Ion Battery Performance</h3>
-              <p>Simulated round-trip efficiency at different C-rates; identified losses in fast charging :contentReference[oaicite:3]{index=3}.</p>
-            </div>
-          </a>
-        </article>
-
+        <!-- FEA Labs -->
         <article class="card project">
           <a href="project-fea.html">
-            <div class="thumb"><img src="fea2.png" alt="FEA labs"></div>
+            <div class="thumb"><img src="fea.png" alt="Finite element analysis labs"></div>
             <div class="content">
               <h3>Finite Element Analysis Labs</h3>
-              <p>3D stress, heat transfer, and thermal stress analysis in silicon vias and heat sinks :contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}.</p>
+              <p>3D thermal-stress TSV model and heat-sink conduction studies; sequential heat→stress workflow.</p>
+              <div class="tags"><span class="tag">Ansys</span><span class="tag">FEA</span><span class="tag">Heat Transfer</span></div>
             </div>
           </a>
         </article>
@@ -144,12 +213,14 @@
 
     <!-- ============================== Contact ============================== -->
     <section id="contact">
-      <div class="section-title"><h2>Contact</h2><div class="line"></div></div>
+      <div class="section-title">
+        <h2>Contact</h2><div class="line"></div>
+      </div>
       <div class="card item">
         <div class="logo"></div>
         <div>
-          <p>Email: <a href="mailto:grantgottlieb27@gmail.com">grantgottlieb27@gmail.com</a></p>
-          <p><a href="https://www.linkedin.com/in/grant-gottlieb-74867a24b/" target="_blank">LinkedIn</a></p>
+          <p>Best way to reach me: <a href="mailto:grantgottlieb27@gmail.com">grantgottlieb27@gmail.com</a></p>
+          <p>Also on <a href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener">LinkedIn</a>.</p>
         </div>
       </div>
     </section>
@@ -157,8 +228,9 @@
 
   <footer class="container footer">
     <div>&copy; <span id="year"></span> Grant Gottlieb</div>
-    <div>Built with clean HTML/CSS/JS.</div>
+    <div>Built with clean HTML/CSS/JS. Deployed on GitHub Pages.</div>
   </footer>
+
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Starship Delivery Robot — Wi-Fi RC Toy | Grant Gottlieb</title>
+  <meta name="description" content="Arduino-based Wi-Fi RC replica of campus delivery robots with custom linkages and PTC Creo CAD." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/headshot-placeholder.svg" />
+
+  <!-- Link style overrides (no underline, not blue) -->
+  <style>
+    a { text-decoration: none; color: inherit; }
+    a:hover, a:focus { text-decoration: none; opacity: 0.95; }
+    .project a, .card a { display: block; color: inherit; }
+    a.button { color: #fff !important; }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="container nav">
+    <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
+    <nav class="right"><a href="index.html#projects">← Back to Projects</a></nav>
+  </div>
+</header>
+
+<main class="container">
+  <!-- =============================== Hero =============================== -->
+  <section class="hero" id="top">
+    <div>
+      <div class="badge">Mechatronics • Prototyping</div>
+      <h1 class="title">Starship Delivery Robot — Wi-Fi RC Toy</h1>
+      <p class="subtitle">
+        Remote-controlled replica inspired by campus delivery robots. Custom chassis and linkages designed in PTC Creo, driven by
+        Arduino-based control of DC and servo actuators. Focus on mechanism design, packaging, and reliable wireless control.
+      </p>
+      <div class="actions">
+        <!-- EDIT ME: add a YouTube or Loom link to a short demo video -->
+        <a class="button secondary" href="#" target="_blank" rel="noopener">View Demo (add link)</a>
+        <a class="button" href="#gallery">See Gallery</a>
+        <!-- EDIT ME: link a GitHub repo if you publish code -->
+        <a class="button ghost" href="#" target="_blank" rel="noopener">Source Code (optional)</a>
+      </div>
+    </div>
+    <div class="headshot card">
+      <!-- EDIT ME: hero image ~1600x900. You can reuse your homepage thumbnail if needed. -->
+      <img src="starship.png" alt="Starship delivery robot RC build">
+    </div>
+  </section>
+
+  <!-- ============================== Overview ============================== -->
+  <section>
+    <div class="section-title"><h2>Overview</h2><div class="line"></div></div>
+    <div class="card item">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <p>
+          This personal project recreates the look and motion profile of campus delivery robots at tabletop scale.
+          The goal was to design a robust, serviceable platform that’s easy to iterate on: modular drivetrain, accessible electronics,
+          and clear mechanical load paths for the body shell and suspension.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= Role & Responsibilities ========================= -->
+  <section>
+    <div class="section-title"><h2>My Role & Tools</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Responsibilities</h3>
+          <ul>
+            <li>Concept, CAD, and packaging of chassis/body in <strong>PTC Creo</strong>.</li>
+            <li>Selection and integration of motors, servos, and drivetrain components.</li>
+            <li>Arduino firmware for RC control, steering/throttle mixing, and lighting.</li>
+          </ul>
+        </div>
+      </article>
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Hardware</h3>
+          <p>Arduino (e.g., Nano/Uno), motor driver (dual H-bridge), standard hobby servos, Li-ion/LiPo pack, 2.4 GHz or Wi-Fi link, custom linkages.</p>
+        </div>
+      </article>
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Fabrication</h3>
+          <p>3D-printed brackets/mounts, laser-cut or printed body panels, off-the-shelf wheels, soldered harnesses, quick-disconnects.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================== System Design ============================== -->
+  <section>
+    <div class="section-title"><h2>System Design</h2><div class="line"></div></div>
+    <div class="grid cols-2">
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Electronics & Control</h3>
+          <ul>
+            <li>Arduino reads RC receiver/Wi-Fi commands and outputs PWM to motor driver and servos.</li>
+            <li>Optional lighting (status LEDs) and buzzer; battery monitoring for safe cutoff.</li>
+            <!-- EDIT ME: add exact board, motor driver, and battery specs you used -->
+          </ul>
+        </div>
+      </article>
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Mechanical</h3>
+          <ul>
+            <li>PTC Creo CAD for chassis and body; 3D-printed mounts for electronics and steering linkages.</li>
+            <li>Serviceability: top shell removes with a few screws; wiring looms labeled and strain-relieved.</li>
+            <!-- EDIT ME: add gearing, wheelbase, turning radius, and mass if measured -->
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =============================== Results =============================== -->
+  <section>
+    <div class="section-title"><h2>Results & Lessons</h2><div class="line"></div></div>
+    <div class="grid cols-2">
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>What Works Well</h3>
+          <ul>
+            <li>Reliable steering/throttle response with simple mixing logic.</li>
+            <li>Rigid chassis with easy access to battery and electronics.</li>
+          </ul>
+        </div>
+      </article>
+      <article class="card item">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h3>Next Iterations</h3>
+          <ul>
+            <li>Upgrade to brushless ESC for higher efficiency and smoother control.</li>
+            <li>Integrate ESP32 for built-in Wi-Fi + telemetry dashboard.</li>
+            <li>Refine shell geometry and attachment to reduce rattle.</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =============================== Gallery =============================== -->
+  <section id="gallery">
+    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="grid cols-3">
+      <!-- EDIT ME: replace with your own images (16:9 preferred). Drop files in /assets and update src below -->
+      <img class="card" src="assets/project-starship-1.jpg" alt="Chassis and electronics layout (top view)">
+      <img class="card" src="assets/project-starship-2.jpg" alt="PTC Creo assembly view of linkages">
+      <img class="card" src="assets/project-starship-3.jpg" alt="Finished model on bench">
+    </div>
+  </section>
+
+  <!-- =============================== Downloads =============================== -->
+  <section>
+    <div class="section-title"><h2>Downloads</h2><div class="line"></div></div>
+    <div class="card item">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <!-- EDIT ME: add CAD/firmware links if you choose to publish them -->
+        <p>
+          <a class="button ghost" href="#" target="_blank" rel="noopener">Download CAD (optional)</a>
+          <a class="button ghost" href="#" target="_blank" rel="noopener">Download Firmware (optional)</a>
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+  <div>Built with clean HTML/CSS/JS.</div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
