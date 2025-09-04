@@ -24,31 +24,34 @@
     .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
     .button.ghost:hover { background: var(--accent-2); }
 
-    /* Headshot size (keep your current scaling) */
+    /* Headshot size (keeps your current scaling) */
     .hero .headshot { width: 220px; height: 220px; }
     @media (min-width: 900px) {
       .hero .headshot { width: 320px; height: 320px; }
     }
 
-    /* Uniform icon tiles: simple hollow circle (“donut”), same size everywhere */
+    /* Uniform icon tiles: simple hollow circle (“donut”), transparent background */
     .item .logo {
       width: 42px; height: 42px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      background: var(--card); border: 1px solid var(--border);
-      box-shadow: var(--shadow);
+      background: transparent;         /* ← no tile background */
+      border: 0;                        /* ← no box outline */
+      box-shadow: none;                 /* ← remove shadow */
     }
     .item .logo::after {
       content: "";
       width: 22px; height: 22px;
       border-radius: 50%;
-      border: 2px solid var(--text); /* ring */
+      border: 2px solid var(--text);    /* hollow ring uses current theme text color */
       background: transparent;
       display: block;
     }
 
-    /* Make only the Starship thumbnail image render slightly smaller inside its frame */
+    /* Starship thumbnail: render slightly smaller inside its frame */
     .thumb-starship img { object-fit: contain !important; padding: 6%; }
 
+    /* Spanish project: white placeholder block (no image tag) */
+    .thumb-spanish { background: #ffffff !important; }  /* solid white */
   </style>
 </head>
 <body>
@@ -217,10 +220,10 @@
           </a>
         </article>
 
-        <!-- Spanish Immersion -->
+        <!-- Spanish Immersion (white placeholder) -->
         <article class="card project">
           <a href="spanish.html">
-            <div class="thumb"><img src="spanish.png" alt="Spanish immersion website placeholder"></div>
+            <div class="thumb thumb-spanish"></div>  <!-- no <img>; solid white block -->
             <div class="content">
               <h3>Spanish Immersion — Conversational Web App</h3>
               <p>Apple-clean UI that uses AI to create unique dialogues for learners who can’t study abroad.</p>
