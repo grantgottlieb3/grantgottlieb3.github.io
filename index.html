@@ -10,15 +10,24 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="assets/headshot-placeholder.svg">
 
-  <!-- Link style overrides (no underline, not blue) -->
+  <!-- Overrides -->
   <style>
-    /* make all links look like normal text unless they’re buttons */
+    /* Make all links look like normal text unless they’re buttons */
     a { text-decoration: none; color: inherit; }
     a:hover, a:focus { text-decoration: none; opacity: 0.95; }
-    /* ensure card/project links fill the card and keep normal text color */
-    .project a, .card a { display: block; color: inherit; }
-    /* buttons still look like buttons */
+
+    /* Only project cards become full-card links (not every link inside cards) */
+    .project > a { display: block; color: inherit; }
+
+    /* Buttons keep their look */
     a.button { color: #fff !important; }
+    .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
+
+    /* Headshot size: ~2–3x larger than before, responsive */
+    .hero .headshot { width: 320px; height: 320px; }
+    @media (min-width: 900px) {
+      .hero .headshot { width: 420px; height: 420px; }
+    }
   </style>
 </head>
 <body>
@@ -41,15 +50,15 @@
     <!-- =============================== Hero =============================== -->
     <section class="hero" id="home">
       <div>
-        <div class="badge">Mechanical Engineer • Problem Solver </div>
+        <div class="badge">Mechanical Engineer • Problem Solver • Builder</div>
         <h1 class="title">Designing solutions at the intersection of mechanics, electronics, and human need.</h1>
         <p class="subtitle">
-          Purdue University Mechanical Engineering graduate; currently a Sales Engineer at Ryan Fireprotection through Orr Fellowship.
+          Purdue University Mechanical Engineering graduate; currently a Sales Engineer at Ryan Fireprotection through the Orr Fellowship.
           Building a portfolio to showcase projects, systems thinking, and hands-on prototyping.
         </p>
         <div class="actions">
           <!-- EDIT ME: replace link with your latest resume if you host one in the repo -->
-          <a href="#" class="button secondary">Download Resume</a>
+          <a href="#" class="button secondary">Download Resume (add link)</a>
           <a href="#contact" class="button">Contact Me</a>
           <a href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener" class="button ghost">LinkedIn</a>
         </div>
@@ -173,7 +182,7 @@
           </a>
         </article>
 
-        <!-- HEV (single project page) -->
+        <!-- HEV -->
         <article class="card project">
           <a href="project-parallel-hev.html">
             <div class="thumb"><img src="hev.jpg" alt="Hybrid Electric Vehicle project"></div>
@@ -185,7 +194,7 @@
           </a>
         </article>
 
-        <!-- Starship Delivery Robot (restored) -->
+        <!-- Starship Delivery Robot -->
         <article class="card project">
           <a href="project-starship.html">
             <div class="thumb"><img src="starship.png" alt="Starship delivery robot toy"></div>
@@ -219,8 +228,11 @@
       <div class="card item">
         <div class="logo"></div>
         <div>
-          <p>Best way to reach me: <a href="mailto:grantgottlieb27@gmail.com">grantgottlieb27@gmail.com</a></p>
-          <p>Also on <a href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener">LinkedIn</a>.</p>
+          <!-- Now using buttons -->
+          <p style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <a class="button" href="mailto:grantgottlieb27@gmail.com">Email Me</a>
+            <a class="button ghost" href="https://www.linkedin.com/in/grant-gottlieb" target="_blank" rel="noopener">LinkedIn</a>
+          </p>
         </div>
       </div>
     </section>
