@@ -30,33 +30,25 @@
       .hero .headshot { width: 320px; height: 320px; }
     }
 
-    /* Replace gray squares with a finished icon tile */
+    /* Uniform icon tiles: simple hollow circle (“donut”), same size everywhere */
     .item .logo {
       width: 42px; height: 42px; border-radius: 12px;
-      position: relative; overflow: hidden;
-      border: 1px solid var(--border);
-      background:
-        radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.6) 0%, rgba(255,255,255,0) 55%),
-        linear-gradient(135deg, #eef2ff, #e8ecf5);
+      display: flex; align-items: center; justify-content: center;
+      background: var(--card); border: 1px solid var(--border);
       box-shadow: var(--shadow);
     }
     .item .logo::after {
       content: "";
-      position: absolute; inset: 0; margin: auto;
-      width: 20px; height: 20px; opacity: 0.9;
-      /* simple checkmark icon centered */
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2367788a" d="M20 6L9 17l-5-5"/></svg>') center/20px 20px no-repeat;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--text); /* ring */
+      background: transparent;
+      display: block;
     }
 
-    /* Dark mode adjustment for the logo tile gradient */
-    @media (prefers-color-scheme: dark) {
-      .item .logo {
-        background:
-          radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 55%),
-          linear-gradient(135deg, #1a2333, #121a28);
-      }
-      .item .logo::after { opacity: 0.85; }
-    }
+    /* Make only the Starship thumbnail image render slightly smaller inside its frame */
+    .thumb-starship img { object-fit: contain !important; padding: 6%; }
+
   </style>
 </head>
 <body>
@@ -79,15 +71,15 @@
     <!-- =============================== Hero =============================== -->
     <section class="hero" id="home">
       <div>
-        <div class="badge">Mechanical Engineer • Problem Solver</div>
+        <div class="badge">Mechanical Engineer • Problem Solver • Builder • Innovator</div>
         <h1 class="title">Designing solutions at the intersection of mechanics, electronics, and human need.</h1>
         <p class="subtitle">
           Purdue University Mechanical Engineering alum; currently a Sales Engineer at Ryan Fireprotection through Orr Fellowship.
           Building a portfolio to showcase technical projects and interests.
         </p>
         <div class="actions">
-          <!-- EDIT ME: replace link with your latest resume if you host one in the repo -->
-          <a href="#" class="button secondary">Download Resume (add link)</a>
+          <!-- EDIT ME: set the href to your actual PDF when ready -->
+          <a href="#" class="button secondary">Download Resume</a>
           <a href="#contact" class="button">Contact Me</a>
           <a href="https://www.linkedin.com/in/grant-gottlieb-74867a24b/" target="_blank" rel="noopener" class="button ghost">LinkedIn</a>
         </div>
@@ -189,9 +181,9 @@
           </a>
         </article>
 
-        <!-- HEV (now links to consolidated page with 3 related projects) -->
+        <!-- HEV (consolidated page with 3 related projects) -->
         <article class="card project">
-          <a href="project-hev.html">
+          <a href="hev.html">
             <div class="thumb"><img src="hev.jpg" alt="Hybrid Electric Vehicle projects"></div>
             <div class="content">
               <h3>Hybrid Electric Vehicle — Projects Suite</h3>
@@ -201,10 +193,10 @@
           </a>
         </article>
 
-        <!-- Starship Delivery Robot -->
+        <!-- Starship Delivery Robot (slightly smaller image) -->
         <article class="card project">
           <a href="project-starship.html">
-            <div class="thumb"><img src="starship.png" alt="Starship delivery robot toy"></div>
+            <div class="thumb thumb-starship"><img src="starship.png" alt="Starship delivery robot toy"></div>
             <div class="content">
               <h3>Starship Delivery Robot — Wi-Fi RC Toy</h3>
               <p>Arduino-based RC replica with DC/servo actuation and custom linkages modeled in PTC Creo.</p>
@@ -225,9 +217,9 @@
           </a>
         </article>
 
-        <!-- NEW: Spanish Immersion -->
+        <!-- Spanish Immersion -->
         <article class="card project">
-          <a href="project-spanish.html">
+          <a href="spanish.html">
             <div class="thumb"><img src="spanish.png" alt="Spanish immersion website placeholder"></div>
             <div class="content">
               <h3>Spanish Immersion — Conversational Web App</h3>
