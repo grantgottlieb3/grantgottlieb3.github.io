@@ -4,42 +4,30 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hybrid Electric Vehicle — Projects Suite | Grant Gottlieb</title>
-  <meta name="description" content="Three linked projects: parallel HEV simulation, PMAC motor drive controls, and Li-ion battery performance." />
+  <meta name="description" content="Three linked projects: parallel HEV drive-cycle model, PMAC motor drive controls, and Li-ion battery performance." />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="assets/headshot-placeholder.svg" />
 
-  <!-- Link style overrides (no underline, not blue) -->
+  <!-- Formatting to match index -->
   <style>
     a { text-decoration: none; color: inherit; }
-    a:hover, a:focus { text-decoration: none; opacity: 0.95; }
-    .card a { color: inherit; }
+    a:hover, a:focus { opacity: 0.95; }
     a.button { color: #fff !important; }
     .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
     .button.ghost:hover { background: var(--accent-2); }
 
-    /* Finished icon tiles for section cards */
     .item .logo {
       width: 42px; height: 42px; border-radius: 12px;
-      position: relative; overflow: hidden;
-      border: 1px solid var(--border);
-      background:
-        radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.6) 0%, rgba(255,255,255,0) 55%),
-        linear-gradient(135deg, #eef2ff, #e8ecf5);
-      box-shadow: var(--shadow);
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 0; box-shadow: none;
     }
     .item .logo::after {
-      content: "";
-      position: absolute; inset: 0; margin: auto;
-      width: 20px; height: 20px; opacity: 0.9;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2367788a" d="M20 6L9 17l-5-5"/></svg>') center/20px 20px no-repeat;
+      content: ""; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--text); background: transparent; display: block;
     }
-    @media (prefers-color-scheme: dark) {
-      .item .logo {
-        background:
-          radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 55%),
-          linear-gradient(135deg, #1a2333, #121a28);
-      }
-    }
+
+    .blank-gray { background: #eef1f5; border: 1px dashed var(--border); }
+    .thumb.blank-gray { aspect-ratio: 16/9; }
   </style>
 </head>
 <body>
@@ -51,102 +39,89 @@
 </header>
 
 <main class="container">
-  <!-- =============================== Hero =============================== -->
   <section class="hero" id="top">
     <div>
       <div class="badge">Vehicle Systems • Controls • Energy</div>
       <h1 class="title">Hybrid Electric Vehicle — Projects Suite</h1>
-      <p class="subtitle">
-        Three connected studies exploring hybrid powertrains from the vehicle level down to the motor drive and battery pack.
-      </p>
+      <p class="subtitle">Vehicle-level power split, motor drive control, and battery performance—three views of one system.</p>
       <div class="actions">
-        <!-- EDIT ME: wire these to your actual filenames under /assets/pdfs/ -->
+        <!-- EDIT ME: update to your actual filenames in /assets/pdfs/ -->
         <a class="button ghost" href="assets/pdfs/Analysis of Parallel Hybrid Electric Vehicle.pdf" target="_blank" rel="noopener">Parallel HEV (PDF)</a>
         <a class="button ghost" href="assets/pdfs/Analysis of Permanent Magnet AC Motor Drive.pdf" target="_blank" rel="noopener">PMAC Drive (PDF)</a>
-        <a class="button ghost" href="assets/pdfs/Analysis of Battery Performance.pdf" target="_blank" rel="noopener">Battery Performance (PDF)</a>
+        <a class="button ghost" href="assets/pdfs/Analysis of Battery Performance.pdf" target="_blank" rel="noopener">Battery (PDF)</a>
       </div>
     </div>
-    <div class="headshot card">
-      <!-- EDIT ME: hero collage (1600x900 preferred) -->
-      <img src="assets/hev-suite-hero.jpg" alt="HEV suite collage (vehicle, drive, battery)">
-    </div>
+    <!-- Use a collage if you have one; otherwise gray placeholder -->
+    <div class="headshot card blank-gray" role="img" aria-label="HEV collage placeholder"></div>
   </section>
 
-  <!-- =========================== Project 1: Parallel HEV =========================== -->
+  <!-- Parallel HEV -->
   <section>
     <div class="section-title"><h2>1) Parallel HEV — Drive-Cycle Simulation</h2><div class="line"></div></div>
-    <div class="card item">
-      <div class="logo" aria-hidden="true"></div>
+    <article class="card item">
+      <div class="logo"></div>
       <div>
         <p>
-          MATLAB/Simulink vehicle model with ICE + EM, simple supervisory control to maintain SOC near 0.5, and CVT logic.
+          MATLAB/Simulink model of a parallel HEV with supervisory control to maintain SOC near 0.5, and CVT logic.
           Evaluated UDDS (city), HWFET (highway), and US06 (aggressive) cycles for fuel economy, power split, and SOC behavior.
         </p>
         <ul>
-          <li><strong>US06:</strong> lowest mpg due to high aerodynamic load and power demand; heavy regen spikes possible.</li>
-          <li><strong>UDDS:</strong> best mpg—electric assist at low speeds and frequent regen raise efficiency.</li>
-          <li><strong>HWFET:</strong> mid-range mpg; fewer regen events, higher drag at speed.</li>
+          <li><strong>UDDS:</strong> best mpg via low-speed electric assist + frequent regen.</li>
+          <li><strong>HWFET:</strong> mid-range mpg; higher drag and fewer regen events.</li>
+          <li><strong>US06:</strong> lowest mpg due to high power demand; regen spikes possible.</li>
         </ul>
-        <p>
-          <!-- EDIT ME: replace with real plot images -->
-          <em>EDIT ME:</em> Export 2–3 plots (power split vs time, SOC vs time, cvt ratio vs time) to <code>assets/</code> and drop them in the gallery below.
-        </p>
       </div>
-    </div>
+    </article>
     <div class="grid cols-3" style="margin-top:12px;">
-      <img class="card" src="assets/hev-parallel-1.jpg" alt="Top-level Simulink diagram (parallel HEV)">
-      <img class="card" src="assets/hev-parallel-2.jpg" alt="UDDS power split / SOC">
-      <img class="card" src="assets/hev-parallel-3.jpg" alt="US06 CVT ratio / engine speed">
+      <div class="thumb blank-gray card" role="img" aria-label="Top-level Simulink diagram placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Power split vs time placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="SOC vs time placeholder"></div>
     </div>
   </section>
 
-  <!-- ======================= Project 2: PMAC Motor Drive ======================= -->
+  <!-- PMAC Drive -->
   <section>
     <div class="section-title"><h2>2) PMAC Motor Drive — Sine-Triangle PWM + 3rd Harmonic</h2><div class="line"></div></div>
-    <div class="card item">
-      <div class="logo" aria-hidden="true"></div>
+    <article class="card item">
+      <div class="logo"></div>
       <div>
         <p>
-          Modeled a PMAC motor drive with DC source + LC filter, three-phase inverter, and dq-current control.
-          Sine-triangle PWM with third-harmonic injection increases modulation headroom. Tested torque steps (0 → ±400 Nm) at 500 rpm.
+          DC source + LC filter → three-phase inverter → PMAC machine with dq-current control.
+          Sine–triangle PWM with third-harmonic injection increases modulation headroom; torque steps (0 → ±400 Nm) at 500 rpm validate response.
         </p>
         <ul>
-          <li>dq current tracking and phase currents/voltages under torque steps.</li>
-          <li>DC link dynamics vs battery current under load and regen.</li>
-          <li>Near-instant torque response limited by inductor dynamics.</li>
+          <li>dq current tracking; phase voltages/currents.</li>
+          <li>DC-link dynamics vs battery current under load/regen.</li>
         </ul>
-        <p><em>EDIT ME:</em> Add 2–3 plots (phase currents, dq currents, DC link/battery current) to the gallery.</p>
       </div>
-    </div>
+    </article>
     <div class="grid cols-3" style="margin-top:12px;">
-      <img class="card" src="assets/hev-pmac-1.jpg" alt="dq currents vs torque">
-      <img class="card" src="assets/hev-pmac-2.jpg" alt="phase voltages/currents">
-      <img class="card" src="assets/hev-pmac-3.jpg" alt="DC link and battery current">
+      <div class="thumb blank-gray card" role="img" aria-label="dq currents placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="phase v/i placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="DC link & battery current placeholder"></div>
     </div>
   </section>
 
-  <!-- =================== Project 3: Battery Performance =================== -->
+  <!-- Battery -->
   <section>
     <div class="section-title"><h2>3) Battery Performance — Equivalent Circuit & Efficiency</h2><div class="line"></div></div>
-    <div class="card item">
-      <div class="logo" aria-hidden="true"></div>
+    <article class="card item">
+      <div class="logo"></div>
       <div>
         <p>
-          First-order equivalent-circuit Li-ion model with OCV–SOC table and Coulomb counting. Compared round-trip efficiency under
-          0.2C vs 2C charge/discharge and estimated energy needs for a US06-like drive window.
+          First-order equivalent-circuit Li-ion model with OCV–SOC table and Coulomb counting. Compared round-trip efficiency under 0.2C vs 2C cycles and estimated energy for an aggressive drive window.
         </p>
         <ul>
-          <li><strong>0.2C/0.2C:</strong> highest efficiency (low losses).</li>
-          <li><strong>2C/0.2C:</strong> moderate; losses rise with fast charge current.</li>
-          <li><strong>2C/2C:</strong> lowest; short, high-current cycling amplifies internal loss.</li>
+          <li><strong>0.2C/0.2C:</strong> highest efficiency (lowest losses).</li>
+          <li><strong>2C/0.2C:</strong> moderate efficiency; fast charge raises losses.</li>
+          <li><strong>2C/2C:</strong> lowest efficiency due to high current both ways.</li>
         </ul>
-        <p><em>EDIT ME:</em> Add SOC/voltage/current plots and an efficiency bar chart to the gallery.</p>
       </div>
-    </div>
+    </article>
     <div class="grid cols-3" style="margin-top:12px;">
-      <img class="card" src="assets/hev-batt-1.jpg" alt="Voltage vs time">
-      <img class="card" src="assets/hev-batt-2.jpg" alt="Current vs time">
-      <img class="card" src="assets/hev-batt-3.jpg" alt="SOC vs time">
+      <div class="thumb blank-gray card" role="img" aria-label="Voltage vs time placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Current vs time placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="SOC vs time placeholder"></div>
     </div>
   </section>
 </main>

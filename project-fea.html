@@ -4,9 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Finite Element Analysis Labs — Heat & Stress | Grant Gottlieb</title>
-  <meta name="description" content="3D stress/thermal stress through-silicon via model and finned heat sink heat-transfer analyses." />
+  <meta name="description" content="3D thermal stress through-silicon via model and finned heat sink steady-state conduction analysis." />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="assets/headshot-placeholder.svg" />
+
+  <!-- Match index formatting -->
+  <style>
+    a { text-decoration: none; color: inherit; }
+    a:hover, a:focus { opacity: 0.95; }
+    a.button { color: #fff !important; }
+    .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
+    .button.ghost:hover { background: var(--accent-2); }
+
+    .item .logo {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 0; box-shadow: none;
+    }
+    .item .logo::after {
+      content: ""; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--text); background: transparent; display: block;
+    }
+
+    .blank-gray { background: #eef1f5; border: 1px dashed var(--border); }
+    .thumb.blank-gray { aspect-ratio: 16/9; }
+  </style>
 </head>
 <body>
 <header class="header">
@@ -17,60 +39,59 @@
 </header>
 
 <main class="container">
-  <section class="hero">
+  <section class="hero" id="top">
     <div>
-      <div class="badge">FEA • Heat Transfer • Stress • 2024</div>
+      <div class="badge">FEA • Heat Transfer • Stress</div>
       <h1 class="title">Finite Element Analysis Labs</h1>
-      <p class="subtitle">
-        Sequential heat-to-stress workflows and steady-state conduction problems: TSV thermal mismatch stresses and a fin heat-sink study with boundary variations. :contentReference[oaicite:28]{index=28}:contentReference[oaicite:29]{index=29}
-      </p>
+      <p class="subtitle">Sequential heat→stress workflows and steady-state conduction problems.</p>
       <div class="actions">
-        <!-- EDIT ME: add PDFs to /assets/pdfs/ and link -->
-        <a class="button secondary" href="assets/pdfs/ME489-LAB5-solution-2024.pdf" target="_blank" rel="noopener">TSV Thermal Stress (PDF)</a>
+        <!-- EDIT ME: ensure filenames match what you commit in /assets/pdfs/ -->
+        <a class="button ghost" href="assets/pdfs/ME489-LAB5-solution-2024.pdf" target="_blank" rel="noopener">TSV Thermal Stress (PDF)</a>
         <a class="button ghost" href="assets/pdfs/Lab4-report-heatsink.pdf" target="_blank" rel="noopener">Heat Sink Report (PDF)</a>
       </div>
     </div>
-    <div class="headshot card">
-      <!-- EDIT ME -->
-      <img src="assets/project-fea-hero.jpg" alt="FEA cross-section view">
-    </div>
+    <!-- No hero image? Gray placeholder -->
+    <div class="headshot card blank-gray" role="img" aria-label="FEA hero placeholder"></div>
   </section>
 
   <section>
     <div class="section-title"><h2>TSV Thermal Mismatch (3D)</h2><div class="line"></div></div>
-    <div class="card item"><div class="logo"></div><div>
-      <p>
-        Modeled copper via in silicon/ceramic substrate with tie constraints and encastre perimeter. Ran:
-        (1) uniform ΔT thermal stress, (2) heat-transfer with side faces at 20 °C and a 60 °C via end, then 
-        (3) imported temperature field into stress analysis. Reported through-thickness and in-plane shear stresses on cut sections. :contentReference[oaicite:30]{index=30}
-      </p>
-    </div></div>
+    <article class="card item">
+      <div class="logo"></div>
+      <div>
+        <p>
+          Copper via in silicon/ceramic stack. Cases: (1) uniform ΔT thermal stress, (2) heat transfer with BCs and source, then (3) import temperature field into stress analysis to study thermally induced stresses and shear.
+        </p>
+      </div>
+    </article>
+    <div class="grid cols-3" style="margin-top:12px;">
+      <div class="thumb blank-gray card" role="img" aria-label="TSV mesh/BCs placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Temperature field placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Stress contours placeholder"></div>
+    </div>
   </section>
 
   <section>
     <div class="section-title"><h2>Heat Sink (Steady State)</h2><div class="line"></div></div>
-    <div class="card item"><div class="logo"></div><div>
-      <p>
-        Built encapsulated CPU model and copper fin heat sink; explored top/bottom thermal BCs and body heat-flux loading, then 
-        introduced defective attachment area. Reported CPU temperatures and NT11 heat-flux vectors; example CPU temps: ~23.1 °C and ~34 °C cases. :contentReference[oaicite:31]{index=31}
-      </p>
-    </div></div>
-  </section>
-
-  <section id="gallery">
-    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
-    <div class="grid cols-3">
-      <!-- EDIT ME: add contour images -->
-      <img class="card" src="assets/project-fea-1.jpg" alt="TSV stress contours">
-      <img class="card" src="assets/project-fea-2.jpg" alt="Heat sink temperature field">
-      <img class="card" src="assets/project-fea-3.jpg" alt="Heat flux vectors">
+    <article class="card item">
+      <div class="logo"></div>
+      <div>
+        <p>
+          Encapsulated CPU with copper fin heat sink; explored boundary conditions, heat-flux loading, and a defective attachment area. Reported CPU temps and heat-flux vectors; compared thermal performance under variations.
+        </p>
+      </div>
+    </article>
+    <div class="grid cols-3" style="margin-top:12px;">
+      <div class="thumb blank-gray card" role="img" aria-label="Assembly placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Temperature field placeholder"></div>
+      <div class="thumb blank-gray card" role="img" aria-label="Heat flux vectors placeholder"></div>
     </div>
   </section>
 </main>
 
 <footer class="container footer">
   <div>&copy; <span id="year"></span> Grant Gottlieb</div>
-  <div>Sources: ME489 Lab reports. :contentReference[oaicite:32]{index=32}:contentReference[oaicite:33]{index=33}</div>
+  <div>Built with clean HTML/CSS/JS.</div>
 </footer>
 <script src="script.js"></script>
 </body>
