@@ -51,7 +51,7 @@ export default async function handler(req) {
 
   // OpenRouter recommends these headers (used for attribution/rate fairness)
   if (useOpenRouter) {
-    const referer = req.headers.get('origin') || 'https://your-site.vercel.app';
+    const referer = req.headers.get('origin') || 'https://vercel.com/grants-projects-8848af2d/grantgottlieb3-github-io/4HemXyqS8pUC1XQ4cMq4nnVJyAgV';
     headers['HTTP-Referer'] = referer;
     headers['X-Title'] = 'Spanish Immersion App';
   }
