@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Spanish Immersion — Conversational Web App | Grant Gottlieb</title>
-  <meta name="description" content="Clean, approachable practice scenes for Spanish conversation, with customizable language, city, and CEFR level." />
+  <meta name="description" content="Replayable, goal-driven Spanish conversation practice with customizable city and level — built to work with AI." />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="assets/headshot-placeholder.svg" />
 
@@ -20,8 +20,8 @@
     /* Remove donut logos only on this page */
     .item .logo { display: none !important; }
 
-    /* Hero: title only, no subtitle/actions/headshot */
-    .hero { grid-template-columns: 1fr !important; padding-bottom: 24px; }
+    /* Hero: title only */
+    .hero { grid-template-columns: 1fr !important; padding-bottom: 12px; }
     .hero .title { margin-bottom: 0; }
     .hero .headshot { display: none !important; }
 
@@ -35,6 +35,13 @@
       border: 1px solid var(--border); background: var(--card); color: var(--text);
       font: inherit;
     }
+
+    /* HUD / Gamification */
+    .hud { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 900px) { .hud { grid-template-columns: 1fr 1fr; } }
+    .stat { display:flex; align-items:center; justify-content:space-between; gap: 12px; }
+    .bar { height: 8px; background: var(--accent-2); border-radius: 999px; overflow:hidden; }
+    .bar > i { display:block; height:100%; background: var(--accent); width: 0%; transition: width .3s ease; }
 
     /* Tabs */
     .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -64,8 +71,9 @@
     .modal .sheet {
       width: min(720px, 100%); background: var(--card); color: var(--text);
       border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
-      overflow: hidden;
+      overflow: hidden; transform: scale(.98); opacity: 0; animation: pop .18s ease forwards;
     }
+    @keyframes pop { to { transform: scale(1); opacity: 1; } }
     .sheet header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--border); }
     .sheet header h3 { margin:0; font-size:18px; }
     .sheet .body { padding: 14px 16px; display: grid; gap: 12px; }
@@ -73,8 +81,19 @@
     .sheet .row small { color: var(--muted); }
     .sheet footer { padding: 14px 16px; border-top: 1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap; }
 
+    /* Avatar */
+    .partner {
+      display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--border);
+      border-radius: 12px; background: var(--card);
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 16px; overflow: hidden; flex-shrink:0;
+      border: 1px solid var(--border); background: #fff;
+    }
+
     /* Tiny helper for muted meta */
     .meta { color: var(--muted); font-size: 13px; }
+    textarea.notes { width: 100%; min-height: 70px; resize: vertical; padding:10px; border-radius:10px; border:1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -142,6 +161,34 @@
     </article>
   </section>
 
+  <!-- =============================== HUD / Gamification =============================== -->
+  <section id="hud">
+    <div class="section-title"><h2>Progress</h2><div class="line"></div></div>
+    <div class="hud">
+      <article class="card item">
+        <div style="width:100%;">
+          <div class="stat"><strong>XP</strong><span id="xpVal">0</span></div>
+          <div class="bar" aria-hidden="true"><i id="xpBar" style="width:0%"></i></div>
+          <div class="meta" style="margin-top:6px;">Earn 50 XP per completed scenario.</div>
+        </div>
+      </article>
+      <article class="card item">
+        <div style="width:100%;">
+          <div class="stat"><strong>Streak</strong><span id="streakVal">0 days</span></div>
+          <div class="meta" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</div>
+        </div>
+      </article>
+    </div>
+    <div class="grid cols-3" style="margin-top:12px;">
+      <article class="card item"><div><strong>Travel</strong><div class="meta"><span id="c-travel">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Food</strong><div class="meta"><span id="c-food">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Daily</strong><div class="meta"><span id="c-daily">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Culture</strong><div class="meta"><span id="c-culture">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Social</strong><div class="meta"><span id="c-social">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Custom</strong><div class="meta"><span id="c-custom">0</span> completed</div></div></article>
+    </div>
+  </section>
+
   <!-- =============================== Scenes (Tabs) =============================== -->
   <section id="scenes">
     <div class="section-title"><h2>Scenes</h2><div class="line"></div></div>
@@ -180,7 +227,7 @@
       <article class="card item">
         <div style="width:100%;">
           <h3 style="margin:0 0 6px;">Custom Scenario</h3>
-          <p class="meta" style="margin: 0 0 10px;">Type a keyword (e.g., “pharmacy”, “football”, “job interview”) and generate a tailored practice scene.</p>
+          <p class="meta" style="margin: 0 0 10px;">Type a keyword (e.g., “pharmacy”, “football”, “job interview”) and spawn a tailored practice scene.</p>
           <div class="custom-row">
             <input type="text" id="customKeyword" placeholder="Keyword or topic…" />
             <button class="button" id="addCustom">Generate</button>
@@ -205,17 +252,27 @@
       <button class="button ghost" id="closeModal" aria-label="Close">Close</button>
     </header>
     <div class="body">
-      <div class="row">
-        <small>Who you’re talking to</small>
-        <div id="modalRole"></div>
+      <div class="partner">
+        <div class="avatar" id="modalAvatar" aria-hidden="true"></div>
+        <div>
+          <div class="meta" style="margin-bottom:2px;">You’re talking to</div>
+          <div id="modalRole" style="font-weight:600;"></div>
+        </div>
       </div>
+
       <div class="row">
         <small>Setting</small>
         <div id="modalSetting"></div>
       </div>
+
       <div class="row">
         <small>Key information</small>
         <div id="modalKey"></div>
+      </div>
+
+      <div class="row">
+        <small>Outcome notes (optional)</small>
+        <textarea class="notes" id="modalNotes" placeholder="What happened? Any phrases to remember?"></textarea>
       </div>
     </div>
     <footer>
@@ -236,7 +293,10 @@
     langKey: 'spanish_app_lang',
     cityKey: 'spanish_app_city',
     levelKey: 'spanish_app_level',
-    listsKey: 'spanish_app_lists'
+    listsKey: 'spanish_app_lists',
+    logKey:   'spanish_app_log',
+    xpKey:    'spanish_app_xp',
+    streakKey:'spanish_app_streak'
   };
 
   const langSel  = document.getElementById('langSel');
@@ -253,7 +313,70 @@
   levelSel.addEventListener('change', () => localStorage.setItem(STORE.levelKey, levelSel.value));
 
   // ------------------------------------------------------------
-  // Data model for scenarios, per tab
+  // Gamification: XP, streak, per-category counts
+  // ------------------------------------------------------------
+  const hud = {
+    xpVal: document.getElementById('xpVal'),
+    xpBar: document.getElementById('xpBar'),
+    streakVal: document.getElementById('streakVal'),
+    counts: {
+      travel: document.getElementById('c-travel'),
+      food: document.getElementById('c-food'),
+      daily: document.getElementById('c-daily'),
+      culture: document.getElementById('c-culture'),
+      social: document.getElementById('c-social'),
+      custom: document.getElementById('c-custom'),
+    }
+  };
+
+  function getXP(){ return +(localStorage.getItem(STORE.xpKey) || 0); }
+  function setXP(v){ localStorage.setItem(STORE.xpKey, String(v)); }
+  function getStreak(){
+    try { return JSON.parse(localStorage.getItem(STORE.streakKey) || '{"count":0,"last":""}'); }
+    catch { return {count:0, last:""}; }
+  }
+  function setStreak(obj){ localStorage.setItem(STORE.streakKey, JSON.stringify(obj)); }
+
+  function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+
+  function updateHUD(){
+    const xp = getXP();
+    hud.xpVal.textContent = xp;
+    // Arbitrary level loop: show progress to next 500 XP
+    const pct = Math.min(100, ((xp % 500) / 500) * 100);
+    hud.xpBar.style.width = pct + '%';
+
+    const st = getStreak();
+    hud.streakVal.textContent = `${st.count} day${st.count===1?'':'s'}`;
+
+    // Counts by category from log
+    const log = getLog();
+    const byCat = {travel:0,food:0,daily:0,culture:0,social:0,custom:0};
+    log.forEach(x => { if(byCat[x.category] !== undefined) byCat[x.category]++; });
+    Object.keys(byCat).forEach(k => { hud.counts[k].textContent = byCat[k]; });
+  }
+
+  function awardCompletion(category){
+    // +50 XP
+    setXP(getXP() + 50);
+    // streak
+    const st = getStreak();
+    const t  = todayStr();
+    if (!st.last) { setStreak({count:1, last:t}); }
+    else if (st.last === t) { /* already counted today */ }
+    else {
+      // day difference rough check
+      const prev = new Date(st.last);
+      const now  = new Date();
+      const diffDays = Math.round((now - prev) / 86400000);
+      const nextCount = diffDays === 1 ? (st.count + 1) : 1;
+      setStreak({count: nextCount, last: t});
+    }
+    updateHUD();
+  }
+
+  // ------------------------------------------------------------
+  // Minimal scene seeders (first item per tab). No hardcoded next steps.
   // ------------------------------------------------------------
   function initialScenario(tab) {
     const city = citySel.value;
@@ -307,87 +430,15 @@
     return map[tab];
   }
 
-  function nextScenario(prev, idx) {
-    // Simple progression template that builds difficulty
-    const level = levelSel.value;
-    const city = citySel.value;
-    const bump = idx + 1;
-    const templates = {
-      travel: [
-        { title: 'Lost Luggage', role: 'Baggage office staff', setting: `${city} airport lost & found`,
-          key: ['File a claim', 'Provide address', 'Get case number'],
-          goal: 'Open a claim and set delivery window'
-        },
-        { title: 'Metro Directions', role: 'Metro information agent', setting: `${city} Metro station`,
-          key: ['Confirm correct line', 'Transfers', 'Exit near destination'],
-          goal: 'Confirm a clear route door-to-door'
-        }
-      ],
-      food: [
-        { title: 'Fix a Wrong Order', role: 'Waiter', setting: 'Café table service',
-          key: ['Point out mistake', 'Suggest fix', 'Stay polite'],
-          goal: 'Correct the order without friction'
-        },
-        { title: 'Recommendations', role: 'Local friend', setting: 'Neighborhood bar',
-          key: ['Ask favorite dish', 'Try 2–3 classics', 'Pick a drink'],
-          goal: 'Choose 2–3 dishes and a drink'
-        }
-      ],
-      daily: [
-        { title: 'Buy a Phone Plan', role: 'Shop assistant', setting: 'Mobile carrier shop',
-          key: ['Prepaid vs contract', 'Data minutes', 'Activation'],
-          goal: 'Choose and activate a SIM plan'
-        },
-        { title: 'Buy a Small Appliance', role: 'Store clerk', setting: 'Electronics store',
-          key: ['Compare options', 'Warranty', 'Delivery'],
-          goal: 'Pick a suitable model and pay'
-        }
-      ],
-      culture: [
-        { title: 'Buy Tablao Tickets', role: 'Box office staff', setting: 'Tablao venue',
-          key: ['Seats/visibility', 'Show time', 'Arrival time'],
-          goal: 'Buy tickets and plan arrival'
-        },
-        { title: 'Discuss Differences', role: 'Local friend', setting: 'Walk through city center',
-          key: ['Schedules', 'Forms of address', 'Social norms'],
-          goal: 'Compare differences with examples'
-        }
-      ],
-      social: [
-        { title: 'Meet the Group', role: 'Friend’s group', setting: 'Plaza or small bar',
-          key: ['Introduce yourself', 'Light topics', 'Plan next meet'],
-          goal: 'Integrate with the group naturally'
-        },
-        { title: 'Join a Rec League', role: 'Team captain', setting: 'Local pitch',
-          key: ['Position/level', 'Schedule', 'Equipment'],
-          goal: 'Confirm participation and role'
-        }
-      ]
-    };
-    const pool = templates[prev.category] || [];
-    const t = pool[(bump - 1) % pool.length];
-    return {
-      id: `${prev.category}-${prev.index + 1}`,
-      index: prev.index + 1,
-      category: prev.category,
-      title: t.title,
-      brief: t.title + ' — progressive follow-up.',
-      role: t.role,
-      setting: t.setting,
-      key: t.key,
-      goal: t.goal
-    };
+  // In-memory + persisted lists
+  function wrapInitial(obj, category) {
+    return { ...obj, category, index: 1 };
   }
 
-  // In-memory + persisted lists
   const defaultLists = ['travel','food','daily','culture','social'].reduce((acc, cat) => {
     acc[cat] = [ wrapInitial(initialScenario(cat), cat) ];
     return acc;
   }, { custom: [] });
-
-  function wrapInitial(obj, category) {
-    return { ...obj, category, index: 1 };
-  }
 
   let lists = loadLists();
 
@@ -396,14 +447,28 @@
       const raw = localStorage.getItem(STORE.listsKey);
       if (!raw) return structuredClone(defaultLists);
       const parsed = JSON.parse(raw);
-      // If city changed since first load, refresh first items’ briefs to reflect city
       return { ...structuredClone(defaultLists), ...parsed };
     } catch {
       return structuredClone(defaultLists);
     }
   }
-  function saveLists() {
-    localStorage.setItem(STORE.listsKey, JSON.stringify(lists));
+  function saveLists() { localStorage.setItem(STORE.listsKey, JSON.stringify(lists)); }
+
+  // ------------------------------------------------------------
+  // Conversation log (used to build the "next scenario" prompt)
+  // ------------------------------------------------------------
+  function getLog(){
+    try { return JSON.parse(localStorage.getItem(STORE.logKey) || '[]'); }
+    catch { return []; }
+  }
+  function addLogEntry(entry){
+    const log = getLog();
+    log.push(entry);
+    localStorage.setItem(STORE.logKey, JSON.stringify(log));
+  }
+  function recentNotes(category, n=3){
+    const log = getLog().filter(x => x.category === category).slice(-n);
+    return log.map(x => `• ${x.title} — ${x.notes || 'completed'}`).join('\n');
   }
 
   // ------------------------------------------------------------
@@ -420,6 +485,7 @@
 
   function renderAll() {
     ['travel','food','daily','culture','social','custom'].forEach(renderCategory);
+    updateHUD();
   }
 
   function renderCategory(category) {
@@ -427,9 +493,7 @@
     if (!root) return;
     root.innerHTML = '';
     const arr = lists[category] || [];
-    arr.forEach(item => {
-      root.appendChild(renderSceneCard(item));
-    });
+    arr.forEach(item => { root.appendChild(renderSceneCard(item)); });
   }
 
   function renderSceneCard(scn) {
@@ -478,6 +542,8 @@
   const modalRole = document.getElementById('modalRole');
   const modalSetting = document.getElementById('modalSetting');
   const modalKey = document.getElementById('modalKey');
+  const modalAvatar = document.getElementById('modalAvatar');
+  const modalNotes = document.getElementById('modalNotes');
   const copyBtn = document.getElementById('copyPrompt');
   const completeBtn = document.getElementById('markComplete');
 
@@ -486,9 +552,15 @@
   function openModal(scn) {
     current = scn;
     modalTitle.textContent = scn.title;
-    modalRole.textContent = scn.role;
-    modalSetting.textContent = scn.setting;
-    modalKey.innerHTML = Array.isArray(scn.key) ? `<ul style="margin:0 0 0 18px;">${scn.key.map(k=>`<li>${k}</li>`).join('')}</ul>` : scn.key || '';
+    modalRole.textContent = scn.role || 'Conversation partner';
+    modalSetting.textContent = scn.setting || '(Use Copy Prompt to generate details with AI.)';
+    modalKey.innerHTML = Array.isArray(scn.key) && scn.key.length
+      ? `<ul style="margin:0 0 0 18px;">${scn.key.map(k=>`<li>${k}</li>`).join('')}</ul>`
+      : '<span class="meta">No key points yet; generate via AI.</span>';
+    modalNotes.value = '';
+
+    // Random avatar on open
+    modalAvatar.innerHTML = AVATARS[Math.floor(Math.random()*AVATARS.length)];
     modal.classList.add('open');
   }
   function closeModal(){ modal.classList.remove('open'); current = null; }
@@ -505,34 +577,66 @@
     if (scn) openModal(scn);
   });
 
-  // Copy prompt
+  // Copy prompt — includes recent notes so AI can build the next scene
   copyBtn.addEventListener('click', async () => {
     if (!current) return;
-    const text = buildPrompt(current);
+    const text = buildPrompt(current, /*forNext=*/false);
     try {
       await navigator.clipboard.writeText(text);
       copyBtn.textContent = 'Copied!';
       setTimeout(()=> copyBtn.textContent = 'Copy Prompt', 900);
     } catch {
-      // fallback
       const t = document.createElement('textarea');
       t.value = text; document.body.appendChild(t); t.select();
       document.execCommand('copy'); document.body.removeChild(t);
     }
   });
 
-  // Mark complete → append a follow-up underneath in same tab
+  // Mark complete → log + XP + append "Next Scenario (AI will propose)" placeholder
   completeBtn.addEventListener('click', () => {
     if (!current) return;
     const cat = current.category;
-    const idx = current.index || 1;
-    const next = nextScenario(current, idx);
-    // Ensure unique id
-    next.id = `${cat}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    const notes = modalNotes.value.trim();
+
+    // Log + XP + streak
+    addLogEntry({
+      ts: Date.now(),
+      category: cat,
+      title: current.title,
+      notes
+    });
+    awardCompletion(cat);
+
+    // Append placeholder "next" that relies on AI (no hardcoded details)
+    const next = {
+      id: `${cat}-next-${Date.now()}`,
+      index: (lists[cat]?.length || 0) + 1,
+      category: cat,
+      title: 'Next Scenario (AI will propose)',
+      brief: 'Use Copy Prompt to ask AI for the next scene based on your last conversation. Paste its idea in your notes for reference.',
+      role: '', setting: '', key: []
+    };
+    lists[cat] = lists[cat] || [];
     lists[cat].push(next);
     saveLists();
     renderCategory(cat);
     closeModal();
+
+    // Auto-open the new placeholder so the user can copy the continuation prompt
+    const newly = (lists[cat] || []).find(s => s.id === next.id);
+    if (newly) {
+      openModal(newly);
+      // Replace modal content to show the "continuation" prompt builder
+      modalRole.textContent = '—';
+      modalSetting.textContent = 'Based on your previous scenario';
+      modalKey.innerHTML = `<span class="meta">No details yet — click Copy Prompt to get AI to propose the next scene.</span>`;
+      // Override Copy to continuation mode just for this open instance
+      copyBtn.onclick = async () => {
+        const cont = buildPrompt(current, /*forNext=*/true);
+        try { await navigator.clipboard.writeText(cont); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy Prompt', 900); }
+        catch { const t=document.createElement('textarea'); t.value=cont; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); }
+      };
+    }
   });
 
   // ------------------------------------------------------------
@@ -560,38 +664,111 @@
   });
 
   // ------------------------------------------------------------
-  // Prompt builder (used for Copy)
+  // Prompt builders
   // ------------------------------------------------------------
-  function buildPrompt(scn) {
+  function buildPrompt(scn, forNext=false) {
     const lang  = langSel.value;    // Spanish | English
     const city  = citySel.value;    // e.g., Madrid
     const level = levelSel.value;   // A1..C2
 
-    // Keep prompt short; model will expand
-    return [
+    const history = recentNotes(scn.category, 3);
+    const header = [
       `Language: ${lang}. City: ${city}. CEFR level: ${level}.`,
-      `Role-play a short, realistic conversation. I am the learner.`,
-      `Scenario: ${scn.title}.`,
-      `You are: ${scn.role}. Setting: ${scn.setting}.`,
-      scn.goal ? `Goal: ${scn.goal}.` : '',
-      Array.isArray(scn.key) && scn.key.length ? `Key points: ${scn.key.join('; ')}.` : '',
-      `Style: natural ${lang === 'Spanish' ? 'Spanish' : 'English'} (${level}); 1–2 sentence turns.`,
-      `Correct briefly when helpful. Ask questions to keep it moving.`,
-      `End when the goal is clearly achieved, then give 3–5 tips.`,
-    ].filter(Boolean).join('\n');
+      `I am practicing a short, realistic conversation. I am the learner.`
+    ].join('\n');
+
+    if (!forNext) {
+      // Base scenario prompt
+      return [
+        header,
+        `Scenario: ${scn.title}.`,
+        scn.role ? `You are: ${scn.role}.` : '',
+        scn.setting ? `Setting: ${scn.setting}.` : '',
+        scn.goal ? `Goal: ${scn.goal}.` : '',
+        Array.isArray(scn.key) && scn.key.length ? `Key points: ${scn.key.join('; ')}.` : '',
+        history ? `Recent history in this category:\n${history}` : '',
+        `Style: natural ${lang === 'Spanish' ? 'Spanish' : 'English'} (${level}); 1–2 sentence turns.`,
+        `Correct briefly when helpful. Ask questions to keep it moving.`,
+        `End when the goal is clearly achieved, then give 3–5 tips.`
+      ].filter(Boolean).join('\n');
+    } else {
+      // Continuation prompt — ask AI to PROPOSE the next scene
+      return [
+        header,
+        `I just completed: ${scn.title}.`,
+        history ? `Recent history in this category:\n${history}` : '',
+        `Propose the next scenario that naturally follows. Return a concise JSON with:`,
+        `{ "title": "...", "brief": "...", "role": "...", "setting": "...", "key": ["...","...","..."], "goal": "..." }`,
+        `Keep it realistic for ${city}, ${level}. Do NOT start the conversation; only return the JSON.`
+      ].join('\n');
+    }
   }
 
   // ------------------------------------------------------------
   // Helpers
   // ------------------------------------------------------------
-  function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+  function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+  // ------------------------------------------------------------
+  // Cartoon avatars (inline SVG) — 5 personalities
+  // ------------------------------------------------------------
+  const AVATARS = [
+`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Friendly barista">
+  <rect width="120" height="120" rx="20" fill="#fff"/>
+  <circle cx="60" cy="60" r="38" fill="#FFEFE2" />
+  <path d="M38 52c6-6 11-9 22-9s16 3 22 9" stroke="#2B2B2B" stroke-width="3" fill="none"/>
+  <circle cx="48" cy="64" r="4" fill="#2B2B2B"/><circle cx="72" cy="64" r="4" fill="#2B2B2B"/>
+  <path d="M49 78c3 3 9 5 11 5s8-2 11-5" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M32 44c8-10 18-16 28-16s20 6 28 16" fill="#2B2B2B"/>
+  <rect x="46" y="88" width="28" height="10" rx="5" fill="#F4D1A6"/>
+</svg>`,
+`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Metro agent">
+  <rect width="120" height="120" rx="20" fill="#fff"/>
+  <circle cx="60" cy="60" r="38" fill="#E8F1FF" />
+  <path d="M30 44h60" stroke="#2B2B2B" stroke-width="4"/>
+  <circle cx="50" cy="64" r="4" fill="#2B2B2B"/><circle cx="70" cy="64" r="4" fill="#2B2B2B"/>
+  <path d="M48 79c4 2 8 3 12 3s8-1 12-3" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <rect x="36" y="26" width="48" height="14" rx="7" fill="#1F2937"/>
+  <path d="M32 92c6-6 20-8 28-8s22 2 28 8" stroke="#BFD7FF" stroke-width="6" fill="none" stroke-linecap="round"/>
+</svg>`,
+`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Local friend">
+  <rect width="120" height="120" rx="20" fill="#fff"/>
+  <circle cx="60" cy="60" r="38" fill="#F5F0FF" />
+  <path d="M42 45c5-6 12-9 18-9s13 3 18 9" stroke="#2B2B2B" stroke-width="3" fill="none"/>
+  <circle cx="50" cy="64" r="4" fill="#2B2B2B"/><circle cx="70" cy="64" r="4" fill="#2B2B2B"/>
+  <path d="M50 78c4 4 8 5 10 5s6-1 10-5" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M36 48c4-10 12-17 24-17s20 7 24 17" fill="#7C3AED"/>
+  <circle cx="86" cy="83" r="8" fill="#7C3AED"/><rect x="80" y="80" width="12" height="8" rx="3" fill="#fff" opacity=".8"/>
+</svg>`,
+`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Shop clerk">
+  <rect width="120" height="120" rx="20" fill="#fff"/>
+  <circle cx="60" cy="60" r="38" fill="#E9FFE9" />
+  <path d="M40 46c6-4 12-6 20-6s14 2 20 6" stroke="#2B2B2B" stroke-width="3" fill="none"/>
+  <circle cx="52" cy="64" r="4" fill="#2B2B2B"/><circle cx="68" cy="64" r="4" fill="#2B2B2B"/>
+  <path d="M48 78c4 2 8 3 12 3s8-1 12-3" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <rect x="38" y="90" width="44" height="10" rx="5" fill="#10B981"/>
+  <rect x="44" y="28" width="32" height="10" rx="5" fill="#111827"/>
+</svg>`,
+`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tablao staff">
+  <rect width="120" height="120" rx="20" fill="#fff"/>
+  <circle cx="60" cy="60" r="38" fill="#FFE8EE" />
+  <path d="M42 48c6-6 12-8 18-8s12 2 18 8" stroke="#2B2B2B" stroke-width="3" fill="none"/>
+  <circle cx="50" cy="64" r="4" fill="#2B2B2B"/><circle cx="70" cy="64" r="4" fill="#2B2B2B"/>
+  <path d="M50 78c4 0 8 4 10 4s6-4 10-4" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M32 50c6-10 16-16 28-16s22 6 28 16" fill="#C026D3"/>
+  <path d="M28 88c10-6 24-8 32-8s22 2 32 8" stroke="#F472B6" stroke-width="6" fill="none" stroke-linecap="round"/>
+</svg>`
+  ];
 
   // Initial render
   renderAll();
 
   // TODO: AI INTEGRATION
-  // When you’re ready, replace modal + alert flows with a chat UI that calls your backend/SDK.
-  // You’ll use { language, city, level, scenario } to seed the conversation.
+  // Replace the placeholder "Next Scenario (AI will propose)" with the JSON returned by your backend or SDK.
+  // On completion, call buildPrompt(current, true) to get the continuation prompt and feed it to your model.
+  // When you receive the model's JSON, update the last placeholder in the category:
+  //   lists[cat][lists[cat].length - 1] = { id: ..., title, brief, role, setting, key, goal, category: cat, index: ... }
+  // Then saveLists() and renderCategory(cat).
 </script>
 </body>
 </html>
