@@ -201,7 +201,7 @@
       <button class="tab-btn" data-tab="social" role="tab">Social</button>
       <button class="tab-btn" data-tab="custom" role="tab">Custom</button>
     </div>
-
+    <div><p></p></div>
     <!-- Panels -->
     <div id="panel-travel" class="tab-panel active" role="tabpanel" aria-labelledby="travel">
       <div id="list-travel" class="grid"></div>
@@ -560,7 +560,9 @@
     modalNotes.value = '';
 
     // Random avatar on open
-    modalAvatar.innerHTML = AVATARS[Math.floor(Math.random()*AVATARS.length)];
+    const pick = AVATAR_IMAGES[Math.floor(Math.random() * AVATAR_IMAGES.length)];
+    modalAvatar.innerHTML = `<img src="${pick}" alt="Conversation partner avatar" class="avatar-img" loading="lazy">`;
+
     modal.classList.add('open');
   }
   function closeModal(){ modal.classList.remove('open'); current = null; }
@@ -712,53 +714,15 @@
   // ------------------------------------------------------------
   // Cartoon avatars (inline SVG) — 5 personalities
   // ------------------------------------------------------------
-  const AVATARS = [
-`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Friendly barista">
-  <rect width="120" height="120" rx="20" fill="#fff"/>
-  <circle cx="60" cy="60" r="38" fill="#FFEFE2" />
-  <path d="M38 52c6-6 11-9 22-9s16 3 22 9" stroke="#2B2B2B" stroke-width="3" fill="none"/>
-  <circle cx="48" cy="64" r="4" fill="#2B2B2B"/><circle cx="72" cy="64" r="4" fill="#2B2B2B"/>
-  <path d="M49 78c3 3 9 5 11 5s8-2 11-5" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M32 44c8-10 18-16 28-16s20 6 28 16" fill="#2B2B2B"/>
-  <rect x="46" y="88" width="28" height="10" rx="5" fill="#F4D1A6"/>
-</svg>`,
-`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Metro agent">
-  <rect width="120" height="120" rx="20" fill="#fff"/>
-  <circle cx="60" cy="60" r="38" fill="#E8F1FF" />
-  <path d="M30 44h60" stroke="#2B2B2B" stroke-width="4"/>
-  <circle cx="50" cy="64" r="4" fill="#2B2B2B"/><circle cx="70" cy="64" r="4" fill="#2B2B2B"/>
-  <path d="M48 79c4 2 8 3 12 3s8-1 12-3" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <rect x="36" y="26" width="48" height="14" rx="7" fill="#1F2937"/>
-  <path d="M32 92c6-6 20-8 28-8s22 2 28 8" stroke="#BFD7FF" stroke-width="6" fill="none" stroke-linecap="round"/>
-</svg>`,
-`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Local friend">
-  <rect width="120" height="120" rx="20" fill="#fff"/>
-  <circle cx="60" cy="60" r="38" fill="#F5F0FF" />
-  <path d="M42 45c5-6 12-9 18-9s13 3 18 9" stroke="#2B2B2B" stroke-width="3" fill="none"/>
-  <circle cx="50" cy="64" r="4" fill="#2B2B2B"/><circle cx="70" cy="64" r="4" fill="#2B2B2B"/>
-  <path d="M50 78c4 4 8 5 10 5s6-1 10-5" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M36 48c4-10 12-17 24-17s20 7 24 17" fill="#7C3AED"/>
-  <circle cx="86" cy="83" r="8" fill="#7C3AED"/><rect x="80" y="80" width="12" height="8" rx="3" fill="#fff" opacity=".8"/>
-</svg>`,
-`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Shop clerk">
-  <rect width="120" height="120" rx="20" fill="#fff"/>
-  <circle cx="60" cy="60" r="38" fill="#E9FFE9" />
-  <path d="M40 46c6-4 12-6 20-6s14 2 20 6" stroke="#2B2B2B" stroke-width="3" fill="none"/>
-  <circle cx="52" cy="64" r="4" fill="#2B2B2B"/><circle cx="68" cy="64" r="4" fill="#2B2B2B"/>
-  <path d="M48 78c4 2 8 3 12 3s8-1 12-3" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <rect x="38" y="90" width="44" height="10" rx="5" fill="#10B981"/>
-  <rect x="44" y="28" width="32" height="10" rx="5" fill="#111827"/>
-</svg>`,
-`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tablao staff">
-  <rect width="120" height="120" rx="20" fill="#fff"/>
-  <circle cx="60" cy="60" r="38" fill="#FFE8EE" />
-  <path d="M42 48c6-6 12-8 18-8s12 2 18 8" stroke="#2B2B2B" stroke-width="3" fill="none"/>
-  <circle cx="50" cy="64" r="4" fill="#2B2B2B"/><circle cx="70" cy="64" r="4" fill="#2B2B2B"/>
-  <path d="M50 78c4 0 8 4 10 4s6-4 10-4" stroke="#2B2B2B" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M32 50c6-10 16-16 28-16s22 6 28 16" fill="#C026D3"/>
-  <path d="M28 88c10-6 24-8 32-8s22 2 32 8" stroke="#F472B6" stroke-width="6" fill="none" stroke-linecap="round"/>
-</svg>`
+  // Use PNG avatars instead of inline SVGs
+  const AVATAR_IMAGES = [
+    'avatar1.png',
+    'avatar2.png',
+    'avatar3.png',
+    'avatar4.png',
+    'avatar5.png'
   ];
+
 
   // Initial render
   renderAll();

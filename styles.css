@@ -163,3 +163,10 @@ a.button { color: #fff; text-decoration: none; }
 .media-small { width: min(420px, 100%); margin: 0 auto; }
 .media-el { width: 100%; height: auto; border-radius: 12px; display: block; }
 
+/* Make raster avatar images fit the rounded frame */
+.avatar { background: transparent; }          /* no background halo */
+.avatar img.avatar-img {
+  width: 100%; height: 100%;
+  display: block; object-fit: cover;
+  border-radius: 16px;                        /* match .avatar corner */
+}
