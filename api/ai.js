@@ -1,8 +1,7 @@
-// api/ai.js — Vercel Edge Function (no Node libs needed)
+// api/ai.js — Vercel Edge Function that supports OpenAI OR OpenRouter
 export const config = { runtime: 'edge' };
 
-// CORS: allow your site to call this from anywhere (tighten if you want)
-const cors = {
+const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'POST, OPTIONS',
   'access-control-allow-headers': 'content-type'
@@ -10,41 +9,73 @@ const cors = {
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: cors });
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ ok: true, msg: 'POST JSON to this endpoint' }), {
+      status: 200, headers: { 'content-type': 'application/json', ...CORS }
+    });
   }
 
-  try {
-    const { system = '', user = '', temperature = 0.8, model = 'gpt-4o-mini' } = await req.json();
+  let bodyIn;
+  try { bodyIn = await req.json(); }
+  catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: { 'content-type':'application/json', ...CORS } }); }
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        // Your key stays on the server (set it in Vercel → Environment Variables)
-        'authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model,
-        temperature,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ]
-      })
-    });
+  const {
+    system = '', user = '', temperature = 0.8,
+    // If you pass a model from the client we’ll use it; otherwise we pick sane defaults
+    model,
+    // Optional override: 'openrouter' | 'openai'
+    provider
+  } = bodyIn;
 
-    const data = await r.json();
-    const content = data?.choices?.[0]?.message?.content || '{}';
+  // Decide provider:
+  const envProvider = process.env.AI_PROVIDER || (process.env.OPENROUTER_API_KEY ? 'openrouter' : 'openai');
+  const useOpenRouter = (provider || envProvider) === 'openrouter';
 
-    // Return JSON text (your frontend already handles string/object)
-    return new Response(content, {
-      status: r.ok ? 200 : 400,
-      headers: { 'content-type': 'application/json', ...cors }
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: 'Proxy error', detail: String(e) }), {
-      status: 500, headers: { 'content-type': 'application/json', ...cors }
+  const baseUrl = useOpenRouter
+    ? 'https://openrouter.ai/api/v1/chat/completions'
+    : 'https://api.openai.com/v1/chat/completions';
+
+  const apiKey = useOpenRouter ? process.env.OPENROUTER_API_KEY : process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'Missing API key on server' }), {
+      status: 500, headers: { 'content-type': 'application/json', ...CORS }
     });
   }
+
+  const headers = {
+    'content-type': 'application/json',
+    'authorization': `Bearer ${apiKey}`
+  };
+
+  // OpenRouter recommends these headers (used for attribution/rate fairness)
+  if (useOpenRouter) {
+    const referer = req.headers.get('origin') || 'https://your-site.vercel.app';
+    headers['HTTP-Referer'] = referer;
+    headers['X-Title'] = 'Spanish Immersion App';
+  }
+
+  const requestBody = {
+    model: model || (useOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
+    temperature,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user }
+    ]
+  };
+  // Some OpenRouter models don’t support response_format; keep it OpenAI-only to be safe
+  if (!useOpenRouter) requestBody.response_format = { type: 'json_object' };
+
+  const r = await fetch(baseUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) });
+  const data = await r.json();
+  const content = data?.choices?.[0]?.message?.content ?? '';
+
+  // Try to return a JSON object if the model produced JSON; otherwise return the raw string
+  let out = content;
+  try { out = JSON.parse(content); } catch (_) {}
+  return new Response(typeof out === 'string' ? out : JSON.stringify(out), {
+    status: r.ok ? 200 : 400,
+    headers: { 'content-type': 'application/json', ...CORS }
+  });
 }
