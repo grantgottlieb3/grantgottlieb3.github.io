@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Spanish Immersion — Conversational Web App | Grant Gottlieb</title>
-  <meta name="description" content="Replayable, goal-driven Spanish conversation practice with customizable city and level — built to work with AI." />
+  <meta name="description" content="Replayable, city-specific Spanish conversation practice powered by AI." />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="assets/headshot-placeholder.svg" />
 
@@ -16,6 +16,7 @@
     a.button { color: #fff !important; }
     .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
     .button.ghost:hover { background: var(--accent-2); }
+    .muted { color: var(--muted); }
 
     /* Remove donut logos only on this page */
     .item .logo { display: none !important; }
@@ -88,12 +89,15 @@
     }
     .avatar {
       width: 72px; height: 72px; border-radius: 16px; overflow: hidden; flex-shrink:0;
-      border: 1px solid var(--border); background: #fff;
+      border: 1px solid var(--border); background: transparent;
     }
+    .avatar img.avatar-img { width:100%; height:100%; object-fit:cover; display:block; border-radius:16px; }
 
-    /* Tiny helper for muted meta */
-    .meta { color: var(--muted); font-size: 13px; }
     textarea.notes { width: 100%; min-height: 70px; resize: vertical; padding:10px; border-radius:10px; border:1px solid var(--border); }
+
+    /* Small helper */
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color: var(--accent); border-radius:50%; animation: spin .6s linear infinite; vertical-align: -3px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -156,7 +160,7 @@
             </select>
           </div>
         </div>
-        <div class="meta" style="margin-top:8px;">Choices persist in your browser for next visit.</div>
+        <div class="muted" style="margin-top:8px;">Choices persist in your browser for next visit.</div>
       </div>
     </article>
   </section>
@@ -169,23 +173,23 @@
         <div style="width:100%;">
           <div class="stat"><strong>XP</strong><span id="xpVal">0</span></div>
           <div class="bar" aria-hidden="true"><i id="xpBar" style="width:0%"></i></div>
-          <div class="meta" style="margin-top:6px;">Earn 50 XP per completed scenario.</div>
+          <div class="muted" style="margin-top:6px;">Earn 50 XP per completed scenario.</div>
         </div>
       </article>
       <article class="card item">
         <div style="width:100%;">
           <div class="stat"><strong>Streak</strong><span id="streakVal">0 days</span></div>
-          <div class="meta" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</div>
+          <div class="muted" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</div>
         </div>
       </article>
     </div>
     <div class="grid cols-3" style="margin-top:12px;">
-      <article class="card item"><div><strong>Travel</strong><div class="meta"><span id="c-travel">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Food</strong><div class="meta"><span id="c-food">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Daily</strong><div class="meta"><span id="c-daily">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Culture</strong><div class="meta"><span id="c-culture">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Social</strong><div class="meta"><span id="c-social">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Custom</strong><div class="meta"><span id="c-custom">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Travel</strong><div class="muted"><span id="c-travel">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Food</strong><div class="muted"><span id="c-food">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Daily</strong><div class="muted"><span id="c-daily">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Culture</strong><div class="muted"><span id="c-culture">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Social</strong><div class="muted"><span id="c-social">0</span> completed</div></div></article>
+      <article class="card item"><div><strong>Custom</strong><div class="muted"><span id="c-custom">0</span> completed</div></div></article>
     </div>
   </section>
 
@@ -201,7 +205,7 @@
       <button class="tab-btn" data-tab="social" role="tab">Social</button>
       <button class="tab-btn" data-tab="custom" role="tab">Custom</button>
     </div>
-    <div><p></p></div>
+
     <!-- Panels -->
     <div id="panel-travel" class="tab-panel active" role="tabpanel" aria-labelledby="travel">
       <div id="list-travel" class="grid"></div>
@@ -227,10 +231,10 @@
       <article class="card item">
         <div style="width:100%;">
           <h3 style="margin:0 0 6px;">Custom Scenario</h3>
-          <p class="meta" style="margin: 0 0 10px;">Type a keyword (e.g., “pharmacy”, “football”, “job interview”) and spawn a tailored practice scene.</p>
+          <p class="muted" style="margin: 0 0 10px;">Type a keyword (e.g., “pharmacy”, “football”, “job interview”) and spawn a tailored practice scene.</p>
           <div class="custom-row">
             <input type="text" id="customKeyword" placeholder="Keyword or topic…" />
-            <button class="button" id="addCustom">Generate</button>
+            <button class="button" id="addCustom">Generate with AI</button>
           </div>
         </div>
       </article>
@@ -255,7 +259,7 @@
       <div class="partner">
         <div class="avatar" id="modalAvatar" aria-hidden="true"></div>
         <div>
-          <div class="meta" style="margin-bottom:2px;">You’re talking to</div>
+          <div class="muted" style="margin-bottom:2px;">You’re talking to</div>
           <div id="modalRole" style="font-weight:600;"></div>
         </div>
       </div>
@@ -276,7 +280,7 @@
       </div>
     </div>
     <footer>
-      <button class="button ghost" id="copyPrompt">Copy Prompt</button>
+      <button class="button ghost" id="regenScene">AI: Reroll This Scene</button>
       <button class="button" id="markComplete">Mark Complete</button>
     </footer>
   </div>
@@ -286,14 +290,93 @@
   // Year stamp
   (function(){ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); })();
 
-  // ------------------------------------------------------------
-  // State & persistence
-  // ------------------------------------------------------------
+  // ============================================================
+  //  AVATAR IMAGES (already swapped to PNGs as you asked)
+  // ============================================================
+  const AVATAR_IMAGES = ['avatar1.png','avatar2.png','avatar3.png','avatar4.png','avatar5.png'];
+
+  // ============================================================
+  //  AI CONFIG — READ THIS
+  // ============================================================
+  // OPTION A (LOCAL TEST ONLY — NOT SECURE FOR PROD):
+  //   Set USE_DIRECT_OPENAI = true and paste your API key below.
+  // OPTION B (RECOMMENDED): Leave USE_DIRECT_OPENAI = false and point AI_PROXY_URL
+  //   to your own serverless function that adds the API key server-side.
+  //
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // TODO: SET TRUE ONLY FOR LOCAL TESTING; FALSE IF USING YOUR OWN PROXY
+  const USE_DIRECT_OPENAI = false;
+  //
+  // TODO: IF YOU USE A SERVERLESS PROXY, SET ITS URL HERE
+  // e.g., '/api/ai' on Vercel/Netlify/Cloudflare-workers
+  const AI_PROXY_URL = '/api/ai';
+  //
+  // TODO: IF DIRECT, PASTE YOUR OPENAI API KEY HERE (LOCAL DEV ONLY)
+  const OPENAI_API_KEY = 'PASTE_YOUR_OPENAI_API_KEY_HERE';
+  //
+  // TODO: SET YOUR MODEL NAME
+  const OPENAI_MODEL = 'gpt-4o-mini';
+  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+  // Central AI call
+  async function callAI(systemPrompt, userPrompt, temperature=0.8) {
+    try {
+      if (USE_DIRECT_OPENAI) {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}` // <<< DO NOT SHIP THIS TO PROD
+          },
+          body: JSON.stringify({
+            model: OPENAI_MODEL,
+            temperature,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ]
+          })
+        });
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        return safeParseJSON(text);
+      } else {
+        // Your proxy should accept { system, user, temperature } and return JSON
+        const res = await fetch(AI_PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ system: systemPrompt, user: userPrompt, temperature })
+        });
+        const data = await res.json();
+        // Expect your proxy to already return an object. If it's text, try parse.
+        return typeof data === 'string' ? safeParseJSON(data) : data;
+      }
+    } catch (e) {
+      console.error('AI error', e);
+      return null;
+    }
+  }
+
+  function safeParseJSON(s) {
+    if (!s) return null;
+    try { return JSON.parse(s); } catch (_) {}
+    // try to extract a JSON object if wrapped in prose or code fences
+    const start = s.indexOf('{'); const end = s.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      try { return JSON.parse(s.slice(start, end+1)); } catch (_) {}
+    }
+    return null;
+  }
+
+  // ============================================================
+  //  STATE / PERSISTENCE
+  // ============================================================
   const STORE = {
     langKey: 'spanish_app_lang',
     cityKey: 'spanish_app_city',
     levelKey: 'spanish_app_level',
-    listsKey: 'spanish_app_lists',
+    listsKey: 'spanish_app_lists_v2',  // bumped key since logic changed
     logKey:   'spanish_app_log',
     xpKey:    'spanish_app_xp',
     streakKey:'spanish_app_streak'
@@ -303,18 +386,53 @@
   const citySel  = document.getElementById('citySel');
   const levelSel = document.getElementById('levelSel');
 
-  // Load persisted selections
   langSel.value  = localStorage.getItem(STORE.langKey)  || 'Spanish';
   citySel.value  = localStorage.getItem(STORE.cityKey)  || 'Madrid';
   levelSel.value = localStorage.getItem(STORE.levelKey) || 'B1';
 
-  langSel.addEventListener('change', () => localStorage.setItem(STORE.langKey, langSel.value));
-  citySel.addEventListener('change', () => localStorage.setItem(STORE.cityKey, citySel.value));
-  levelSel.addEventListener('change', () => localStorage.setItem(STORE.levelKey, levelSel.value));
+  langSel.addEventListener('change', () => { localStorage.setItem(STORE.langKey, langSel.value); regenerateSeeds(); });
+  citySel.addEventListener('change', () => { localStorage.setItem(STORE.cityKey, citySel.value); regenerateSeeds(); });
+  levelSel.addEventListener('change', () => { localStorage.setItem(STORE.levelKey, levelSel.value); regenerateSeeds(); });
 
-  // ------------------------------------------------------------
-  // Gamification: XP, streak, per-category counts
-  // ------------------------------------------------------------
+  function getXP(){ return +(localStorage.getItem(STORE.xpKey) || 0); }
+  function setXP(v){ localStorage.setItem(STORE.xpKey, String(v)); }
+  function getStreak(){
+    try { return JSON.parse(localStorage.getItem(STORE.streakKey) || '{"count":0,"last":""}'); }
+    catch { return {count:0, last:""}; }
+  }
+  function setStreak(obj){ localStorage.setItem(STORE.streakKey, JSON.stringify(obj)); }
+  function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+
+  function getLog(){
+    try { return JSON.parse(localStorage.getItem(STORE.logKey) || '[]'); }
+    catch { return []; }
+  }
+  function addLogEntry(entry){
+    const log = getLog();
+    log.push(entry);
+    localStorage.setItem(STORE.logKey, JSON.stringify(log));
+  }
+  function recentHistory(category, n=3){
+    return getLog().filter(x => x.category === category).slice(-n);
+  }
+
+  // Scene lists per category
+  const categories = ['travel','food','daily','culture','social','custom'];
+  let lists = loadLists();
+  function loadLists() {
+    try {
+      const raw = localStorage.getItem(STORE.listsKey);
+      if (!raw) return { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
+      return JSON.parse(raw);
+    } catch {
+      return { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
+    }
+  }
+  function saveLists(){ localStorage.setItem(STORE.listsKey, JSON.stringify(lists)); }
+
+  // ============================================================
+  //  HUD (XP, streak, counts)
+  // ============================================================
   const hud = {
     xpVal: document.getElementById('xpVal'),
     xpBar: document.getElementById('xpBar'),
@@ -329,151 +447,36 @@
     }
   };
 
-  function getXP(){ return +(localStorage.getItem(STORE.xpKey) || 0); }
-  function setXP(v){ localStorage.setItem(STORE.xpKey, String(v)); }
-  function getStreak(){
-    try { return JSON.parse(localStorage.getItem(STORE.streakKey) || '{"count":0,"last":""}'); }
-    catch { return {count:0, last:""}; }
-  }
-  function setStreak(obj){ localStorage.setItem(STORE.streakKey, JSON.stringify(obj)); }
-
-  function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
-
   function updateHUD(){
     const xp = getXP();
     hud.xpVal.textContent = xp;
-    // Arbitrary level loop: show progress to next 500 XP
     const pct = Math.min(100, ((xp % 500) / 500) * 100);
     hud.xpBar.style.width = pct + '%';
 
     const st = getStreak();
     hud.streakVal.textContent = `${st.count} day${st.count===1?'':'s'}`;
 
-    // Counts by category from log
-    const log = getLog();
     const byCat = {travel:0,food:0,daily:0,culture:0,social:0,custom:0};
-    log.forEach(x => { if(byCat[x.category] !== undefined) byCat[x.category]++; });
+    getLog().forEach(x => { if(byCat[x.category] !== undefined) byCat[x.category]++; });
     Object.keys(byCat).forEach(k => { hud.counts[k].textContent = byCat[k]; });
   }
 
   function awardCompletion(category){
-    // +50 XP
     setXP(getXP() + 50);
-    // streak
     const st = getStreak();
     const t  = todayStr();
     if (!st.last) { setStreak({count:1, last:t}); }
-    else if (st.last === t) { /* already counted today */ }
-    else {
-      // day difference rough check
-      const prev = new Date(st.last);
-      const now  = new Date();
+    else if (st.last !== t) {
+      const prev = new Date(st.last), now  = new Date();
       const diffDays = Math.round((now - prev) / 86400000);
-      const nextCount = diffDays === 1 ? (st.count + 1) : 1;
-      setStreak({count: nextCount, last: t});
+      setStreak({count: diffDays === 1 ? (st.count + 1) : 1, last: t});
     }
     updateHUD();
   }
 
-  // ------------------------------------------------------------
-  // Minimal scene seeders (first item per tab). No hardcoded next steps.
-  // ------------------------------------------------------------
-  function initialScenario(tab) {
-    const city = citySel.value;
-    const map = {
-      travel: {
-        id: 'travel-1',
-        title: 'Arrival & Passport Control',
-        brief: `Essentials at ${city} airport: passport, luggage, and getting into the city.`,
-        role: 'Immigration officer or information desk staff',
-        setting: `${city} airport arrivals, passport control, baggage claim`,
-        key: ['State purpose/duration', 'Collect luggage', 'Choose transport (Metro/train/taxi)'],
-        goal: 'Clear passport control and pick a route into the city'
-      },
-      food: {
-        id: 'food-1',
-        title: 'Café Like a Local',
-        brief: `Order confidently and fix small mistakes politely.`,
-        role: 'Barista or waiter',
-        setting: 'Busy café counter; limited time to order',
-        key: ['Drink + one item', '“Para tomar / para llevar”', 'If wrong, correct kindly'],
-        goal: 'Place a clear order and handle any correction'
-      },
-      daily: {
-        id: 'daily-1',
-        title: 'New Flat, New Roommate',
-        brief: 'Introduce yourself and agree on three basic house norms.',
-        role: 'Roommate',
-        setting: 'Shared flat common area',
-        key: ['Cleanliness', 'Noise hours', 'Guests'],
-        goal: 'Introduce yourself and agree 3 simple rules'
-      },
-      culture: {
-        id: 'culture-1',
-        title: 'Colloquialisms & Flamenco',
-        brief: 'Learn a few Madrid expressions and plan a tablao visit.',
-        role: 'Local friend',
-        setting: 'City center café after work',
-        key: ['3 expressions', 'What is a tablao', 'Pick date/place'],
-        goal: 'Understand expressions and choose a tablao show'
-      },
-      social: {
-        id: 'social-1',
-        title: 'Meet & Make Plans',
-        brief: 'Set a concrete day, time, and place with someone new.',
-        role: 'New acquaintance',
-        setting: 'Public square outside a Metro stop',
-        key: ['Confirm time/place', 'Exchange contact', 'Agree plan'],
-        goal: 'Schedule a short meet-up without ambiguity'
-      }
-    };
-    return map[tab];
-  }
-
-  // In-memory + persisted lists
-  function wrapInitial(obj, category) {
-    return { ...obj, category, index: 1 };
-  }
-
-  const defaultLists = ['travel','food','daily','culture','social'].reduce((acc, cat) => {
-    acc[cat] = [ wrapInitial(initialScenario(cat), cat) ];
-    return acc;
-  }, { custom: [] });
-
-  let lists = loadLists();
-
-  function loadLists() {
-    try {
-      const raw = localStorage.getItem(STORE.listsKey);
-      if (!raw) return structuredClone(defaultLists);
-      const parsed = JSON.parse(raw);
-      return { ...structuredClone(defaultLists), ...parsed };
-    } catch {
-      return structuredClone(defaultLists);
-    }
-  }
-  function saveLists() { localStorage.setItem(STORE.listsKey, JSON.stringify(lists)); }
-
-  // ------------------------------------------------------------
-  // Conversation log (used to build the "next scenario" prompt)
-  // ------------------------------------------------------------
-  function getLog(){
-    try { return JSON.parse(localStorage.getItem(STORE.logKey) || '[]'); }
-    catch { return []; }
-  }
-  function addLogEntry(entry){
-    const log = getLog();
-    log.push(entry);
-    localStorage.setItem(STORE.logKey, JSON.stringify(log));
-  }
-  function recentNotes(category, n=3){
-    const log = getLog().filter(x => x.category === category).slice(-n);
-    return log.map(x => `• ${x.title} — ${x.notes || 'completed'}`).join('\n');
-  }
-
-  // ------------------------------------------------------------
-  // Rendering
-  // ------------------------------------------------------------
+  // ============================================================
+  //  RENDERING
+  // ============================================================
   const containers = {
     travel:  document.getElementById('list-travel'),
     food:    document.getElementById('list-food'),
@@ -483,16 +486,23 @@
     custom:  document.getElementById('list-custom')
   };
 
-  function renderAll() {
-    ['travel','food','daily','culture','social','custom'].forEach(renderCategory);
-    updateHUD();
-  }
+  function renderAll() { categories.forEach(renderCategory); updateHUD(); }
 
   function renderCategory(category) {
     const root = containers[category];
     if (!root) return;
     root.innerHTML = '';
     const arr = lists[category] || [];
+    if (!arr.length && category !== 'custom') {
+      // show a loading card while we ask AI for the city-specific seed
+      const ld = document.createElement('article');
+      ld.className = 'card scene-card';
+      ld.innerHTML = `<div class="content"><h4>Generating ${capitalize(category)} scene <span class="spinner" aria-hidden="true"></span></h4><p class="muted">Tailoring to ${citySel.value}…</p></div>`;
+      root.appendChild(ld);
+      // kick off seed
+      aiSeedCategory(category);
+      return;
+    }
     arr.forEach(item => { root.appendChild(renderSceneCard(item)); });
   }
 
@@ -511,19 +521,9 @@
     return el;
   }
 
-  // Rebuild first scene descriptions when city changes
-  citySel.addEventListener('change', () => {
-    ['travel','food','daily','culture','social'].forEach(cat => {
-      if (lists[cat] && lists[cat][0]) {
-        lists[cat][0] = wrapInitial(initialScenario(cat), cat);
-      }
-    });
-    saveLists(); renderAll();
-  });
-
-  // ------------------------------------------------------------
-  // Tabs
-  // ------------------------------------------------------------
+  // ============================================================
+  //  TABS
+  // ============================================================
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -533,9 +533,9 @@
     });
   });
 
-  // ------------------------------------------------------------
-  // Modal behaviors
-  // ------------------------------------------------------------
+  // ============================================================
+  //  MODAL
+  // ============================================================
   const modal = document.getElementById('modal');
   const closeModalBtn = document.getElementById('closeModal');
   const modalTitle = document.getElementById('modalTitle');
@@ -544,7 +544,7 @@
   const modalKey = document.getElementById('modalKey');
   const modalAvatar = document.getElementById('modalAvatar');
   const modalNotes = document.getElementById('modalNotes');
-  const copyBtn = document.getElementById('copyPrompt');
+  const regenBtn = document.getElementById('regenScene');
   const completeBtn = document.getElementById('markComplete');
 
   let current = null;
@@ -553,23 +553,19 @@
     current = scn;
     modalTitle.textContent = scn.title;
     modalRole.textContent = scn.role || 'Conversation partner';
-    modalSetting.textContent = scn.setting || '(Use Copy Prompt to generate details with AI.)';
+    modalSetting.textContent = scn.setting || '(AI-generated setting)';
     modalKey.innerHTML = Array.isArray(scn.key) && scn.key.length
       ? `<ul style="margin:0 0 0 18px;">${scn.key.map(k=>`<li>${k}</li>`).join('')}</ul>`
-      : '<span class="meta">No key points yet; generate via AI.</span>';
+      : '<span class="muted">Key points will be generated by AI.</span>';
     modalNotes.value = '';
-
-    // Random avatar on open
     const pick = AVATAR_IMAGES[Math.floor(Math.random() * AVATAR_IMAGES.length)];
     modalAvatar.innerHTML = `<img src="${pick}" alt="Conversation partner avatar" class="avatar-img" loading="lazy">`;
-
     modal.classList.add('open');
   }
   function closeModal(){ modal.classList.remove('open'); current = null; }
   closeModalBtn.addEventListener('click', closeModal);
   modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
 
-  // Listen for Details buttons
   document.getElementById('scenes').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-act="details"]');
     if (!btn) return;
@@ -579,160 +575,206 @@
     if (scn) openModal(scn);
   });
 
-  // Copy prompt — includes recent notes so AI can build the next scene
-  copyBtn.addEventListener('click', async () => {
+  // Reroll current scene with AI (same category+city+level)
+  regenBtn.addEventListener('click', async () => {
     if (!current) return;
-    const text = buildPrompt(current, /*forNext=*/false);
-    try {
-      await navigator.clipboard.writeText(text);
-      copyBtn.textContent = 'Copied!';
-      setTimeout(()=> copyBtn.textContent = 'Copy Prompt', 900);
-    } catch {
-      const t = document.createElement('textarea');
-      t.value = text; document.body.appendChild(t); t.select();
-      document.execCommand('copy'); document.body.removeChild(t);
+    regenBtn.disabled = true; regenBtn.textContent = 'Re-rolling…';
+    const repl = await aiGenerateScene(current.category);
+    if (repl) {
+      // Replace the card where current lives
+      const arr = lists[current.category];
+      const idx = arr.findIndex(x => x.id === current.id);
+      if (idx !== -1) {
+        arr[idx] = repl;
+        saveLists(); renderCategory(current.category);
+        openModal(repl);
+      }
     }
+    regenBtn.disabled = false; regenBtn.textContent = 'AI: Reroll This Scene';
   });
 
-  // Mark complete → log + XP + append "Next Scenario (AI will propose)" placeholder
-  completeBtn.addEventListener('click', () => {
+  // Complete → log + XP + ask AI for NEXT scene and append it
+  completeBtn.addEventListener('click', async () => {
     if (!current) return;
     const cat = current.category;
     const notes = modalNotes.value.trim();
 
-    // Log + XP + streak
-    addLogEntry({
-      ts: Date.now(),
-      category: cat,
-      title: current.title,
-      notes
-    });
+    addLogEntry({ ts: Date.now(), category: cat, title: current.title, notes });
     awardCompletion(cat);
 
-    // Append placeholder "next" that relies on AI (no hardcoded details)
-    const next = {
-      id: `${cat}-next-${Date.now()}`,
-      index: (lists[cat]?.length || 0) + 1,
-      category: cat,
-      title: 'Next Scenario (AI will propose)',
-      brief: 'Use Copy Prompt to ask AI for the next scene based on your last conversation. Paste its idea in your notes for reference.',
-      role: '', setting: '', key: []
-    };
-    lists[cat] = lists[cat] || [];
-    lists[cat].push(next);
-    saveLists();
-    renderCategory(cat);
     closeModal();
 
-    // Auto-open the new placeholder so the user can copy the continuation prompt
-    const newly = (lists[cat] || []).find(s => s.id === next.id);
-    if (newly) {
-      openModal(newly);
-      // Replace modal content to show the "continuation" prompt builder
-      modalRole.textContent = '—';
-      modalSetting.textContent = 'Based on your previous scenario';
-      modalKey.innerHTML = `<span class="meta">No details yet — click Copy Prompt to get AI to propose the next scene.</span>`;
-      // Override Copy to continuation mode just for this open instance
-      copyBtn.onclick = async () => {
-        const cont = buildPrompt(current, /*forNext=*/true);
-        try { await navigator.clipboard.writeText(cont); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy Prompt', 900); }
-        catch { const t=document.createElement('textarea'); t.value=cont; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); }
-      };
-    }
-  });
-
-  // ------------------------------------------------------------
-  // Custom scenarios
-  // ------------------------------------------------------------
-  document.getElementById('addCustom').addEventListener('click', () => {
-    const kw = (document.getElementById('customKeyword').value || '').trim();
-    if (!kw) { alert('Please enter a keyword.'); return; }
-    const city = citySel.value;
-    const scn = {
-      id: `custom-${Date.now()}`,
-      index: (lists.custom?.length || 0) + 1,
-      category: 'custom',
-      title: `Custom: ${capitalize(kw)}`,
-      brief: `Practice focused on “${kw}” in ${city}.`,
-      role: 'A helpful local in the right context for your topic',
-      setting: `Realistic ${city} setting related to "${kw}"`,
-      key: ['Define your goal clearly', 'Ask relevant questions', 'Summarize outcome'],
-      goal: `Make progress on "${kw}" in a natural conversation`
+    // Show small loading placeholder below
+    const placeholder = {
+      id: `${cat}-loading-${Date.now()}`,
+      category: cat,
+      title: 'Generating next scenario…',
+      brief: `Asking AI to continue your ${capitalize(cat)} storyline for ${citySel.value} <span class="spinner"></span>`,
+      role: '', setting: '', key: []
     };
-    lists.custom = lists.custom || [];
-    lists.custom.push(scn);
-    saveLists(); renderCategory('custom');
-    document.getElementById('customKeyword').value = '';
+    lists[cat].push(placeholder); saveLists(); renderCategory(cat);
+
+    // Ask AI for the next scene using the last one + recent notes
+    const next = await aiGenerateNextScene(cat, current);
+    // Replace placeholder
+    const arr = lists[cat];
+    const pIdx = arr.findIndex(x => x.id === placeholder.id);
+    if (next && pIdx !== -1) { arr[pIdx] = next; saveLists(); renderCategory(cat); }
   });
 
-  // ------------------------------------------------------------
-  // Prompt builders
-  // ------------------------------------------------------------
-  function buildPrompt(scn, forNext=false) {
-    const lang  = langSel.value;    // Spanish | English
-    const city  = citySel.value;    // e.g., Madrid
-    const level = levelSel.value;   // A1..C2
+  // ============================================================
+  //  AI SCENE GENERATION
+  // ============================================================
+  function baseSystemPrompt(){
+    return `
+You generate *city-specific* conversation scenes for a Spanish immersion app.
 
-    const history = recentNotes(scn.category, 3);
-    const header = [
-      `Language: ${lang}. City: ${city}. CEFR level: ${level}.`,
-      `I am practicing a short, realistic conversation. I am the learner.`
-    ].join('\n');
+Output strictly as JSON (no prose), matching this schema:
+{
+  "title": "string",
+  "brief": "1–2 sentence description",
+  "role": "who the learner is talking to",
+  "setting": "where it happens (city-specific)",
+  "key": ["3–5 bullet points"],
+  "goal": "clear outcome to reach"
+}
 
-    if (!forNext) {
-      // Base scenario prompt
-      return [
-        header,
-        `Scenario: ${scn.title}.`,
-        scn.role ? `You are: ${scn.role}.` : '',
-        scn.setting ? `Setting: ${scn.setting}.` : '',
-        scn.goal ? `Goal: ${scn.goal}.` : '',
-        Array.isArray(scn.key) && scn.key.length ? `Key points: ${scn.key.join('; ')}.` : '',
-        history ? `Recent history in this category:\n${history}` : '',
-        `Style: natural ${lang === 'Spanish' ? 'Spanish' : 'English'} (${level}); 1–2 sentence turns.`,
-        `Correct briefly when helpful. Ask questions to keep it moving.`,
-        `End when the goal is clearly achieved, then give 3–5 tips.`
-      ].filter(Boolean).join('\n');
+Rules:
+- Use the given City (Spain), Language and CEFR Level to tune names, transit, and cultural detail.
+- If the selected city doesn't have an airport (e.g., Torrevieja), route through the nearest major airport (e.g., Alicante–Elche) and continue by realistic transport (bus/coach/regional rail).
+- Keep it practical and plausible for that city (Metro, Cercanías, barrios, plazas, customs, hours).
+- Avoid brand-new factual claims that are likely wrong; prefer generic but city-colored details.
+- Keep titles short and clear; keep "key" items actionable.
+- Do not start the conversation; just return the JSON.
+`.trim();
+  }
+
+  function seedUserPrompt(category){
+    const lang  = langSel.value;
+    const city  = citySel.value;
+    const level = levelSel.value;
+    const label = capitalize(category);
+    return `
+Language: ${lang}
+City: ${city}
+CEFR level: ${level}
+Category: ${label}
+
+Task: Propose the very first practice scene a newcomer would realistically face in this category in ${city}. Make it authentic to ${city} specifically.
+`.trim();
+  }
+
+  function nextUserPrompt(category, lastScene){
+    const lang  = langSel.value;
+    const city  = citySel.value;
+    const level = levelSel.value;
+    const history = recentHistory(category, 3).map(x => `- ${x.title}${x.notes?`: ${x.notes}`:''}`).join('\n') || '(none)';
+    return `
+Language: ${lang}
+City: ${city}
+CEFR level: ${level}
+Category: ${capitalize(category)}
+
+Last scene JSON:
+${JSON.stringify(stripId(lastScene), null, 2)}
+
+Recent outcomes in this category:
+${history}
+
+Task: Propose the next logical scene that builds difficulty slightly and stays authentic to ${city}.
+`.trim();
+  }
+
+  function stripId(obj){ const {id, category, ...rest} = obj; return rest; }
+
+  async function aiSeedCategory(category){
+    const scene = await aiGenerateScene(category);
+    if (scene) {
+      lists[category] = [scene]; saveLists(); renderCategory(category);
     } else {
-      // Continuation prompt — ask AI to PROPOSE the next scene
-      return [
-        header,
-        `I just completed: ${scn.title}.`,
-        history ? `Recent history in this category:\n${history}` : '',
-        `Propose the next scenario that naturally follows. Return a concise JSON with:`,
-        `{ "title": "...", "brief": "...", "role": "...", "setting": "...", "key": ["...","...","..."], "goal": "..." }`,
-        `Keep it realistic for ${city}, ${level}. Do NOT start the conversation; only return the JSON.`
-      ].join('\n');
+      // On failure, show a manual card so the user can still practice
+      lists[category] = [{
+        id: `${category}-fallback`,
+        category,
+        title: `${capitalize(category)} — Manual Start`,
+        brief: `Couldn’t reach AI. Click Details and use your own idea to begin.`,
+        role: 'Local person',
+        setting: `${citySel.value}`,
+        key: ['Set a clear goal', 'Keep turns short', 'Ask follow-ups'],
+        goal: 'Have a short, realistic chat'
+      }];
+      saveLists(); renderCategory(category);
     }
   }
 
-  // ------------------------------------------------------------
-  // Helpers
-  // ------------------------------------------------------------
-  function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  async function aiGenerateScene(category){
+    const sys = baseSystemPrompt();
+    const usr = seedUserPrompt(category);
+    const obj = await callAI(sys, usr, 0.9);
+    if (!obj) return null;
+    return normalizeScene(obj, category);
+  }
 
-  // ------------------------------------------------------------
-  // Cartoon avatars (inline SVG) — 5 personalities
-  // ------------------------------------------------------------
-  // Use PNG avatars instead of inline SVGs
-  const AVATAR_IMAGES = [
-    'avatar1.png',
-    'avatar2.png',
-    'avatar3.png',
-    'avatar4.png',
-    'avatar5.png'
-  ];
+  async function aiGenerateNextScene(category, lastScene){
+    const sys = baseSystemPrompt();
+    const usr = nextUserPrompt(category, lastScene);
+    const obj = await callAI(sys, usr, 0.9);
+    if (!obj) return null;
+    return normalizeScene(obj, category);
+  }
 
+  function normalizeScene(obj, category){
+    // guard + assign id
+    const title = (obj.title || 'Scene').toString().slice(0, 120);
+    const brief = (obj.brief || '').toString().slice(0, 240);
+    const role  = (obj.role || 'Conversation partner').toString().slice(0, 120);
+    const setting = (obj.setting || citySel.value).toString().slice(0, 200);
+    const key = Array.isArray(obj.key) ? obj.key.slice(0,5).map(x=>x.toString().slice(0,120)) : [];
+    const goal = (obj.goal || '').toString().slice(0, 160);
+    return {
+      id: `${category}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+      category, title, brief, role, setting, key, goal
+    };
+  }
 
-  // Initial render
+  // Regenerate all seeds when city/lang/level changes
+  async function regenerateSeeds(){
+    lists = { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
+    saveLists();
+    renderAll(); // shows "Generating…" placeholders which will call aiSeedCategory
+  }
+
+  // ============================================================
+  //  CUSTOM SCENES (keyword → AI)
+  // ============================================================
+  document.getElementById('addCustom').addEventListener('click', async () => {
+    const kw = (document.getElementById('customKeyword').value || '').trim();
+    if (!kw) { alert('Please enter a keyword.'); return; }
+    const sys = baseSystemPrompt();
+    const usr = `
+${seedUserPrompt('custom')}
+
+Extra requirement: Build the first scene around this keyword: "${kw}".
+`.trim();
+    const obj = await callAI(sys, usr, 0.9);
+    const scn = obj ? normalizeScene(obj, 'custom') : {
+      id:`custom-${Date.now()}`, category:'custom',
+      title:`Custom: ${capitalize(kw)}`, brief:`Practice focused on “${kw}” in ${citySel.value}.`,
+      role:'Local person', setting: citySel.value, key:['Define your goal','Ask relevant questions','Summarize outcome'], goal:'Make clear progress'
+    };
+    lists.custom.push(scn); saveLists(); renderCategory('custom');
+    document.getElementById('customKeyword').value = '';
+  });
+
+  // ============================================================
+  //  BOOTSTRAP
+  // ============================================================
   renderAll();
 
-  // TODO: AI INTEGRATION
-  // Replace the placeholder "Next Scenario (AI will propose)" with the JSON returned by your backend or SDK.
-  // On completion, call buildPrompt(current, true) to get the continuation prompt and feed it to your model.
-  // When you receive the model's JSON, update the last placeholder in the category:
-  //   lists[cat][lists[cat].length - 1] = { id: ..., title, brief, role, setting, key, goal, category: cat, index: ... }
-  // Then saveLists() and renderCategory(cat).
+  // ============================================================
+  //  UTIL
+  // ============================================================
+  function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 </script>
 </body>
 </html>
