@@ -25,19 +25,6 @@
   --maxw: 1100px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0f17;
-    --text: #eef1f7;
-    --muted: #a7afbd;
-    --accent: #4da3ff;
-    --accent-2: #101623;
-    --card: #111827;
-    --border: #1f2937;
-    --shadow: 0 10px 30px rgba(0,0,0,0.5);
-  }
-}
-
 * { box-sizing: border-box; }
 html, body { padding: 0; margin: 0; }
 body {
