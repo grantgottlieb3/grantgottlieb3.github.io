@@ -254,12 +254,12 @@
 
   function safeParseJSON(s) {
     if (!s) return null;
-    try { return JSON.parse(s); } catch (_) {}
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) s = fence[1].trim();
     const i = s.indexOf('{'), j = s.lastIndexOf('}');
-    if (i !== -1 && j !== -1 && j > i) { try { return JSON.parse(s.slice(i, j + 1)); } catch {} }
-    return null;
-  }
-
+    if (i !== -1 && j !== -1 && j > i) s = s.slice(i, j + 1);
+    try { return JSON.parse(s); } catch { return null; }
+}
   // ===== STATE / PERSISTENCE =====
   const STORE = {
     langKey: 'spanish_app_lang',
@@ -498,7 +498,11 @@ Rules:
 - Keep details plausible for that city (transit, barrios, customs, hours).
 - Avoid fragile facts; prefer generic but city-colored details.
 - Titles short; "key" items actionable.
-- Do not include prose or code fences—JSON only.`;
+- Do not include prose or code fences—JSON only.
+- Return ONLY a single JSON object. No markdown fences, no prose, no explanations.
+- Property names must be exactly: title, brief, role, setting, key (array), goal.
+`
+;
   }
 
   function seedUserPrompt(category){
@@ -578,17 +582,26 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
   }
 
   function normalizeScene(obj, category){
-    const title = (obj.title || 'Scene').toString().slice(0, 120);
-    const brief = (obj.brief || '').toString().slice(0, 240);
-    const role  = (obj.role || 'Conversation partner').toString().slice(0, 120);
-    const setting = (obj.setting || citySel.value).toString().slice(0, 200);
-    const key = Array.isArray(obj.key) ? obj.key.slice(0,5).map(x=>x.toString().slice(0,120)) : [];
-    const goal = (obj.goal || '').toString().slice(0, 160);
+  if (!obj || typeof obj !== 'object') obj = {};
+    const title  = (obj.title || obj.name || 'Scene').toString().slice(0, 120);
+    const brief  = (obj.brief || obj.description || obj.summary || '').toString().slice(0, 240);
+    const role   = (obj.role || obj.partner || obj.character || 'Conversation partner').toString().slice(0, 120);
+    const setting = (obj.setting || obj.location || obj.place || citySel.value || '').toString().slice(0, 200);
+
+    let key = obj.key || obj.keys || obj.points || obj.bullets || obj.topics || [];
+    if (typeof key === 'string') {
+      key = key.split(/\r?\n|•|-/).map(s => s.trim()).filter(Boolean);
+    }
+    if (!Array.isArray(key)) key = [];
+    key = key.slice(0,5).map(x => x.toString().slice(0,120));
+
+    const goal = (obj.goal || obj.objective || obj.target || '').toString().slice(0, 160);
+
     return {
       id: `${category}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
       category, title, brief, role, setting, key, goal
-    };
-  }
+  };
+}
 
   async function regenerateSeeds(){
     lists = { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
