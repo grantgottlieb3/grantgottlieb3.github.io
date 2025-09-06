@@ -110,34 +110,60 @@
   </section>
 
   <section id="hud">
-    <div class="section-title"><h2>Progress</h2><div class="line"></div></div>
+    <div class="section-title">
+      <h2>Progress</h2>
+      <div class="line"></div>
+    </div>
+  
+    <!-- Summary: XP + Streak -->
     <div class="hud">
       <article class="card item">
-        <div style="width:100%;">
+        <div>
           <div class="stat"><strong>XP</strong><span id="xpVal">0</span></div>
-          <div class="bar" aria-hidden="true"><i id="xpBar" style="width:0%"></i></div>
-          <div class="muted" style="margin-top:6px;">Earn 50 XP per completed scenario.</div>
+          <div class="bar" aria-hidden="true"><i id="xpBar"></i></div>
+          <p class="muted" style="margin-top:6px;">Earn 50 XP per completed scenario.</p>
         </div>
+      </article>
+  
+      <article class="card item">
+        <div>
+          <div class="stat"><strong>Streak</strong><span id="streakVal">0 days</span></div>
+          <p class="muted" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</p>
+        </div>
+      </article>
+    </div>
+  
+    <!-- By category -->
+    <div class="section-title" style="margin-top:12px;">
+      <h3>By category</h3>
+      <div class="line"></div>
+    </div>
+  
+    <div class="grid cols-3">
+      <article class="card item">
+        <div><strong>Travel</strong><div class="muted"><span id="c-travel">0</span> completed</div></div>
       </article>
       <article class="card item">
-        <div style="width:100%;">
-          <div class="stat"><strong>Streak</strong><span id="streakVal">0 days</span></div>
-          <div class="muted" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</div>
-        </div>
+        <div><strong>Food</strong><div class="muted"><span id="c-food">0</span> completed</div></div>
+      </article>
+      <article class="card item">
+        <div><strong>Daily</strong><div class="muted"><span id="c-daily">0</span> completed</div></div>
+      </article>
+      <article class="card item">
+        <div><strong>Culture</strong><div class="muted"><span id="c-culture">0</span> completed</div></div>
+      </article>
+      <article class="card item">
+        <div><strong>Social</strong><div class="muted"><span id="c-social">0</span> completed</div></div>
+      </article>
+      <article class="card item">
+        <div><strong>Custom</strong><div class="muted"><span id="c-custom">0</span> completed</div></div>
       </article>
     </div>
-    <div class="grid cols-3" style="margin-top:12px;">
-      <article class="card item"><div><strong>Travel</strong><div class="muted"><span id="c-travel">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Food</strong><div class="muted"><span id="c-food">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Daily</strong><div class="muted"><span id="c-daily">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Culture</strong><div class="muted"><span id="c-culture">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Social</strong><div class="muted"><span id="c-social">0</span> completed</div></div></article>
-      <article class="card item"><div><strong>Custom</strong><div class="muted"><span id="c-custom">0</span> completed</div></div></article>
-    </div>
   </section>
+  
 
   <section id="scenes">
-    <div class="section-title"><h2>Scenes</h2><div class="line"></div></div>
+    <div class="section-title"><h2>Scenes</h2><div class="line"></div></div> <p></p>
 
     <div class="tabs" role="tablist" aria-label="Scene categories">
       <button class="tab-btn active" data-tab="travel" role="tab" aria-selected="true">Travel</button>
