@@ -427,15 +427,12 @@
     const arr = lists[category] || [];
 
     if (!arr.length && category !== 'custom') {
-      // Show loading only on active tab when Scenes is visible
       if (shouldGenerate(category) && allowAI) {
         const ld = document.createElement('article');
         ld.className = 'card scene-card';
         ld.innerHTML = `<div class="content"><h4>Generating ${capitalize(category)} scene <span class="spinner" aria-hidden="true"></span></h4><p class="muted">Tailoring to ${citySel.value}…</p></div>`;
         root.appendChild(ld);
         aiSeedCategory(category);
-      } else {
-        // Keep panel empty until user activates this tab
       }
       return;
     }
@@ -468,14 +465,11 @@
 
   viewButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      // toggle button active states
       viewButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      // toggle panels
       Object.values(viewPanels).forEach(p => p.classList.remove('active'));
       viewPanels[btn.dataset.view].classList.add('active');
 
-      // If switching into Scenes, render (and maybe generate) the current active scene tab
       if (btn.dataset.view === 'scenes') {
         renderCategory(activeSceneTab, true);
       }
@@ -485,16 +479,13 @@
   // SCENE CATEGORY TABS (scoped to #scenes only)
   document.querySelectorAll('#scenes .tab-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
-      // update active tab state
       activeSceneTab = btn.dataset.tab;
 
-      // toggle tab/button classes
       document.querySelectorAll('#scenes .tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('#scenes .tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-' + activeSceneTab).classList.add('active');
 
-      // Render (and only if needed, generate) this newly active category
       renderCategory(activeSceneTab, true);
     });
   });
@@ -511,7 +502,6 @@
   const regenBtn = document.getElementById('regenScene');
   const completeBtn = document.getElementById('markComplete');
   const copyBtn = document.getElementById('copyPrompt');
-
 
   let current = null;
 
@@ -575,37 +565,62 @@
     const pIdx = arr.findIndex(x => x.id === placeholder.id);
     if (next && pIdx !== -1) { arr[pIdx] = next; saveLists(); renderCategory(cat); }
   });
-  copyBtn.addEventListener('click', async () => {
-  if (!current) return;
 
-  // Build a self-contained prompt pair for extending the current scene
-  const sys = baseSystemPrompt();
-  const usr = nextUserPrompt(current.category, current);
-  const clip = `SYSTEM:\n${sys}\n\nUSER:\n${usr}`;
+  // === Build conversation-bot prompt from the AI scene (popup info) ===
+  function buildConversationBotPrompt(scn){
+    const lang  = langSel.value;
+    const level = levelSel.value;
+    const city  = citySel.value;
 
-  try {
-    await navigator.clipboard.writeText(clip);
-  } catch {
-    // Fallback for older browsers
-    const ta = document.createElement('textarea');
-    ta.value = clip;
-    ta.setAttribute('readonly', '');
-    ta.style.position = 'absolute';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
+    const keyLines = Array.isArray(scn.key) && scn.key.length
+      ? scn.key.map(k => `  - ${k}`).join('\n')
+      : '  - (none)';
+
+    const role = scn.role || 'Conversation partner';
+    const setting = scn.setting || city;
+    const goal = (scn.goal && scn.goal.trim()) ? scn.goal : 'Help the participant complete a realistic task.';
+
+    return (
+`You are a ${lang} aid for a ${level} speaker for an immersion game in ${city}. Please ensure that in the following conversation you utilize a level of ${lang} that someone at this level (${level}) could understand. Incorporate colloquial expressions and an accent of someone native to ${city}.
+
+Here is your role and context:
+- Your role: ${role}
+- Setting: ${setting}
+- Key information:
+${keyLines}
+- Conversation goal: ${goal}
+
+Once the participant has achieved the goal of the conversation, tell them it is complete and provide some brief, simple feedback on the conversation. Acknowledge this message by saying "read" but do not start the role play until the participant speaks.`).trim();
   }
 
-  const original = copyBtn.textContent;
-  copyBtn.textContent = 'Copied!';
-  copyBtn.disabled = true;
-  setTimeout(() => {
-    copyBtn.textContent = original;
-    copyBtn.disabled = false;
-  }, 1200);
-});
+  // Copy Prompt button: copies the conversation-bot prompt (built from current scene)
+  copyBtn.addEventListener('click', async () => {
+    if (!current) return;
+
+    const clip = buildConversationBotPrompt(current);
+
+    try {
+      await navigator.clipboard.writeText(clip);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = clip;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    const original = copyBtn.textContent;
+    copyBtn.textContent = 'Copied!';
+    copyBtn.disabled = true;
+    setTimeout(() => {
+      copyBtn.textContent = original;
+      copyBtn.disabled = false;
+    }, 1200);
+  });
 
   // ===== AI SCENE GENERATION =====
   function baseSystemPrompt(){
@@ -729,7 +744,6 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
   async function regenerateSeeds(){
     lists = { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
     saveLists();
-    // Only (re)seed the currently active scene tab
     renderAll();
   }
 
