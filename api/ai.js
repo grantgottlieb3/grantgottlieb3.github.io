@@ -54,7 +54,7 @@ export default async function handler(req) {
   }
 
   const body = {
-    model: model || (useOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
+    model: model || (useOpenRouter ? 'openai/gpt-oss-20b:free' : 'gpt-oss-20b:free'),
     temperature,
     messages: [
       { role: 'system', content: system },

@@ -215,7 +215,7 @@
 
   // Only used for local testing if you flip USE_DIRECT_OPENAI to true
   const OPENAI_API_KEY = '';
-  const OPENAI_MODEL   = 'gpt-4o-mini';
+  const OPENAI_MODEL   = 'openai/gpt-oss-20b:free';
 
   async function callAI(systemPrompt, userPrompt, temperature = 0.8) {
     try {
@@ -514,11 +514,17 @@ Task: Propose the very first practice scene a newcomer would realistically face 
   }
 
   function nextUserPrompt(category, lastScene){
-    const lang  = langSel.value;
-    const city  = citySel.value;
-    const level = levelSel.value;
-    const history = recentHistory(category, 3).map(x => `- ${x.title}${x.notes?`: ${x.notes}`:''}`).join('\n') || '(none)';
-    return `Language: ${lang}
+  const lang  = langSel.value;
+  const city  = citySel.value;
+  const level = levelSel.value;
+  const history = recentHistory(category, 3)
+    .map(x => `- ${x.title}${x.notes?`: ${x.notes}`:''}`)
+    .join('\n') || '(none)';
+
+  const lastJson = JSON.stringify(stripId(lastScene || {}), null, 2);
+
+  return `Language: ${lang}
+
 City: ${city}
 CEFR level: ${level}
 Category: ${capitalize(category)}
@@ -529,7 +535,12 @@ ${history}
 Task: Propose the next logical scene that builds difficulty slightly and stays authentic to ${city}.`;
   }
 
-  function stripId(obj){ const {id, category, ...rest} = obj; return rest; }
+  function stripId(obj){
+    if (!obj || typeof obj !== 'object') return {};
+    const { id, category, ...rest } = obj;
+  return rest;
+}
+
 
   async function aiSeedCategory(category){
     const scene = await aiGenerateScene(category);
