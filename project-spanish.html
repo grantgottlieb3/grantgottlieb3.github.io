@@ -229,7 +229,7 @@
   (function(){ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); })();
 
   // Avatars
-  const AVATAR_IMAGES = ['avatar1.png','avatar2.png','avatar3.png','avatar4.png','avatar5.png'];
+  const AVATAR_IMAGES = ['avatar1.png','avatar2.png','avatar3.png','avatar4.png'];
 
   // ===== AI CONFIG (frontend) =====
   const USE_DIRECT_OPENAI = false; // keep false in production
@@ -590,7 +590,7 @@ Here is your role and context:
 ${keyLines}
 - Conversation goal: ${goal}
 
-Once the participant has achieved the goal of the conversation, tell them it is complete and provide some brief, simple feedback on the conversation. Acknowledge this message by saying "read" but do not start the role play until the participant speaks.`).trim();
+Once the participant has achieved the goal of the conversation, tell them it is complete and provide some brief, simple feedback on the conversation. Acknowledge this message but do not start the role play until the participant speaks.`).trim();
   }
 
   // Copy Prompt button: copies the conversation-bot prompt (built from current scene)
