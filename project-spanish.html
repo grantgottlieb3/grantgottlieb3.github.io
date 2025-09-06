@@ -7,26 +7,17 @@
   <meta name="description" content="Replayable, city-specific Spanish conversation practice powered by AI." />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="assets/headshot-placeholder.svg" />
-
-  <!-- Page-only tweaks (keeps site brand) -->
   <style>
-    /* Links are plain unless buttons */
     a { text-decoration: none; color: inherit; }
     a:hover, a:focus { opacity: .95; }
     a.button { color: #fff !important; }
     .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
     .button.ghost:hover { background: var(--accent-2); }
     .muted { color: var(--muted); }
-
-    /* Remove donut logos only on this page */
     .item .logo { display: none !important; }
-
-    /* Hero: title only */
     .hero { grid-template-columns: 1fr !important; padding-bottom: 12px; }
     .hero .title { margin-bottom: 0; }
     .hero .headshot { display: none !important; }
-
-    /* Controls */
     .controls { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 720px) { .controls { grid-template-columns: repeat(3, 1fr); } }
     .control { display: grid; gap: 6px; }
@@ -36,34 +27,23 @@
       border: 1px solid var(--border); background: var(--card); color: var(--text);
       font: inherit;
     }
-
-    /* HUD / Gamification */
     .hud { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 900px) { .hud { grid-template-columns: 1fr 1fr; } }
     .stat { display:flex; align-items:center; justify-content:space-between; gap: 12px; }
     .bar { height: 8px; background: var(--accent-2); border-radius: 999px; overflow:hidden; }
     .bar > i { display:block; height:100%; background: var(--accent); width: 0%; transition: width .3s ease; }
-
-    /* Tabs */
     .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
     .tab-btn {
       border: 1px solid var(--border); background: var(--card);
       border-radius: 999px; padding: 8px 12px; cursor: pointer; font-weight: 600;
     }
     .tab-btn.active { background: var(--text); color: #fff; }
-
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
-
-    /* Scene cards */
     .scene-card .content { padding: 16px; }
     .scene-card h4 { margin: 0 0 6px; font-size: 16px; }
     .scene-card p { margin: 0; color: var(--muted); }
-
-    /* Custom scene input row */
     .custom-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin: 8px 0 0; }
-
-    /* Modal */
     .modal {
       position: fixed; inset: 0; display: none; place-items: center;
       background: rgba(0,0,0,.35); z-index: 1000; padding: 20px;
@@ -81,21 +61,10 @@
     .sheet .row { display: grid; gap: 4px; }
     .sheet .row small { color: var(--muted); }
     .sheet footer { padding: 14px 16px; border-top: 1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap; }
-
-    /* Avatar */
-    .partner {
-      display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--border);
-      border-radius: 12px; background: var(--card);
-    }
-    .avatar {
-      width: 72px; height: 72px; border-radius: 16px; overflow: hidden; flex-shrink:0;
-      border: 1px solid var(--border); background: transparent;
-    }
+    .partner { display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--border); border-radius: 12px; background: var(--card); }
+    .avatar { width: 72px; height: 72px; border-radius: 16px; overflow: hidden; flex-shrink:0; border: 1px solid var(--border); background: transparent; }
     .avatar img.avatar-img { width:100%; height:100%; object-fit:cover; display:block; border-radius:16px; }
-
     textarea.notes { width: 100%; min-height: 70px; resize: vertical; padding:10px; border-radius:10px; border:1px solid var(--border); }
-
-    /* Small helper */
     .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color: var(--accent); border-radius:50%; animation: spin .6s linear infinite; vertical-align: -3px; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -109,14 +78,10 @@
 </header>
 
 <main class="container">
-  <!-- =============================== Hero (title only) =============================== -->
   <section class="hero" id="top">
-    <div>
-      <h1 class="title">Spanish Immersion — Conversational Web App</h1>
-    </div>
+    <div><h1 class="title">Spanish Immersion — Conversational Web App</h1></div>
   </section>
 
-  <!-- =============================== Customization =============================== -->
   <section id="customization">
     <div class="section-title"><h2>Customization</h2><div class="line"></div></div>
     <article class="card item">
@@ -124,40 +89,19 @@
         <div class="controls">
           <div class="control">
             <label for="langSel">Language</label>
-            <select id="langSel">
-              <option>Spanish</option>
-              <option>English</option>
-            </select>
+            <select id="langSel"><option>Spanish</option><option>English</option></select>
           </div>
-
           <div class="control">
             <label for="citySel">City (Spain)</label>
             <select id="citySel">
-              <option>Madrid</option>
-              <option>Barcelona</option>
-              <option>Valencia</option>
-              <option>Sevilla</option>
-              <option>Bilbao</option>
-              <option>Málaga</option>
-              <option>Granada</option>
-              <option>Zaragoza</option>
-              <option>Salamanca</option>
-              <option>Córdoba</option>
-              <option>San Sebastián</option>
-              <option>Torrevieja</option>
+              <option>Madrid</option><option>Barcelona</option><option>Valencia</option><option>Sevilla</option>
+              <option>Bilbao</option><option>Málaga</option><option>Granada</option><option>Zaragoza</option>
+              <option>Salamanca</option><option>Córdoba</option><option>San Sebastián</option><option>Torrevieja</option>
             </select>
           </div>
-
           <div class="control">
             <label for="levelSel">CEFR Level</label>
-            <select id="levelSel">
-              <option>A1</option>
-              <option>A2</option>
-              <option selected>B1</option>
-              <option>B2</option>
-              <option>C1</option>
-              <option>C2</option>
-            </select>
+            <select id="levelSel"><option>A1</option><option>A2</option><option selected>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
           </div>
         </div>
         <div class="muted" style="margin-top:8px;">Choices persist in your browser for next visit.</div>
@@ -165,7 +109,6 @@
     </article>
   </section>
 
-  <!-- =============================== HUD / Gamification =============================== -->
   <section id="hud">
     <div class="section-title"><h2>Progress</h2><div class="line"></div></div>
     <div class="hud">
@@ -193,7 +136,6 @@
     </div>
   </section>
 
-  <!-- =============================== Scenes (Tabs) =============================== -->
   <section id="scenes">
     <div class="section-title"><h2>Scenes</h2><div class="line"></div></div>
 
@@ -206,28 +148,13 @@
       <button class="tab-btn" data-tab="custom" role="tab">Custom</button>
     </div>
 
-    <!-- Panels -->
-    <div id="panel-travel" class="tab-panel active" role="tabpanel" aria-labelledby="travel">
-      <div id="list-travel" class="grid"></div>
-    </div>
+    <div id="panel-travel" class="tab-panel active" role="tabpanel"><div id="list-travel" class="grid"></div></div>
+    <div id="panel-food" class="tab-panel" role="tabpanel"><div id="list-food" class="grid"></div></div>
+    <div id="panel-daily" class="tab-panel" role="tabpanel"><div id="list-daily" class="grid"></div></div>
+    <div id="panel-culture" class="tab-panel" role="tabpanel"><div id="list-culture" class="grid"></div></div>
+    <div id="panel-social" class="tab-panel" role="tabpanel"><div id="list-social" class="grid"></div></div>
 
-    <div id="panel-food" class="tab-panel" role="tabpanel" aria-labelledby="food">
-      <div id="list-food" class="grid"></div>
-    </div>
-
-    <div id="panel-daily" class="tab-panel" role="tabpanel" aria-labelledby="daily">
-      <div id="list-daily" class="grid"></div>
-    </div>
-
-    <div id="panel-culture" class="tab-panel" role="tabpanel" aria-labelledby="culture">
-      <div id="list-culture" class="grid"></div>
-    </div>
-
-    <div id="panel-social" class="tab-panel" role="tabpanel" aria-labelledby="social">
-      <div id="list-social" class="grid"></div>
-    </div>
-
-    <div id="panel-custom" class="tab-panel" role="tabpanel" aria-labelledby="custom">
+    <div id="panel-custom" class="tab-panel" role="tabpanel">
       <article class="card item">
         <div style="width:100%;">
           <h3 style="margin:0 0 6px;">Custom Scenario</h3>
@@ -248,7 +175,6 @@
   <div>Built with clean HTML/CSS/JS.</div>
 </footer>
 
-<!-- =============================== Modal =============================== -->
 <div class="modal" id="modal">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <header>
@@ -263,21 +189,9 @@
           <div id="modalRole" style="font-weight:600;"></div>
         </div>
       </div>
-
-      <div class="row">
-        <small>Setting</small>
-        <div id="modalSetting"></div>
-      </div>
-
-      <div class="row">
-        <small>Key information</small>
-        <div id="modalKey"></div>
-      </div>
-
-      <div class="row">
-        <small>Outcome notes (optional)</small>
-        <textarea class="notes" id="modalNotes" placeholder="What happened? Any phrases to remember?"></textarea>
-      </div>
+      <div class="row"><small>Setting</small><div id="modalSetting"></div></div>
+      <div class="row"><small>Key information</small><div id="modalKey"></div></div>
+      <div class="row"><small>Outcome notes (optional)</small><textarea class="notes" id="modalNotes" placeholder="What happened? Any phrases to remember?"></textarea></div>
     </div>
     <footer>
       <button class="button ghost" id="regenScene">AI: Reroll This Scene</button>
@@ -287,70 +201,50 @@
 </div>
 
 <script>
-  // Year stamp
+  // Footer year
   (function(){ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); })();
 
-  // ============================================================
-  //  AVATAR IMAGES (already swapped to PNGs as you asked)
-  // ============================================================
+  // Avatars
   const AVATAR_IMAGES = ['avatar1.png','avatar2.png','avatar3.png','avatar4.png','avatar5.png'];
 
-  // ============================================================
-  //  AI CONFIG — READ THIS
-  // ============================================================
-  // OPTION A (LOCAL TEST ONLY — NOT SECURE FOR PROD):
-  //   Set USE_DIRECT_OPENAI = true and paste your API key below.
-  // OPTION B (RECOMMENDED): Leave USE_DIRECT_OPENAI = false and point AI_PROXY_URL
-  //   to your own serverless function that adds the API key server-side.
-  //
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  // TODO: SET TRUE ONLY FOR LOCAL TESTING; FALSE IF USING YOUR OWN PROXY
-  const USE_DIRECT_OPENAI = false;
-  //
-  // TODO: IF YOU USE A SERVERLESS PROXY, SET ITS URL HERE
-  // e.g., '/api/ai' on Vercel/Netlify/Cloudflare-workers
-  const AI_PROXY_URL = 'https://vercel.com/grants-projects-8848af2d/grantgottlieb3-github-io/4HemXyqS8pUC1XQ4cMq4nnVJyAgV';
-  //
-  // TODO: IF DIRECT, PASTE YOUR OPENAI API KEY HERE (LOCAL DEV ONLY)
-  const OPENAI_API_KEY = 'PASTE_YOUR_OPENAI_API_KEY_HERE';
-  //
-  const OPENAI_MODEL = 'openai/gpt-4o-mini'; // when provider is OpenRouter
+  // ===== AI CONFIG (frontend) =====
+  const USE_DIRECT_OPENAI = false; // keep false in production
+  // IMPORTANT: set this to your deployed Vercel domain:
+  // e.g., 'https://your-app.vercel.app/api/ai'
+  const AI_PROXY_URL = 'https://grantgottlieb3-github-io.vercel.app/api/ai';
 
-  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  // Only used for local testing if you flip USE_DIRECT_OPENAI to true
+  const OPENAI_API_KEY = '';
+  const OPENAI_MODEL   = 'gpt-4o-mini';
 
-  // Central AI call
-  async function callAI(systemPrompt, userPrompt, temperature=0.8) {
+  async function callAI(systemPrompt, userPrompt, temperature = 0.8) {
     try {
       if (USE_DIRECT_OPENAI) {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        const r = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}` // <<< DO NOT SHIP THIS TO PROD
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
           body: JSON.stringify({
             model: OPENAI_MODEL,
             temperature,
             response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
+              { role: 'user',   content: userPrompt }
             ]
           })
         });
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content || '';
-        return safeParseJSON(text);
+        if (!r.ok) { console.error('OpenAI error', r.status, await r.text()); return null; }
+        const data = await r.json();
+        return safeParseJSON(data?.choices?.[0]?.message?.content || '');
       } else {
-        // Your proxy should accept { system, user, temperature } and return JSON
-        const res = await fetch(AI_PROXY_URL, {
+        const r = await fetch(AI_PROXY_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ system: systemPrompt, user: userPrompt, temperature })
         });
-        const data = await res.json();
-        // Expect your proxy to already return an object. If it's text, try parse.
-        return typeof data === 'string' ? safeParseJSON(data) : data;
+        if (!r.ok) { console.error('Proxy error', r.status, await r.text()); return null; }
+        const text = await r.text();
+        try { return JSON.parse(text); } catch { return safeParseJSON(text); }
       }
     } catch (e) {
       console.error('AI error', e);
@@ -361,22 +255,17 @@
   function safeParseJSON(s) {
     if (!s) return null;
     try { return JSON.parse(s); } catch (_) {}
-    // try to extract a JSON object if wrapped in prose or code fences
-    const start = s.indexOf('{'); const end = s.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      try { return JSON.parse(s.slice(start, end+1)); } catch (_) {}
-    }
+    const i = s.indexOf('{'), j = s.lastIndexOf('}');
+    if (i !== -1 && j !== -1 && j > i) { try { return JSON.parse(s.slice(i, j + 1)); } catch {} }
     return null;
   }
 
-  // ============================================================
-  //  STATE / PERSISTENCE
-  // ============================================================
+  // ===== STATE / PERSISTENCE =====
   const STORE = {
     langKey: 'spanish_app_lang',
     cityKey: 'spanish_app_city',
     levelKey: 'spanish_app_level',
-    listsKey: 'spanish_app_lists_v2',  // bumped key since logic changed
+    listsKey: 'spanish_app_lists_v2',
     logKey:   'spanish_app_log',
     xpKey:    'spanish_app_xp',
     streakKey:'spanish_app_streak'
@@ -408,31 +297,20 @@
     catch { return []; }
   }
   function addLogEntry(entry){
-    const log = getLog();
-    log.push(entry);
+    const log = getLog(); log.push(entry);
     localStorage.setItem(STORE.logKey, JSON.stringify(log));
   }
-  function recentHistory(category, n=3){
-    return getLog().filter(x => x.category === category).slice(-n);
-  }
+  function recentHistory(category, n=3){ return getLog().filter(x => x.category === category).slice(-n); }
 
-  // Scene lists per category
   const categories = ['travel','food','daily','culture','social','custom'];
   let lists = loadLists();
   function loadLists() {
-    try {
-      const raw = localStorage.getItem(STORE.listsKey);
-      if (!raw) return { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
-      return JSON.parse(raw);
-    } catch {
-      return { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
-    }
+    try { return JSON.parse(localStorage.getItem(STORE.listsKey) || '{"travel":[],"food":[],"daily":[],"culture":[],"social":[],"custom":[]}'); }
+    catch { return { travel:[], food:[], daily:[], culture:[], social:[], custom:[] }; }
   }
   function saveLists(){ localStorage.setItem(STORE.listsKey, JSON.stringify(lists)); }
 
-  // ============================================================
-  //  HUD (XP, streak, counts)
-  // ============================================================
+  // ===== HUD =====
   const hud = {
     xpVal: document.getElementById('xpVal'),
     xpBar: document.getElementById('xpBar'),
@@ -474,9 +352,7 @@
     updateHUD();
   }
 
-  // ============================================================
-  //  RENDERING
-  // ============================================================
+  // ===== RENDERING =====
   const containers = {
     travel:  document.getElementById('list-travel'),
     food:    document.getElementById('list-food'),
@@ -494,12 +370,10 @@
     root.innerHTML = '';
     const arr = lists[category] || [];
     if (!arr.length && category !== 'custom') {
-      // show a loading card while we ask AI for the city-specific seed
       const ld = document.createElement('article');
       ld.className = 'card scene-card';
       ld.innerHTML = `<div class="content"><h4>Generating ${capitalize(category)} scene <span class="spinner" aria-hidden="true"></span></h4><p class="muted">Tailoring to ${citySel.value}…</p></div>`;
       root.appendChild(ld);
-      // kick off seed
       aiSeedCategory(category);
       return;
     }
@@ -521,9 +395,7 @@
     return el;
   }
 
-  // ============================================================
-  //  TABS
-  // ============================================================
+  // ===== TABS =====
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -533,9 +405,7 @@
     });
   });
 
-  // ============================================================
-  //  MODAL
-  // ============================================================
+  // ===== MODAL =====
   const modal = document.getElementById('modal');
   const closeModalBtn = document.getElementById('closeModal');
   const modalTitle = document.getElementById('modalTitle');
@@ -575,25 +445,18 @@
     if (scn) openModal(scn);
   });
 
-  // Reroll current scene with AI (same category+city+level)
   regenBtn.addEventListener('click', async () => {
     if (!current) return;
     regenBtn.disabled = true; regenBtn.textContent = 'Re-rolling…';
     const repl = await aiGenerateScene(current.category);
     if (repl) {
-      // Replace the card where current lives
       const arr = lists[current.category];
       const idx = arr.findIndex(x => x.id === current.id);
-      if (idx !== -1) {
-        arr[idx] = repl;
-        saveLists(); renderCategory(current.category);
-        openModal(repl);
-      }
+      if (idx !== -1) { arr[idx] = repl; saveLists(); renderCategory(current.category); openModal(repl); }
     }
     regenBtn.disabled = false; regenBtn.textContent = 'AI: Reroll This Scene';
   });
 
-  // Complete → log + XP + ask AI for NEXT scene and append it
   completeBtn.addEventListener('click', async () => {
     if (!current) return;
     const cat = current.category;
@@ -601,35 +464,26 @@
 
     addLogEntry({ ts: Date.now(), category: cat, title: current.title, notes });
     awardCompletion(cat);
-
     closeModal();
 
-    // Show small loading placeholder below
     const placeholder = {
-      id: `${cat}-loading-${Date.now()}`,
-      category: cat,
+      id: `${cat}-loading-${Date.now()}`, category: cat,
       title: 'Generating next scenario…',
       brief: `Asking AI to continue your ${capitalize(cat)} storyline for ${citySel.value} <span class="spinner"></span>`,
       role: '', setting: '', key: []
     };
     lists[cat].push(placeholder); saveLists(); renderCategory(cat);
 
-    // Ask AI for the next scene using the last one + recent notes
     const next = await aiGenerateNextScene(cat, current);
-    // Replace placeholder
     const arr = lists[cat];
     const pIdx = arr.findIndex(x => x.id === placeholder.id);
     if (next && pIdx !== -1) { arr[pIdx] = next; saveLists(); renderCategory(cat); }
   });
 
-  // ============================================================
-  //  AI SCENE GENERATION
-  // ============================================================
+  // ===== AI SCENE GENERATION =====
   function baseSystemPrompt(){
-    return `
-You generate *city-specific* conversation scenes for a Spanish immersion app.
-
-Output strictly as JSON (no prose), matching this schema:
+    return `You generate city-specific conversation scenes for a Spanish immersion app.
+Output JSON only, matching:
 {
   "title": "string",
   "brief": "1–2 sentence description",
@@ -638,15 +492,13 @@ Output strictly as JSON (no prose), matching this schema:
   "key": ["3–5 bullet points"],
   "goal": "clear outcome to reach"
 }
-
 Rules:
-- Use the given City (Spain), Language and CEFR Level to tune names, transit, and cultural detail.
-- If the selected city doesn't have an airport (e.g., Torrevieja), route through the nearest major airport (e.g., Alicante–Elche) and continue by realistic transport (bus/coach/regional rail).
-- Keep it practical and plausible for that city (Metro, Cercanías, barrios, plazas, customs, hours).
-- Avoid brand-new factual claims that are likely wrong; prefer generic but city-colored details.
-- Keep titles short and clear; keep "key" items actionable.
-- Do not start the conversation; just return the JSON.
-`.trim();
+- Use the selected City (Spain), Language and CEFR Level.
+- If city lacks an airport (e.g., Torrevieja), route via nearest major airport then realistic transport.
+- Keep details plausible for that city (transit, barrios, customs, hours).
+- Avoid fragile facts; prefer generic but city-colored details.
+- Titles short; "key" items actionable.
+- Do not include prose or code fences—JSON only.`;
   }
 
   function seedUserPrompt(category){
@@ -654,14 +506,11 @@ Rules:
     const city  = citySel.value;
     const level = levelSel.value;
     const label = capitalize(category);
-    return `
-Language: ${lang}
+    return `Language: ${lang}
 City: ${city}
 CEFR level: ${level}
 Category: ${label}
-
-Task: Propose the very first practice scene a newcomer would realistically face in this category in ${city}. Make it authentic to ${city} specifically.
-`.trim();
+Task: Propose the very first practice scene a newcomer would realistically face in this category in ${city}. Make it authentic to ${city}.`;
   }
 
   function nextUserPrompt(category, lastScene){
@@ -669,20 +518,15 @@ Task: Propose the very first practice scene a newcomer would realistically face 
     const city  = citySel.value;
     const level = levelSel.value;
     const history = recentHistory(category, 3).map(x => `- ${x.title}${x.notes?`: ${x.notes}`:''}`).join('\n') || '(none)';
-    return `
-Language: ${lang}
+    return `Language: ${lang}
 City: ${city}
 CEFR level: ${level}
 Category: ${capitalize(category)}
-
 Last scene JSON:
 ${JSON.stringify(stripId(lastScene), null, 2)}
-
 Recent outcomes in this category:
 ${history}
-
-Task: Propose the next logical scene that builds difficulty slightly and stays authentic to ${city}.
-`.trim();
+Task: Propose the next logical scene that builds difficulty slightly and stays authentic to ${city}.`;
   }
 
   function stripId(obj){ const {id, category, ...rest} = obj; return rest; }
@@ -692,7 +536,6 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
     if (scene) {
       lists[category] = [scene]; saveLists(); renderCategory(category);
     } else {
-      // On failure, show a manual card so the user can still practice
       lists[category] = [{
         id: `${category}-fallback`,
         category,
@@ -724,7 +567,6 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
   }
 
   function normalizeScene(obj, category){
-    // guard + assign id
     const title = (obj.title || 'Scene').toString().slice(0, 120);
     const brief = (obj.brief || '').toString().slice(0, 240);
     const role  = (obj.role || 'Conversation partner').toString().slice(0, 120);
@@ -737,43 +579,35 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
     };
   }
 
-  // Regenerate all seeds when city/lang/level changes
   async function regenerateSeeds(){
     lists = { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
     saveLists();
-    renderAll(); // shows "Generating…" placeholders which will call aiSeedCategory
+    renderAll();
   }
 
-  // ============================================================
-  //  CUSTOM SCENES (keyword → AI)
-  // ============================================================
+  // ===== CUSTOM SCENES =====
   document.getElementById('addCustom').addEventListener('click', async () => {
     const kw = (document.getElementById('customKeyword').value || '').trim();
     if (!kw) { alert('Please enter a keyword.'); return; }
     const sys = baseSystemPrompt();
-    const usr = `
-${seedUserPrompt('custom')}
+    const usr = `${seedUserPrompt('custom')}
 
-Extra requirement: Build the first scene around this keyword: "${kw}".
-`.trim();
+Extra requirement: Build the first scene around this keyword: "${kw}".`;
     const obj = await callAI(sys, usr, 0.9);
     const scn = obj ? normalizeScene(obj, 'custom') : {
       id:`custom-${Date.now()}`, category:'custom',
       title:`Custom: ${capitalize(kw)}`, brief:`Practice focused on “${kw}” in ${citySel.value}.`,
-      role:'Local person', setting: citySel.value, key:['Define your goal','Ask relevant questions','Summarize outcome'], goal:'Make clear progress'
+      role:'Local person', setting: citySel.value,
+      key:['Define your goal','Ask relevant questions','Summarize outcome'], goal:'Make clear progress'
     };
     lists.custom.push(scn); saveLists(); renderCategory('custom');
     document.getElementById('customKeyword').value = '';
   });
 
-  // ============================================================
-  //  BOOTSTRAP
-  // ============================================================
+  // ===== BOOTSTRAP =====
   renderAll();
 
-  // ============================================================
-  //  UTIL
-  // ============================================================
+  // ===== UTIL =====
   function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 </script>
 </body>
