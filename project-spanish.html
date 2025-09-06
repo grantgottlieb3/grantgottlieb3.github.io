@@ -218,39 +218,69 @@
   const OPENAI_MODEL   = 'openai/gpt-oss-20b:free';
 
   async function callAI(systemPrompt, userPrompt, temperature = 0.8) {
-    try {
-      if (USE_DIRECT_OPENAI) {
-        const r = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-          body: JSON.stringify({
-            model: OPENAI_MODEL,
-            temperature,
-            response_format: { type: 'json_object' },
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user',   content: userPrompt }
-            ]
-          })
-        });
-        if (!r.ok) { console.error('OpenAI error', r.status, await r.text()); return null; }
-        const data = await r.json();
-        return safeParseJSON(data?.choices?.[0]?.message?.content || '');
-      } else {
-        const r = await fetch(AI_PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ system: systemPrompt, user: userPrompt, temperature })
-        });
-        if (!r.ok) { console.error('Proxy error', r.status, await r.text()); return null; }
-        const text = await r.text();
-        try { return JSON.parse(text); } catch { return safeParseJSON(text); }
+  try {
+    if (USE_DIRECT_OPENAI) {
+      // Local testing only — never ship a real key to the browser
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: OPENAI_MODEL || 'gpt-4o-mini',
+          temperature,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userPrompt }
+          ]
+        })
+      });
+
+      const data = await r.json().catch(() => ({}));
+      const raw  = data?.choices?.[0]?.message?.content ?? '';
+      console.log('AI raw response (direct):', raw);
+
+      if (!r.ok) {
+        console.error('OpenAI error', r.status, data);
+        return null;
       }
-    } catch (e) {
-      console.error('AI error', e);
-      return null;
+      return safeParseJSON(raw);
+    } else {
+      // Production path — call your Vercel Edge proxy using OpenRouter model
+      const payload = {
+        system: systemPrompt,
+        user: userPrompt,
+        temperature,
+        provider: 'openrouter',
+        model: 'gpt-oss-20b:free'
+      };
+
+      const r = await fetch(AI_PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await r.text();
+      console.log('AI raw response (proxy):', text);
+
+      if (!r.ok) {
+        console.error('Proxy error', r.status, text);
+        return null;
+      }
+
+      // Proxy may return an object or a JSON-looking string
+      try { return JSON.parse(text); } catch {
+        return safeParseJSON(text);
+      }
     }
+  } catch (e) {
+    console.error('AI error', e);
+    return null;
   }
+}
 
   function safeParseJSON(s) {
     if (!s) return null;
