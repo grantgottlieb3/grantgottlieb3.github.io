@@ -217,8 +217,10 @@
     </div>
     <footer>
       <button class="button ghost" id="regenScene">AI: Reroll This Scene</button>
+      <button class="button ghost" id="copyPrompt" aria-label="Copy prompt to clipboard">Copy Prompt</button>
       <button class="button" id="markComplete">Mark Complete</button>
     </footer>
+    
   </div>
 </div>
 
@@ -508,6 +510,8 @@
   const modalNotes = document.getElementById('modalNotes');
   const regenBtn = document.getElementById('regenScene');
   const completeBtn = document.getElementById('markComplete');
+  const copyBtn = document.getElementById('copyPrompt');
+
 
   let current = null;
 
@@ -571,6 +575,37 @@
     const pIdx = arr.findIndex(x => x.id === placeholder.id);
     if (next && pIdx !== -1) { arr[pIdx] = next; saveLists(); renderCategory(cat); }
   });
+  copyBtn.addEventListener('click', async () => {
+  if (!current) return;
+
+  // Build a self-contained prompt pair for extending the current scene
+  const sys = baseSystemPrompt();
+  const usr = nextUserPrompt(current.category, current);
+  const clip = `SYSTEM:\n${sys}\n\nUSER:\n${usr}`;
+
+  try {
+    await navigator.clipboard.writeText(clip);
+  } catch {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = clip;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
+  const original = copyBtn.textContent;
+  copyBtn.textContent = 'Copied!';
+  copyBtn.disabled = true;
+  setTimeout(() => {
+    copyBtn.textContent = original;
+    copyBtn.disabled = false;
+  }, 1200);
+});
 
   // ===== AI SCENE GENERATION =====
   function baseSystemPrompt(){
