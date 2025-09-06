@@ -170,3 +170,29 @@ a.button { color: #fff; text-decoration: none; }
   display: block; object-fit: cover;
   border-radius: 16px;                        /* match .avatar corner */
 }
+/* Bigger top-level view tabs (Profile/Scenes only) */
+.tabs.view-tabs {
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+.tabs.view-tabs .tab-btn {
+  font-size: 18px;          /* larger text */
+  font-weight: 700;         /* bolder label */
+  padding: 12px 20px;       /* taller & wider */
+  border-radius: 9999px;    /* extra pill shape */
+  line-height: 1.2;
+}
+
+/* Optional: make them even larger on wider screens */
+@media (min-width: 900px) {
+  .tabs.view-tabs .tab-btn {
+    font-size: 20px;
+    padding: 14px 24px;
+  }
+}
+
+/* Optional: have them expand to fill the row evenly */
+.tabs.view-tabs .tab-btn {
+  flex: 1 1 auto;           /* remove this line if you prefer tight buttons */
+}
