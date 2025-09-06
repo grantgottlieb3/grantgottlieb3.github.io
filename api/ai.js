@@ -28,14 +28,14 @@ export default async function handler(req) {
   const { system = '', user = '', temperature = 0.8, model, provider } = bodyIn;
 
   // Choose provider based on env or explicit override
-  const envProvider = process.env.AI_PROVIDER || (process.env.OPENROUTER_API_KEY ? 'openrouter' : 'openai');
+  const envProvider = process.env.AI_PROVIDER || (process.env.OPENROUTER_API_KEY2 ? 'openrouter' : 'openai');
   const useOpenRouter = (provider || envProvider) === 'openrouter';
 
   const baseUrl = useOpenRouter
     ? 'https://openrouter.ai/api/v1/chat/completions'
     : 'https://api.openai.com/v1/chat/completions';
 
-  const apiKey = useOpenRouter ? process.env.OPENROUTER_API_KEY : process.env.OPENAI_API_KEY;
+  const apiKey = useOpenRouter ? process.env.OPENROUTER_API_KEY2 : process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'Missing API key on server' }), {
       status: 500, headers: { 'content-type': 'application/json', ...CORS }
