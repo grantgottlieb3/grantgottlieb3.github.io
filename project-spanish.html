@@ -228,7 +228,7 @@
           'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({
-          model: OPENAI_MODEL || 'gpt-4o-mini',
+          model: OPENAI_MODEL || 'openai/gpt-oss-20b:free',
           temperature,
           response_format: { type: 'json_object' },
           messages: [
