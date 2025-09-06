@@ -220,7 +220,6 @@
   async function callAI(systemPrompt, userPrompt, temperature = 0.8) {
   try {
     if (USE_DIRECT_OPENAI) {
-      // Local testing only — never ship a real key to the browser
       const r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -242,13 +241,10 @@
       const raw  = data?.choices?.[0]?.message?.content ?? '';
       console.log('AI raw response (direct):', raw);
 
-      if (!r.ok) {
-        console.error('OpenAI error', r.status, data);
-        return null;
-      }
+      if (!r.ok) { console.error('OpenAI error', r.status, data); return null; }
       return safeParseJSON(raw);
     } else {
-      // Production path — call your Vercel Edge proxy using OpenRouter model
+      // OpenRouter via your Vercel proxy
       const payload = {
         system: systemPrompt,
         user: userPrompt,
@@ -266,15 +262,32 @@
       const text = await r.text();
       console.log('AI raw response (proxy):', text);
 
-      if (!r.ok) {
-        console.error('Proxy error', r.status, text);
-        return null;
+      if (!r.ok) { console.error('Proxy error', r.status, text); return null; }
+
+      // 1) Try to parse the top level
+      let top;
+      try { top = JSON.parse(text); } catch {}
+
+      // 1a) If it already looks like a scene object, return it
+      if (top && typeof top === 'object' && (top.title || top.brief || top.role || top.setting || top.key || top.goal)) {
+        return top;
       }
 
-      // Proxy may return an object or a JSON-looking string
-      try { return JSON.parse(text); } catch {
-        return safeParseJSON(text);
+      // 1b) If it's an OpenRouter envelope, unwrap choices[0].message.content
+      const content = top?.choices?.[0]?.message?.content;
+      if (typeof content === 'string') {
+        const inner = safeParseJSON(content);
+        if (inner) return inner;
       }
+
+      // 1c) If the proxy returned a JSON string as the body
+      if (typeof top === 'string') {
+        const inner = safeParseJSON(top);
+        if (inner) return inner;
+      }
+
+      // 2) Last resort: scrape JSON object from the raw text
+      return safeParseJSON(text);
     }
   } catch (e) {
     console.error('AI error', e);
@@ -282,14 +295,16 @@
   }
 }
 
-  function safeParseJSON(s) {
-    if (!s) return null;
-    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fence) s = fence[1].trim();
-    const i = s.indexOf('{'), j = s.lastIndexOf('}');
-    if (i !== -1 && j !== -1 && j > i) s = s.slice(i, j + 1);
-    try { return JSON.parse(s); } catch { return null; }
+// tolerant JSON extractor (handles ```json fences, prose, etc.)
+function safeParseJSON(s) {
+  if (!s) return null;
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  const i = s.indexOf('{'), j = s.lastIndexOf('}');
+  if (i !== -1 && j !== -1 && j > i) s = s.slice(i, j + 1);
+  try { return JSON.parse(s); } catch { return null; }
 }
+
   // ===== STATE / PERSISTENCE =====
   const STORE = {
     langKey: 'spanish_app_lang',
