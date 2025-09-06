@@ -227,7 +227,7 @@
           'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({
-          model: OPENAI_MODEL || 'openai/gpt-oss-20b:free',
+          model: OPENAI_MODEL || 'gpt-4o-mini',
           temperature,
           response_format: { type: 'json_object' },
           messages: [
@@ -236,21 +236,18 @@
           ]
         })
       });
-
       const data = await r.json().catch(() => ({}));
       const raw  = data?.choices?.[0]?.message?.content ?? '';
       console.log('AI raw response (direct):', raw);
-
       if (!r.ok) { console.error('OpenAI error', r.status, data); return null; }
       return safeParseJSON(raw);
     } else {
-      // OpenRouter via your Vercel proxy
       const payload = {
         system: systemPrompt,
         user: userPrompt,
         temperature,
         provider: 'openrouter',
-        model: 'openai/gpt-oss-20b:free'
+        model: 'gpt-oss-20b:free'
       };
 
       const r = await fetch(AI_PROXY_URL, {
@@ -261,32 +258,32 @@
 
       const text = await r.text();
       console.log('AI raw response (proxy):', text);
-
       if (!r.ok) { console.error('Proxy error', r.status, text); return null; }
 
-      // 1) Try to parse the top level
+      // Try to parse the envelope
       let top;
       try { top = JSON.parse(text); } catch {}
 
-      // 1a) If it already looks like a scene object, return it
-      if (top && typeof top === 'object' && (top.title || top.brief || top.role || top.setting || top.key || top.goal)) {
+      // If it's already a scene-shaped object, return it
+      if (top && typeof top === 'object' &&
+          (top.title || top.brief || top.role || top.setting || top.key || top.goal)) {
         return top;
       }
 
-      // 1b) If it's an OpenRouter envelope, unwrap choices[0].message.content
+      // If it's an OpenRouter-style envelope, unwrap choices[0].message.content
       const content = top?.choices?.[0]?.message?.content;
       if (typeof content === 'string') {
         const inner = safeParseJSON(content);
         if (inner) return inner;
       }
 
-      // 1c) If the proxy returned a JSON string as the body
+      // If the body itself was a stringified JSON object
       if (typeof top === 'string') {
         const inner = safeParseJSON(top);
         if (inner) return inner;
       }
 
-      // 2) Last resort: scrape JSON object from the raw text
+      // Last resort: try to extract a JSON object from raw text
       return safeParseJSON(text);
     }
   } catch (e) {
@@ -295,15 +292,17 @@
   }
 }
 
-// tolerant JSON extractor (handles ```json fences, prose, etc.)
 function safeParseJSON(s) {
   if (!s) return null;
+  // strip ```json ... ``` or ``` ... ```
   const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) s = fence[1].trim();
+  // keep only outermost {...}
   const i = s.indexOf('{'), j = s.lastIndexOf('}');
   if (i !== -1 && j !== -1 && j > i) s = s.slice(i, j + 1);
   try { return JSON.parse(s); } catch { return null; }
 }
+
 
   // ===== STATE / PERSISTENCE =====
   const STORE = {
@@ -628,23 +627,21 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
 
   function normalizeScene(obj, category){
   if (!obj || typeof obj !== 'object') obj = {};
-    const title  = (obj.title || obj.name || 'Scene').toString().slice(0, 120);
-    const brief  = (obj.brief || obj.description || obj.summary || '').toString().slice(0, 240);
-    const role   = (obj.role || obj.partner || obj.character || 'Conversation partner').toString().slice(0, 120);
-    const setting = (obj.setting || obj.location || obj.place || citySel.value || '').toString().slice(0, 200);
+  const title   = (obj.title  || obj.name || 'Scene').toString().slice(0,120);
+  const brief   = (obj.brief  || obj.description || obj.summary || '').toString().slice(0,240);
+  const role    = (obj.role   || obj.partner || obj.character || 'Conversation partner').toString().slice(0,120);
+  const setting = (obj.setting|| obj.location || obj.place || citySel.value || '').toString().slice(0,200);
 
-    let key = obj.key || obj.keys || obj.points || obj.bullets || obj.topics || [];
-    if (typeof key === 'string') {
-      key = key.split(/\r?\n|•|-/).map(s => s.trim()).filter(Boolean);
-    }
-    if (!Array.isArray(key)) key = [];
-    key = key.slice(0,5).map(x => x.toString().slice(0,120));
+  let key = obj.key || obj.keys || obj.points || obj.bullets || obj.topics || [];
+  if (typeof key === 'string') key = key.split(/\r?\n|•|-/).map(s=>s.trim()).filter(Boolean);
+  if (!Array.isArray(key)) key = [];
+  key = key.slice(0,5).map(x => x.toString().slice(0,120));
 
-    const goal = (obj.goal || obj.objective || obj.target || '').toString().slice(0, 160);
+  const goal = (obj.goal || obj.objective || obj.target || '').toString().slice(0,160);
 
-    return {
-      id: `${category}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-      category, title, brief, role, setting, key, goal
+  return {
+    id: `${category}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    category, title, brief, role, setting, key, goal
   };
 }
 
