@@ -83,10 +83,8 @@
     <button class="tab-btn" data-view="scenes">Scenes</button>
   </div>
 
-
   <!-- PROFILE PANEL (Customization + Progress) -->
   <section id="view-profile" class="tab-panel active" role="tabpanel">
-    
     <!-- Progress -->
     <section id="hud" style="margin-top:18px;">
       <div class="section-title">
@@ -169,7 +167,8 @@
         <button class="tab-btn" data-tab="social" role="tab">Social</button>
         <button class="tab-btn" data-tab="custom" role="tab">Custom</button>
       </div>
-<p></p>
+      <p></p>
+
       <div id="panel-travel" class="tab-panel active" role="tabpanel"><div id="list-travel" class="grid"></div></div>
       <div id="panel-food" class="tab-panel" role="tabpanel"><div id="list-food" class="grid"></div></div>
       <div id="panel-daily" class="tab-panel" role="tabpanel"><div id="list-daily" class="grid"></div></div>
@@ -177,7 +176,6 @@
       <div id="panel-social" class="tab-panel" role="tabpanel"><div id="list-social" class="grid"></div></div>
 
       <div id="panel-custom" class="tab-panel" role="tabpanel">
-
         <article class="card item">
           <div style="width:100%;">
             <h3 style="margin:0 0 6px;">Custom Scenario</h3>
@@ -193,7 +191,6 @@
     </section>
   </section>
 </main>
-
 
 <footer class="container footer">
   <div>&copy; <span id="year"></span> Grant Gottlieb</div>
@@ -234,98 +231,73 @@
 
   // ===== AI CONFIG (frontend) =====
   const USE_DIRECT_OPENAI = false; // keep false in production
-  // IMPORTANT: set this to your deployed Vercel domain:
-  // e.g., 'https://your-app.vercel.app/api/ai'
   const AI_PROXY_URL = 'https://grantgottlieb3-github-io.vercel.app/api/ai';
-
-  // Only used for local testing if you flip USE_DIRECT_OPENAI to true
   const OPENAI_API_KEY = '';
   const OPENAI_MODEL   = 'openai/gpt-oss-20b:free';
 
   async function callAI(systemPrompt, userPrompt, temperature = 0.8) {
-  try {
-    if (USE_DIRECT_OPENAI) {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: OPENAI_MODEL || 'openai/openai/gpt-oss-20b:free',
-          temperature,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user',   content: userPrompt }
-          ]
-        })
-      });
-      const data = await r.json().catch(() => ({}));
-      const raw  = data?.choices?.[0]?.message?.content ?? '';
-      console.log('AI raw response (direct):', raw);
-      if (!r.ok) { console.error('OpenAI error', r.status, data); return null; }
-      return safeParseJSON(raw);
-    } else {
-      const payload = {
-        system: systemPrompt,
-        user: userPrompt,
-        temperature,
-        provider: 'openrouter',
-        model: 'openai/gpt-oss-20b:free'
-      };
+    try {
+      if (USE_DIRECT_OPENAI) {
+        const r = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: OPENAI_MODEL || 'openai/openai/gpt-oss-20b:free',
+            temperature,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user',   content: userPrompt }
+            ]
+          })
+        });
+        const data = await r.json().catch(() => ({}));
+        const raw  = data?.choices?.[0]?.message?.content ?? '';
+        console.log('AI raw response (direct):', raw);
+        if (!r.ok) { console.error('OpenAI error', r.status, data); return null; }
+        return safeParseJSON(raw);
+      } else {
+        const payload = { system: systemPrompt, user: userPrompt, temperature, provider: 'openrouter', model: 'openai/gpt-oss-20b:free' };
+        const r = await fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const text = await r.text();
+        console.log('AI raw response (proxy):', text);
+        if (!r.ok) { console.error('Proxy error', r.status, text); return null; }
 
-      const r = await fetch(AI_PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+        let top;
+        try { top = JSON.parse(text); } catch {}
 
-      const text = await r.text();
-      console.log('AI raw response (proxy):', text);
-      if (!r.ok) { console.error('Proxy error', r.status, text); return null; }
-
-      // Try to parse the envelope
-      let top;
-      try { top = JSON.parse(text); } catch {}
-
-      // If it's already a scene-shaped object, return it
-      if (top && typeof top === 'object' &&
-          (top.title || top.brief || top.role || top.setting || top.key || top.goal)) {
-        return top;
+        if (top && typeof top === 'object' && (top.title || top.brief || top.role || top.setting || top.key || top.goal)) {
+          return top;
+        }
+        const content = top?.choices?.[0]?.message?.content;
+        if (typeof content === 'string') {
+          const inner = safeParseJSON(content);
+          if (inner) return inner;
+        }
+        if (typeof top === 'string') {
+          const inner = safeParseJSON(top);
+          if (inner) return inner;
+        }
+        return safeParseJSON(text);
       }
-
-      // If it's an OpenRouter-style envelope, unwrap choices[0].message.content
-      const content = top?.choices?.[0]?.message?.content;
-      if (typeof content === 'string') {
-        const inner = safeParseJSON(content);
-        if (inner) return inner;
-      }
-
-      // If the body itself was a stringified JSON object
-      if (typeof top === 'string') {
-        const inner = safeParseJSON(top);
-        if (inner) return inner;
-      }
-
-      // Last resort: try to extract a JSON object from raw text
-      return safeParseJSON(text);
+    } catch (e) {
+      console.error('AI error', e);
+      return null;
     }
-  } catch (e) {
-    console.error('AI error', e);
-    return null;
   }
-}
 
-// tolerant JSON extractor (handles ```json fences, prose, etc.)
-function safeParseJSON(s) {
-  if (!s) return null;
-  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) s = fence[1].trim();
-  const i = s.indexOf('{'), j = s.lastIndexOf('}');
-  if (i !== -1 && j !== -1 && j > i) s = s.slice(i, j + 1);
-  try { return JSON.parse(s); } catch { return null; }
-}
+  // tolerant JSON extractor (handles ```json fences, prose, etc.)
+  function safeParseJSON(s) {
+    if (!s) return null;
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) s = fence[1].trim();
+    const i = s.indexOf('{'), j = s.lastIndexOf('}');
+    if (i !== -1 && j !== -1 && j > i) s = s.slice(i, j + 1);
+    try { return JSON.parse(s); } catch { return null; }
+  }
 
   // ===== STATE / PERSISTENCE =====
   const STORE = {
@@ -429,21 +401,43 @@ function safeParseJSON(s) {
     custom:  document.getElementById('list-custom')
   };
 
-  function renderAll() { categories.forEach(renderCategory); updateHUD(); }
+  // Track which scene tab is active (default: Travel)
+  let activeSceneTab = document.querySelector('#scenes .tab-btn.active')?.dataset.tab || 'travel';
 
-  function renderCategory(category) {
+  // Only generate AI content when:
+  // - Scenes view is visible, AND
+  // - The category is the active scene tab
+  function shouldGenerate(category){
+    const scenesActive = viewPanels.scenes.classList.contains('active');
+    return scenesActive && category === activeSceneTab;
+  }
+
+  function renderAll() {
+    // Only render (and potentially generate) the active scene tab to limit usage
+    renderCategory(activeSceneTab, true);
+    updateHUD();
+  }
+
+  function renderCategory(category, allowAI = true) {
     const root = containers[category];
     if (!root) return;
     root.innerHTML = '';
     const arr = lists[category] || [];
+
     if (!arr.length && category !== 'custom') {
-      const ld = document.createElement('article');
-      ld.className = 'card scene-card';
-      ld.innerHTML = `<div class="content"><h4>Generating ${capitalize(category)} scene <span class="spinner" aria-hidden="true"></span></h4><p class="muted">Tailoring to ${citySel.value}…</p></div>`;
-      root.appendChild(ld);
-      aiSeedCategory(category);
+      // Show loading only on active tab when Scenes is visible
+      if (shouldGenerate(category) && allowAI) {
+        const ld = document.createElement('article');
+        ld.className = 'card scene-card';
+        ld.innerHTML = `<div class="content"><h4>Generating ${capitalize(category)} scene <span class="spinner" aria-hidden="true"></span></h4><p class="muted">Tailoring to ${citySel.value}…</p></div>`;
+        root.appendChild(ld);
+        aiSeedCategory(category);
+      } else {
+        // Keep panel empty until user activates this tab
+      }
       return;
     }
+
     arr.forEach(item => { root.appendChild(renderSceneCard(item)); });
   }
 
@@ -463,7 +457,7 @@ function safeParseJSON(s) {
   }
 
   // ===== TABS =====
- // ===== TOP-LEVEL VIEW TABS (Profile vs Scenes) =====
+  // TOP-LEVEL VIEW TABS (Profile vs Scenes)
   const viewButtons = document.querySelectorAll('[data-view]');
   const viewPanels = {
     profile: document.getElementById('view-profile'),
@@ -478,19 +472,30 @@ function safeParseJSON(s) {
       // toggle panels
       Object.values(viewPanels).forEach(p => p.classList.remove('active'));
       viewPanels[btn.dataset.view].classList.add('active');
+
+      // If switching into Scenes, render (and maybe generate) the current active scene tab
+      if (btn.dataset.view === 'scenes') {
+        renderCategory(activeSceneTab, true);
+      }
     });
   });
 
-  // ===== SCENE CATEGORY TABS (scoped to #scenes only) =====
+  // SCENE CATEGORY TABS (scoped to #scenes only)
   document.querySelectorAll('#scenes .tab-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
+      // update active tab state
+      activeSceneTab = btn.dataset.tab;
+
+      // toggle tab/button classes
       document.querySelectorAll('#scenes .tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('#scenes .tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      document.getElementById('panel-' + activeSceneTab).classList.add('active');
+
+      // Render (and only if needed, generate) this newly active category
+      renderCategory(activeSceneTab, true);
     });
   });
-
 
   // ===== MODAL =====
   const modal = document.getElementById('modal');
@@ -588,8 +593,7 @@ Rules:
 - Do not include prose or code fences—JSON only.
 - Return ONLY a single JSON object. No markdown fences, no prose, no explanations.
 - Property names must be exactly: title, brief, role, setting, key (array), goal.
-`
-;
+`;
   }
 
   function seedUserPrompt(category){
@@ -605,16 +609,14 @@ Task: Propose the very first practice scene a newcomer would realistically face 
   }
 
   function nextUserPrompt(category, lastScene){
-  const lang  = langSel.value;
-  const city  = citySel.value;
-  const level = levelSel.value;
-  const history = recentHistory(category, 3)
-    .map(x => `- ${x.title}${x.notes?`: ${x.notes}`:''}`)
-    .join('\n') || '(none)';
+    const lang  = langSel.value;
+    const city  = citySel.value;
+    const level = levelSel.value;
+    const history = recentHistory(category, 3)
+      .map(x => `- ${x.title}${x.notes?`: ${x.notes}`:''}`)
+      .join('\n') || '(none)';
 
-  const lastJson = JSON.stringify(stripId(lastScene || {}), null, 2);
-
-  return `Language: ${lang}
+    return `Language: ${lang}
 
 City: ${city}
 CEFR level: ${level}
@@ -629,14 +631,13 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
   function stripId(obj){
     if (!obj || typeof obj !== 'object') return {};
     const { id, category, ...rest } = obj;
-  return rest;
-}
-
+    return rest;
+  }
 
   async function aiSeedCategory(category){
     const scene = await aiGenerateScene(category);
     if (scene) {
-      lists[category] = [scene]; saveLists(); renderCategory(category);
+      lists[category] = [scene]; saveLists(); renderCategory(category, false);
     } else {
       lists[category] = [{
         id: `${category}-fallback`,
@@ -648,7 +649,7 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
         key: ['Set a clear goal', 'Keep turns short', 'Ask follow-ups'],
         goal: 'Have a short, realistic chat'
       }];
-      saveLists(); renderCategory(category);
+      saveLists(); renderCategory(category, false);
     }
   }
 
@@ -669,7 +670,7 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
   }
 
   function normalizeScene(obj, category){
-  if (!obj || typeof obj !== 'object') obj = {};
+    if (!obj || typeof obj !== 'object') obj = {};
     const title  = (obj.title || obj.name || 'Scene').toString().slice(0, 120);
     const brief  = (obj.brief || obj.description || obj.summary || '').toString().slice(0, 240);
     const role   = (obj.role || obj.partner || obj.character || 'Conversation partner').toString().slice(0, 120);
@@ -687,12 +688,13 @@ Task: Propose the next logical scene that builds difficulty slightly and stays a
     return {
       id: `${category}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
       category, title, brief, role, setting, key, goal
-  };
-}
+    };
+  }
 
   async function regenerateSeeds(){
     lists = { travel:[], food:[], daily:[], culture:[], social:[], custom:[] };
     saveLists();
+    // Only (re)seed the currently active scene tab
     renderAll();
   }
 
@@ -711,7 +713,7 @@ Extra requirement: Build the first scene around this keyword: "${kw}".`;
       role:'Local person', setting: citySel.value,
       key:['Define your goal','Ask relevant questions','Summarize outcome'], goal:'Make clear progress'
     };
-    lists.custom.push(scn); saveLists(); renderCategory('custom');
+    lists.custom.push(scn); saveLists(); renderCategory('custom', false);
     document.getElementById('customKeyword').value = '';
   });
 
