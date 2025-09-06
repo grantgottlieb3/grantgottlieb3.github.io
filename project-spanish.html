@@ -78,123 +78,125 @@
 </header>
 
 <main class="container">
+  <!-- Hero -->
   <section class="hero" id="top">
     <div><h1 class="title">Spanish Immersion — Conversational Web App</h1></div>
   </section>
 
-  <section id="customization">
-    <div class="section-title"><h2>Customization</h2><div class="line"></div></div>
-    <article class="card item">
-      <div>
-        <div class="controls">
-          <div class="control">
-            <label for="langSel">Language</label>
-            <select id="langSel"><option>Spanish</option><option>English</option></select>
+  <!-- Top-level tabs -->
+  <div class="tabs" role="tablist" aria-label="Main sections">
+    <button class="tab-btn active" data-view="profile" aria-selected="true">Profile</button>
+    <button class="tab-btn" data-view="scenes">Scenes</button>
+  </div>
+
+  <!-- PROFILE PANEL (Customization + Progress) -->
+  <section id="view-profile" class="tab-panel active" role="tabpanel">
+    <!-- Customization -->
+    <section id="customization">
+      <div class="section-title"><h2>Customization</h2><div class="line"></div></div>
+      <article class="card item">
+        <div>
+          <div class="controls">
+            <div class="control">
+              <label for="langSel">Language</label>
+              <select id="langSel"><option>Spanish</option><option>English</option></select>
+            </div>
+            <div class="control">
+              <label for="citySel">City (Spain)</label>
+              <select id="citySel">
+                <option>Madrid</option><option>Barcelona</option><option>Valencia</option><option>Sevilla</option>
+                <option>Bilbao</option><option>Málaga</option><option>Granada</option><option>Zaragoza</option>
+                <option>Salamanca</option><option>Córdoba</option><option>San Sebastián</option><option>Torrevieja</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="levelSel">CEFR Level</label>
+              <select id="levelSel"><option>A1</option><option>A2</option><option selected>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
+            </div>
           </div>
-          <div class="control">
-            <label for="citySel">City (Spain)</label>
-            <select id="citySel">
-              <option>Madrid</option><option>Barcelona</option><option>Valencia</option><option>Sevilla</option>
-              <option>Bilbao</option><option>Málaga</option><option>Granada</option><option>Zaragoza</option>
-              <option>Salamanca</option><option>Córdoba</option><option>San Sebastián</option><option>Torrevieja</option>
-            </select>
-          </div>
-          <div class="control">
-            <label for="levelSel">CEFR Level</label>
-            <select id="levelSel"><option>A1</option><option>A2</option><option selected>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
-          </div>
+          <div class="muted" style="margin-top:8px;">Choices persist in your browser for next visit.</div>
         </div>
-        <div class="muted" style="margin-top:8px;">Choices persist in your browser for next visit.</div>
+      </article>
+    </section>
+
+    <!-- Progress -->
+    <section id="hud" style="margin-top:18px;">
+      <div class="section-title">
+        <h2>Progress</h2>
+        <div class="line"></div>
       </div>
-    </article>
-  </section>
 
-  <section id="hud">
-    <div class="section-title">
-      <h2>Progress</h2>
-      <div class="line"></div>
-    </div>
-  
-    <!-- Summary: XP + Streak -->
-    <div class="hud">
-      <article class="card item">
-        <div>
-          <div class="stat"><strong>XP</strong><span id="xpVal">0</span></div>
-          <div class="bar" aria-hidden="true"><i id="xpBar"></i></div>
-          <p class="muted" style="margin-top:6px;">Earn 50 XP per completed scenario.</p>
-        </div>
-      </article>
-  
-      <article class="card item">
-        <div>
-          <div class="stat"><strong>Streak</strong><span id="streakVal">0 days</span></div>
-          <p class="muted" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</p>
-        </div>
-      </article>
-    </div>
-  
-    <!-- By category -->
-    <div class="section-title" style="margin-top:12px;">
-      <h3>By category</h3>
-      <div class="line"></div>
-    </div>
-  
-    <div class="grid cols-3">
-      <article class="card item">
-        <div><strong>Travel</strong><div class="muted"><span id="c-travel">0</span> completed</div></div>
-      </article>
-      <article class="card item">
-        <div><strong>Food</strong><div class="muted"><span id="c-food">0</span> completed</div></div>
-      </article>
-      <article class="card item">
-        <div><strong>Daily</strong><div class="muted"><span id="c-daily">0</span> completed</div></div>
-      </article>
-      <article class="card item">
-        <div><strong>Culture</strong><div class="muted"><span id="c-culture">0</span> completed</div></div>
-      </article>
-      <article class="card item">
-        <div><strong>Social</strong><div class="muted"><span id="c-social">0</span> completed</div></div>
-      </article>
-      <article class="card item">
-        <div><strong>Custom</strong><div class="muted"><span id="c-custom">0</span> completed</div></div>
-      </article>
-    </div>
-  </section>
-  
-
-  <section id="scenes">
-    <div class="section-title"><h2>Scenes</h2><div class="line"></div></div> <p></p>
-
-    <div class="tabs" role="tablist" aria-label="Scene categories">
-      <button class="tab-btn active" data-tab="travel" role="tab" aria-selected="true">Travel</button>
-      <button class="tab-btn" data-tab="food" role="tab">Food</button>
-      <button class="tab-btn" data-tab="daily" role="tab">Daily</button>
-      <button class="tab-btn" data-tab="culture" role="tab">Culture</button>
-      <button class="tab-btn" data-tab="social" role="tab">Social</button>
-      <button class="tab-btn" data-tab="custom" role="tab">Custom</button>
-    </div>
-
-    <div id="panel-travel" class="tab-panel active" role="tabpanel"><div id="list-travel" class="grid"></div></div>
-    <div id="panel-food" class="tab-panel" role="tabpanel"><div id="list-food" class="grid"></div></div>
-    <div id="panel-daily" class="tab-panel" role="tabpanel"><div id="list-daily" class="grid"></div></div>
-    <div id="panel-culture" class="tab-panel" role="tabpanel"><div id="list-culture" class="grid"></div></div>
-    <div id="panel-social" class="tab-panel" role="tabpanel"><div id="list-social" class="grid"></div></div>
-
-    <div id="panel-custom" class="tab-panel" role="tabpanel">
-      <article class="card item">
-        <div style="width:100%;">
-          <h3 style="margin:0 0 6px;">Custom Scenario</h3>
-          <p class="muted" style="margin: 0 0 10px;">Type a keyword (e.g., “pharmacy”, “football”, “job interview”) and spawn a tailored practice scene.</p>
-          <div class="custom-row">
-            <input type="text" id="customKeyword" placeholder="Keyword or topic…" />
-            <button class="button" id="addCustom">Generate with AI</button>
+      <!-- Summary: XP + Streak -->
+      <div class="hud">
+        <article class="card item">
+          <div>
+            <div class="stat"><strong>XP</strong><span id="xpVal">0</span></div>
+            <div class="bar" aria-hidden="true"><i id="xpBar"></i></div>
+            <p class="muted" style="margin-top:6px;">Earn 50 XP per completed scenario.</p>
           </div>
-        </div>
-      </article>
-      <div id="list-custom" class="grid" style="margin-top:12px;"></div>
-    </div>
+        </article>
+        <article class="card item">
+          <div>
+            <div class="stat"><strong>Streak</strong><span id="streakVal">0 days</span></div>
+            <p class="muted" style="margin-top:6px;">Complete at least one scenario per day to build your streak.</p>
+          </div>
+        </article>
+      </div>
+
+      <!-- By category -->
+      <div class="section-title" style="margin-top:12px;">
+        <h3>By category</h3>
+        <div class="line"></div>
+      </div>
+
+      <div class="grid cols-3">
+        <article class="card item"><div><strong>Travel</strong><div class="muted"><span id="c-travel">0</span> completed</div></div></article>
+        <article class="card item"><div><strong>Food</strong><div class="muted"><span id="c-food">0</span> completed</div></div></article>
+        <article class="card item"><div><strong>Daily</strong><div class="muted"><span id="c-daily">0</span> completed</div></div></article>
+        <article class="card item"><div><strong>Culture</strong><div class="muted"><span id="c-culture">0</span> completed</div></div></article>
+        <article class="card item"><div><strong>Social</strong><div class="muted"><span id="c-social">0</span> completed</div></div></article>
+        <article class="card item"><div><strong>Custom</strong><div class="muted"><span id="c-custom">0</span> completed</div></div></article>
+      </div>
+    </section>
+  </section>
+
+  <!-- SCENES PANEL -->
+  <section id="view-scenes" class="tab-panel" role="tabpanel">
+    <section id="scenes">
+      <div class="section-title"><h2>Scenes</h2><div class="line"></div></div>
+
+      <div class="tabs" role="tablist" aria-label="Scene categories">
+        <button class="tab-btn active" data-tab="travel" role="tab" aria-selected="true">Travel</button>
+        <button class="tab-btn" data-tab="food" role="tab">Food</button>
+        <button class="tab-btn" data-tab="daily" role="tab">Daily</button>
+        <button class="tab-btn" data-tab="culture" role="tab">Culture</button>
+        <button class="tab-btn" data-tab="social" role="tab">Social</button>
+        <button class="tab-btn" data-tab="custom" role="tab">Custom</button>
+      </div>
+
+      <div id="panel-travel" class="tab-panel active" role="tabpanel"><div id="list-travel" class="grid"></div></div>
+      <div id="panel-food" class="tab-panel" role="tabpanel"><div id="list-food" class="grid"></div></div>
+      <div id="panel-daily" class="tab-panel" role="tabpanel"><div id="list-daily" class="grid"></div></div>
+      <div id="panel-culture" class="tab-panel" role="tabpanel"><div id="list-culture" class="grid"></div></div>
+      <div id="panel-social" class="tab-panel" role="tabpanel"><div id="list-social" class="grid"></div></div>
+
+      <div id="panel-custom" class="tab-panel" role="tabpanel">
+        <article class="card item">
+          <div style="width:100%;">
+            <h3 style="margin:0 0 6px;">Custom Scenario</h3>
+            <p class="muted" style="margin: 0 0 10px;">Type a keyword (e.g., “pharmacy”, “football”, “job interview”) and spawn a tailored practice scene.</p>
+            <div class="custom-row">
+              <input type="text" id="customKeyword" placeholder="Keyword or topic…" />
+              <button class="button" id="addCustom">Generate with AI</button>
+            </div>
+          </div>
+        </article>
+        <div id="list-custom" class="grid" style="margin-top:12px;"></div>
+      </div>
+    </section>
   </section>
 </main>
+
 
 <footer class="container footer">
   <div>&copy; <span id="year"></span> Grant Gottlieb</div>
@@ -464,14 +466,34 @@ function safeParseJSON(s) {
   }
 
   // ===== TABS =====
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+ // ===== TOP-LEVEL VIEW TABS (Profile vs Scenes) =====
+  const viewButtons = document.querySelectorAll('[data-view]');
+  const viewPanels = {
+    profile: document.getElementById('view-profile'),
+    scenes:  document.getElementById('view-scenes')
+  };
+
+  viewButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      // toggle button active states
+      viewButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // toggle panels
+      Object.values(viewPanels).forEach(p => p.classList.remove('active'));
+      viewPanels[btn.dataset.view].classList.add('active');
+    });
+  });
+
+  // ===== SCENE CATEGORY TABS (scoped to #scenes only) =====
+  document.querySelectorAll('#scenes .tab-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#scenes .tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#scenes .tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
     });
   });
+
 
   // ===== MODAL =====
   const modal = document.getElementById('modal');
