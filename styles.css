@@ -221,9 +221,13 @@ a.button { color: #fff; text-decoration: none; }
 
 /* ==================== Personal Board ==================== */
 #personal .board {
-  display: grid; gap: 18px;
-  grid-template-columns: repeat(12, 1fr);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  justify-content: center;   /* center the grid content */
+  justify-items: center;     /* center each tile horizontally */
 }
+
 @media (max-width: 1200px) { #personal .board { grid-template-columns: repeat(8, 1fr); } }
 @media (max-width: 800px)  { #personal .board { grid-template-columns: repeat(4, 1fr); } }
 
