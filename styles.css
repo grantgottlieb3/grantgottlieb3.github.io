@@ -221,29 +221,32 @@ a.button { color: #fff; text-decoration: none; }
 
 /* ==================== Personal: Masonry Photos with Hover Captions ==================== */
 #personal .board {
-  column-count: 3;          /* masonry columns */
-  column-gap: 20px;         /* space between columns */
+  column-count: 3;          
+  column-gap: 20px;
   padding-top: 8px;
 }
 @media (max-width: 1100px) { #personal .board { column-count: 2; } }
 @media (max-width: 640px)  { #personal .board { column-count: 1; } }
 
-/* Each tile becomes a "masonry item" */
+/* Masonry items */
 #personal .masonry-item {
-  display: inline-block;    /* required for CSS columns */
+  display: inline-block;
   width: 100%;
   margin: 0 0 20px;
-  break-inside: avoid;      /* keep tiles intact between columns */
+  break-inside: avoid;
 }
 
-/* Photo card (image-only at rest) */
+/* Photo card */
 #personal .photo-card {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--shadow-1);
   border: 1px solid var(--border);
-  background: #000;         /* helps image fade look crisp on load */
+  background: #000;
+  max-width: 320px;   /* ✅ makes each card a bit smaller */
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Image */
@@ -253,15 +256,17 @@ a.button { color: #fff; text-decoration: none; }
   height: auto;
   vertical-align: middle;
   transition: transform .35s ease, filter .35s ease;
+  border-radius: 14px;   /* ✅ keep rounded corners on hover */
 }
 
-/* Overlay with caption (hidden by default) */
+/* Overlay with caption */
 #personal .photo-card .overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: flex-end;          /* caption anchored at bottom */
+  align-items: flex-end;
   padding: 14px;
+  border-radius: 14px;   /* ✅ overlay matches rounded corners */
   background: linear-gradient(
     to top,
     rgba(0,0,0,.55) 0%,
@@ -274,7 +279,6 @@ a.button { color: #fff; text-decoration: none; }
   transition: opacity .25s ease, transform .25s ease;
 }
 
-/* Caption content box */
 #personal .photo-card .caption {
   background: rgba(0,0,0,.35);
   border: 1px solid rgba(255,255,255,.15);
@@ -294,7 +298,7 @@ a.button { color: #fff; text-decoration: none; }
   line-height: 1.35;
 }
 
-/* Reveal effect on hover/focus */
+/* Hover/focus effects */
 #personal .photo-card:hover .overlay,
 #personal .photo-card:focus-within .overlay {
   opacity: 1;
@@ -304,11 +308,11 @@ a.button { color: #fff; text-decoration: none; }
 #personal .photo-card:focus-within img {
   transform: scale(1.03);
   filter: saturate(1.05);
+  border-radius: 14px;  /* ✅ keeps corners rounded even when scaled */
 }
 
-/* Keyboard accessibility: allow focusing the card */
-#personal .photo-card a,
-#personal .photo-card button {
+/* Accessibility */
+#personal .photo-card a {
   position: absolute;
   inset: 0;
   background: transparent;
