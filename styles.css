@@ -219,67 +219,77 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Clean Card Grid ==================== */
+/* ==================== Personal: Clean, Compact Cards ==================== */
 #personal .board {
-  display: grid;
-  gap: 20px;
-  /* Responsive, balanced columns */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;              /* neat spacing between cards */
+  padding: 16px 0;
 }
 
-/* Card */
+/* Card sizing matches the earlier compact feel */
 #personal .tile {
-  background: var(--card);
+  position: relative;
+  width: 260px;           /* compact card width (desktop) */
+  padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 14px;
+  background: var(--card);
   box-shadow: var(--shadow-1);
   transition: box-shadow .15s ease, transform .15s ease;
+  /* remove all rotation/jitter from prior styles */
 }
 
-/* Subtle hover */
+/* Subtle hover lift (no tilt) */
 #personal .tile:hover {
   box-shadow: var(--shadow-2);
   transform: translateY(-2px);
 }
 
-/* Headings & text */
-#personal .tile h4 { margin: 0 0 8px; }
-#personal .tile p  { margin: 0; font-size: .95rem; line-height: 1.45; }
+/* Tidy typography inside cards */
+#personal .tile h4 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;     /* keep headings modest */
+  line-height: 1.2;
+}
+#personal .tile p {
+  margin: 0;
+  font-size: .95rem;      /* prevent large body text */
+  line-height: 1.45;
+}
 
-/* Images: consistent size, no full-width stretching */
+/* Photos: small, consistent height so nothing looks huge */
 #personal .tile img {
   display: block;
   width: 100%;
-  height: 220px;        /* consistent visual rhythm */
+  height: 170px;          /* consistent, compact visual rhythm */
   object-fit: cover;
-  border-radius: 12px;
-  margin-top: 12px;
+  border-radius: 10px;
+  margin-top: 10px;
 }
 
-/* Optional: keep photo variant neutral (no special white frame now) */
+/* Photo variant just uses same card styling now */
 #personal .tile.photo {
   background: var(--card);
   border: 1px solid var(--border);
 }
 
-/* Remove old bulletin-board effects entirely */
-#personal .tile,
-#personal .tile:hover {
-  transform: none;
-}
+/* Hard remove old bulletin-board bits if any remain */
 #personal .pin,
 #personal .tape { display: none !important; }
 
-/* If you keep span-* classes in HTML, let grid auto-handle layout.
-   (They’re harmless; not used here.) */
-
-/* Responsive tweaks */
-@media (max-width: 900px) {
-  #personal .tile img { height: 200px; }
+/* Responsiveness: slightly tighter on tablets, friendly on phones */
+@media (max-width: 1024px) {
+  #personal .tile { width: 240px; }
+  #personal .tile img { height: 160px; }
 }
-@media (max-width: 600px) {
-  #personal .tile { padding: 14px; }
-  #personal .tile img { height: 180px; }
+@media (max-width: 760px) {
+  #personal .tile { width: 46vw; max-width: 320px; min-width: 240px; }
+  #personal .tile img { height: 170px; }
+}
+@media (max-width: 480px) {
+  #personal .tile { width: 100%; }
+  #personal .tile img { height: 200px; }
 }
