@@ -221,14 +221,14 @@ a.button { color: #fff; text-decoration: none; }
 
 /* ==================== Personal: Masonry Photos with Hover Captions ==================== */
 #personal .board {
-  column-count: 3;          
+  column-count: 3;
   column-gap: 20px;
   padding-top: 8px;
 }
 @media (max-width: 1100px) { #personal .board { column-count: 2; } }
 @media (max-width: 640px)  { #personal .board { column-count: 1; } }
 
-/* Masonry items */
+/* Masonry item wrapper */
 #personal .masonry-item {
   display: inline-block;
   width: 100%;
@@ -236,15 +236,15 @@ a.button { color: #fff; text-decoration: none; }
   break-inside: avoid;
 }
 
-/* Photo card */
+/* Card */
 #personal .photo-card {
   position: relative;
   border-radius: 14px;
-  overflow: hidden;
+  overflow: hidden;             /* ✅ clips everything to rounded corners */
   box-shadow: var(--shadow-1);
   border: 1px solid var(--border);
   background: #000;
-  max-width: 320px;   /* ✅ makes each card a bit smaller */
+  max-width: 300px;             /* ✅ smaller feel */
   margin-left: auto;
   margin-right: auto;
 }
@@ -256,7 +256,7 @@ a.button { color: #fff; text-decoration: none; }
   height: auto;
   vertical-align: middle;
   transition: transform .35s ease, filter .35s ease;
-  border-radius: 14px;   /* ✅ keep rounded corners on hover */
+  border-radius: inherit;       /* ✅ keep corners rounded on hover */
 }
 
 /* Overlay with caption */
@@ -266,7 +266,7 @@ a.button { color: #fff; text-decoration: none; }
   display: flex;
   align-items: flex-end;
   padding: 14px;
-  border-radius: 14px;   /* ✅ overlay matches rounded corners */
+  border-radius: inherit;       /* ✅ overlay respects rounded corners */
   background: linear-gradient(
     to top,
     rgba(0,0,0,.55) 0%,
@@ -279,10 +279,11 @@ a.button { color: #fff; text-decoration: none; }
   transition: opacity .25s ease, transform .25s ease;
 }
 
+/* Caption bubble */
 #personal .photo-card .caption {
   background: rgba(0,0,0,.35);
   border: 1px solid rgba(255,255,255,.15);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 12px 14px;
   backdrop-filter: blur(3px);
   width: 100%;
@@ -294,34 +295,21 @@ a.button { color: #fff; text-decoration: none; }
 }
 #personal .photo-card .caption p {
   margin: 0;
-  font-size: .92rem;
+  font-size: .9rem;
   line-height: 1.35;
 }
 
 /* Hover/focus effects */
-#personal .photo-card:hover .overlay,
-#personal .photo-card:focus-within .overlay {
+#personal .photo-card:hover .overlay {
   opacity: 1;
   transform: translateY(0);
 }
-#personal .photo-card:hover img,
-#personal .photo-card:focus-within img {
+#personal .photo-card:hover img {
   transform: scale(1.03);
   filter: saturate(1.05);
-  border-radius: 14px;  /* ✅ keeps corners rounded even when scaled */
 }
 
-/* Accessibility */
+/* ✅ Remove clickability */
 #personal .photo-card a {
-  position: absolute;
-  inset: 0;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  color: inherit;
-}
-#personal .photo-card a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  display: none;
 }
