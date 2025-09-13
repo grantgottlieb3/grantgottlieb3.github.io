@@ -219,7 +219,7 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Masonry Photos with Hover Captions ==================== */
+/* ==================== Personal: Masonry Photos with Hover Captions (fixed) ==================== */
 #personal .board {
   column-count: 3;
   column-gap: 20px;
@@ -228,7 +228,7 @@ a.button { color: #fff; text-decoration: none; }
 @media (max-width: 1100px) { #personal .board { column-count: 2; } }
 @media (max-width: 640px)  { #personal .board { column-count: 1; } }
 
-/* Masonry item wrapper */
+/* Masonry items */
 #personal .masonry-item {
   display: inline-block;
   width: 100%;
@@ -240,23 +240,27 @@ a.button { color: #fff; text-decoration: none; }
 #personal .photo-card {
   position: relative;
   border-radius: 14px;
-  overflow: hidden;             /* ✅ clips everything to rounded corners */
+  overflow: hidden;                 /* clip children */
+  /* Extra-robust clipping for transforms/compositing: */
+  -webkit-clip-path: inset(0 round 14px);
+          clip-path: inset(0 round 14px);
   box-shadow: var(--shadow-1);
   border: 1px solid var(--border);
   background: #000;
-  max-width: 300px;             /* ✅ smaller feel */
+  max-width: 300px;
   margin-left: auto;
   margin-right: auto;
+  will-change: transform;
 }
 
-/* Image */
+/* Image (container clips; no need to round the img itself) */
 #personal .photo-card img {
   display: block;
   width: 100%;
   height: auto;
   vertical-align: middle;
-  transition: transform .35s ease, filter .35s ease;
-  border-radius: inherit;       /* ✅ keep corners rounded on hover */
+  transition: transform .28s ease, filter .28s ease;  /* align timing with overlay */
+  will-change: transform, filter;
 }
 
 /* Overlay with caption */
@@ -266,7 +270,7 @@ a.button { color: #fff; text-decoration: none; }
   display: flex;
   align-items: flex-end;
   padding: 14px;
-  border-radius: inherit;       /* ✅ overlay respects rounded corners */
+  /* Keep overlay corners rounded via container clip-path */
   background: linear-gradient(
     to top,
     rgba(0,0,0,.55) 0%,
@@ -274,9 +278,12 @@ a.button { color: #fff; text-decoration: none; }
     rgba(0,0,0,0) 70%
   );
   color: #fff;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .25s ease, transform .25s ease;
+  /* Keep a tiny baseline opacity to avoid flash/light jump on exit */
+  opacity: .06;                      /* baseline */
+  transform: translateY(6px);
+  transition: opacity .28s ease, transform .28s ease;
+  pointer-events: none;              /* prevent hover flicker */
+  will-change: opacity, transform;
 }
 
 /* Caption bubble */
@@ -299,17 +306,17 @@ a.button { color: #fff; text-decoration: none; }
   line-height: 1.35;
 }
 
-/* Hover/focus effects */
-#personal .photo-card:hover .overlay {
+/* Hover: coordinated reveal (no corner changes, no flash) */
+#personal .photo-card:hover .overlay,
+#personal .photo-card:focus-within .overlay {
   opacity: 1;
   transform: translateY(0);
 }
-#personal .photo-card:hover img {
+#personal .photo-card:hover img,
+#personal .photo-card:focus-within img {
   transform: scale(1.03);
   filter: saturate(1.05);
 }
 
-/* ✅ Remove clickability */
-#personal .photo-card a {
-  display: none;
-}
+/* Remove clickability (if any anchors remain) */
+#personal .photo-card a { display: none; }
