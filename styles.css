@@ -219,105 +219,67 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Polaroid Flip Grid ==================== */
-#personal .polaroid-grid {
+/* ==================== Personal: Clean Card Grid ==================== */
+#personal .board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 22px;
-  justify-items: center;
+  gap: 20px;
+  /* Responsive, balanced columns */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   align-items: start;
 }
 
-/* Polaroid shell with subtle random rotation via data-rot */
-#personal .polaroid {
-  width: 240px;
-  height: 320px;
-  perspective: 1000px;
-  transform: rotate(var(--rot, 0deg));
-}
-
-/* 3D flip wrapper */
-#personal .polaroid .flip {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform .6s ease;
-  outline: none; /* handled by focus ring below */
-}
-
-/* focus ring for keyboard users */
-#personal .polaroid .flip:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent, #6aa9ff);
-  border-radius: 10px;
-}
-
-/* Face shared styles */
-#personal .polaroid .face {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  border-radius: 10px;
-  box-shadow: var(--shadow-1, 0 6px 16px rgba(0,0,0,.1));
-}
-
-/* Front: classic polaroid look */
-#personal .polaroid .front {
-  background: #fff;
-  border: 1px solid var(--border, #e5e5e5);
-  display: flex;
-  flex-direction: column;
-  padding: 12px 12px 16px; /* bottom padding = caption border */
-}
-
-/* Photo area */
-#personal .polaroid .front img {
-  width: 100%;
-  height: 70%;
-  object-fit: cover;
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);
-}
-
-/* Polaroid caption strip */
-#personal .polaroid .caption {
-  margin-top: 10px;
-  padding: 8px 6px;
-  text-align: center;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px dashed var(--border, #ececec);
-  background: #fff;
-}
-
-/* Back face */
-#personal .polaroid .back {
-  background: var(--card, #fafafa);
-  border: 1px solid var(--border, #e5e5e5);
-  transform: rotateY(180deg);
+/* Card */
+#personal .tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  box-shadow: var(--shadow-1);
+  transition: box-shadow .15s ease, transform .15s ease;
 }
 
-#personal .polaroid .back h4 {
-  margin: 0 0 8px;
+/* Subtle hover */
+#personal .tile:hover {
+  box-shadow: var(--shadow-2);
+  transform: translateY(-2px);
 }
 
-#personal .polaroid .back p {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.4;
+/* Headings & text */
+#personal .tile h4 { margin: 0 0 8px; }
+#personal .tile p  { margin: 0; font-size: .95rem; line-height: 1.45; }
+
+/* Images: consistent size, no full-width stretching */
+#personal .tile img {
+  display: block;
+  width: 100%;
+  height: 220px;        /* consistent visual rhythm */
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 12px;
 }
 
-/* Flip state */
-#personal .polaroid.flipped .flip {
-  transform: rotateY(180deg);
+/* Optional: keep photo variant neutral (no special white frame now) */
+#personal .tile.photo {
+  background: var(--card);
+  border: 1px solid var(--border);
 }
 
-/* Back button */
-#personal .polaroid .back-btn {
-  align-self: center
+/* Remove old bulletin-board effects entirely */
+#personal .tile,
+#personal .tile:hover {
+  transform: none;
+}
+#personal .pin,
+#personal .tape { display: none !important; }
+
+/* If you keep span-* classes in HTML, let grid auto-handle layout.
+   (They’re harmless; not used here.) */
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+  #personal .tile img { height: 200px; }
+}
+@media (max-width: 600px) {
+  #personal .tile { padding: 14px; }
+  #personal .tile img { height: 180px; }
 }
