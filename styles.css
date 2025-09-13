@@ -219,84 +219,121 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Masonry Photos with Hover Captions ==================== */
+/* ==================== Personal: Collage/Bulletin Board ==================== */
 #personal .board {
-  column-count: 3;
-  column-gap: 20px;
-  padding-top: 8px;
-}
-@media (max-width: 1100px) { #personal .board { column-count: 2; } }
-@media (max-width: 640px)  { #personal .board { column-count: 1; } }
-
-/* Masonry item wrapper */
-#personal .masonry-item {
-  display: inline-block;
-  width: 100%;
-  margin: 0 0 20px;
-  break-inside: avoid;
-}
-
-/* Card */
-#personal .photo-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;     /* center the whole collage */
+  align-items: flex-start;
+  gap: 0;                      /* overlap handled by negative margins */
   position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-1);
-  border: 1px solid var(--border);
-  background: #000;
-  max-width: 300px;
-  margin-left: auto;
-  margin-right: auto;
+  padding: 20px;
 }
 
-/* Image */
-#personal .photo-card img {
+/* Base tile look — small, pinned, slightly rotated */
+#personal .tile {
+  position: relative;
+  width: 220px;                /* ≈ quarter-width feel on desktop */
+  margin: -22px 14px 42px;     /* negative top margin = gentle overlap */
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow-1);
+  transform: rotate(var(--r, 0deg));
+  transition: transform .2s ease, box-shadow .2s ease, translate .2s ease;
+  z-index: 1;
+}
+
+/* Bring hovered tile forward and give it a subtle pop */
+#personal .tile:hover {
+  z-index: 10;
+  transform: rotate(var(--r, 0deg)) scale(1.04);
+  box-shadow: var(--shadow-2);
+}
+
+/* Titles & text inside tiles */
+#personal .tile h4 { margin: 0 0 8px; }
+#personal .tile p  { margin: 0; font-size: .95rem; line-height: 1.35; }
+
+/* Photos feel like small pinned prints */
+#personal .tile img {
   display: block;
   width: 100%;
   height: auto;
-  vertical-align: middle;
-  transition: transform .35s ease, filter .35s ease;
+  max-height: 160px;           /* keeps pictures “small” */
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 10px;
 }
 
-/* Overlay with caption */
-#personal .photo-card .overlay {
+/* “photo” variant (keeps white print vibe if you use it) */
+#personal .tile.photo {
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+/* Push-pin accent */
+#personal .pin {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  padding: 0;  /* let caption itself handle spacing */
-  background: rgba(0,0,0,.55);
-  color: #fff;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .25s ease, transform .25s ease;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent);
+  right: 10px; top: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
 }
 
-/* Uniform caption bar */
-#personal .photo-card .caption {
-  background: rgba(0,0,0,.75);   /* solid bar */
-  padding: 14px;
-  width: 100%;
-}
-#personal .photo-card .caption h4 {
-  margin: 0 0 6px;
-  font-size: 1rem;
-  line-height: 1.2;
-}
-#personal .photo-card .caption p {
-  margin: 0;
-  font-size: .9rem;
-  line-height: 1.35;
+/* Tape accent */
+#personal .tape {
+  position: absolute; left: 12px; top: -8px;
+  width: 64px; height: 18px;
+  background: rgba(255,255,200,.75);
+  transform: rotate(-4deg);
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,.08);
 }
 
-/* Hover/focus effects */
-#personal .photo-card:hover .overlay {
-  opacity: 1;
-  transform: translateY(0);
-}
-#personal .photo-card:hover img {
-  transform: scale(1.03);
-  filter: saturate(1.05);
+/* Randomized rotation & stagger for organic layout */
+#personal .tile:nth-child(odd)  { --r: -3deg; }
+#personal .tile:nth-child(even) { --r:  2.5deg; }
+#personal .tile:nth-child(3n)   { translate: 0 6px; }
+#personal .tile:nth-child(4n)   { translate: 0 -4px; }
+#personal .tile:nth-child(5n)   { --r: 1deg; translate: 0 10px; }
+
+/* Slight horizontal jitter to avoid perfect columns */
+#personal .tile:nth-child(6n+1) { margin-left: 4px;  }
+#personal .tile:nth-child(6n+3) { margin-right: 2px; }
+#personal .tile:nth-child(6n+5) { margin-left: -4px; }
+
+/* Chips styling (if you use them) */
+#personal .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+#personal .chip  {
+  border:1px solid var(--border);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:.85rem;
+  background: var(--card);
 }
 
-/* Remove clickability */
-#personal .photo-card a { display: none; }
+/* Responsive tuning — keep the collage feel on small screens */
+@media (max-width: 1024px) {
+  #personal .tile { width: 200px; margin: -18px 12px 36px; }
+  #personal .tile img { max-height: 150px; }
+}
+@media (max-width: 760px) {
+  #personal .board { justify-content: center; }
+  #personal .tile { width: 44vw; max-width: 280px; margin: -16px 10px 32px; }
+  #personal .tile img { max-height: 140px; }
+}
+@media (max-width: 480px) {
+  #personal .tile { width: 86vw; margin: 8px 0 20px; transform: none; }
+  #personal .tile:hover { transform: none; }
+  #personal .tile img { max-height: 180px; }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  #personal .tile, #personal .tile:hover {
+    transition: none;
+    transform: none;
+  }
+}
