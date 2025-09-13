@@ -219,77 +219,105 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Clean, Compact Cards ==================== */
+/* ==================== Personal: Masonry Photos with Hover Captions ==================== */
 #personal .board {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 16px;              /* neat spacing between cards */
-  padding: 16px 0;
+  column-count: 3;          /* masonry columns */
+  column-gap: 20px;         /* space between columns */
+  padding-top: 8px;
+}
+@media (max-width: 1100px) { #personal .board { column-count: 2; } }
+@media (max-width: 640px)  { #personal .board { column-count: 1; } }
+
+/* Each tile becomes a "masonry item" */
+#personal .masonry-item {
+  display: inline-block;    /* required for CSS columns */
+  width: 100%;
+  margin: 0 0 20px;
+  break-inside: avoid;      /* keep tiles intact between columns */
 }
 
-/* Card sizing matches the earlier compact feel */
-#personal .tile {
+/* Photo card (image-only at rest) */
+#personal .photo-card {
   position: relative;
-  width: 260px;           /* compact card width (desktop) */
-  padding: 14px;
-  border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--card);
+  overflow: hidden;
   box-shadow: var(--shadow-1);
-  transition: box-shadow .15s ease, transform .15s ease;
-  /* remove all rotation/jitter from prior styles */
+  border: 1px solid var(--border);
+  background: #000;         /* helps image fade look crisp on load */
 }
 
-/* Subtle hover lift (no tilt) */
-#personal .tile:hover {
-  box-shadow: var(--shadow-2);
-  transform: translateY(-2px);
-}
-
-/* Tidy typography inside cards */
-#personal .tile h4 {
-  margin: 0 0 8px;
-  font-size: 1.05rem;     /* keep headings modest */
-  line-height: 1.2;
-}
-#personal .tile p {
-  margin: 0;
-  font-size: .95rem;      /* prevent large body text */
-  line-height: 1.45;
-}
-
-/* Photos: small, consistent height so nothing looks huge */
-#personal .tile img {
+/* Image */
+#personal .photo-card img {
   display: block;
   width: 100%;
-  height: 170px;          /* consistent, compact visual rhythm */
-  object-fit: cover;
-  border-radius: 10px;
-  margin-top: 10px;
+  height: auto;
+  vertical-align: middle;
+  transition: transform .35s ease, filter .35s ease;
 }
 
-/* Photo variant just uses same card styling now */
-#personal .tile.photo {
-  background: var(--card);
-  border: 1px solid var(--border);
+/* Overlay with caption (hidden by default) */
+#personal .photo-card .overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;          /* caption anchored at bottom */
+  padding: 14px;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,.55) 0%,
+    rgba(0,0,0,.35) 40%,
+    rgba(0,0,0,0) 70%
+  );
+  color: #fff;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .25s ease, transform .25s ease;
 }
 
-/* Hard remove old bulletin-board bits if any remain */
-#personal .pin,
-#personal .tape { display: none !important; }
+/* Caption content box */
+#personal .photo-card .caption {
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  backdrop-filter: blur(3px);
+  width: 100%;
+}
+#personal .photo-card .caption h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+#personal .photo-card .caption p {
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.35;
+}
 
-/* Responsiveness: slightly tighter on tablets, friendly on phones */
-@media (max-width: 1024px) {
-  #personal .tile { width: 240px; }
-  #personal .tile img { height: 160px; }
+/* Reveal effect on hover/focus */
+#personal .photo-card:hover .overlay,
+#personal .photo-card:focus-within .overlay {
+  opacity: 1;
+  transform: translateY(0);
 }
-@media (max-width: 760px) {
-  #personal .tile { width: 46vw; max-width: 320px; min-width: 240px; }
-  #personal .tile img { height: 170px; }
+#personal .photo-card:hover img,
+#personal .photo-card:focus-within img {
+  transform: scale(1.03);
+  filter: saturate(1.05);
 }
-@media (max-width: 480px) {
-  #personal .tile { width: 100%; }
-  #personal .tile img { height: 200px; }
+
+/* Keyboard accessibility: allow focusing the card */
+#personal .photo-card a,
+#personal .photo-card button {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+#personal .photo-card a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
