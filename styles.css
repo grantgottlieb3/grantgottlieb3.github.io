@@ -292,13 +292,6 @@ a.button { color: #fff; text-decoration: none; }
   border: 1px solid rgba(0,0,0,.08);
 }
 
-/* Randomized rotation & stagger for organic layout */
-#personal .tile:nth-child(odd)  { --r: -3deg; }
-#personal .tile:nth-child(even) { --r:  2.5deg; }
-#personal .tile:nth-child(3n)   { translate: 0 6px; }
-#personal .tile:nth-child(4n)   { translate: 0 -4px; }
-#personal .tile:nth-child(5n)   { --r: 1deg; translate: 0 10px; }
-
 /* Slight horizontal jitter to avoid perfect columns */
 #personal .tile:nth-child(6n+1) { margin-left: 4px;  }
 #personal .tile:nth-child(6n+3) { margin-right: 2px; }
