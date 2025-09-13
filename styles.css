@@ -219,121 +219,105 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Collage/Bulletin Board ==================== */
-#personal .board {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;     /* center the whole collage */
-  align-items: flex-start;
-  gap: 0;                      /* overlap handled by negative margins */
+/* ==================== Personal: Polaroid Flip Grid ==================== */
+#personal .polaroid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+  justify-items: center;
+  align-items: start;
+}
+
+/* Polaroid shell with subtle random rotation via data-rot */
+#personal .polaroid {
+  width: 240px;
+  height: 320px;
+  perspective: 1000px;
+  transform: rotate(var(--rot, 0deg));
+}
+
+/* 3D flip wrapper */
+#personal .polaroid .flip {
   position: relative;
-  padding: 20px;
-}
-
-/* Base tile look — small, pinned, slightly rotated */
-#personal .tile {
-  position: relative;
-  width: 220px;                /* ≈ quarter-width feel on desktop */
-  margin: -22px 14px 42px;     /* negative top margin = gentle overlap */
-  padding: 14px;
-  border: 1px dashed var(--border);
-  border-radius: 16px;
-  background: var(--card);
-  box-shadow: var(--shadow-1);
-  transform: rotate(var(--r, 0deg));
-  transition: transform .2s ease, box-shadow .2s ease, translate .2s ease;
-  z-index: 1;
-}
-
-/* Bring hovered tile forward and give it a subtle pop */
-#personal .tile:hover {
-  z-index: 10;
-  transform: rotate(var(--r, 0deg)) scale(1.04);
-  box-shadow: var(--shadow-2);
-}
-
-/* Titles & text inside tiles */
-#personal .tile h4 { margin: 0 0 8px; }
-#personal .tile p  { margin: 0; font-size: .95rem; line-height: 1.35; }
-
-/* Photos feel like small pinned prints */
-#personal .tile img {
-  display: block;
   width: 100%;
-  height: auto;
-  max-height: 160px;           /* keeps pictures “small” */
-  object-fit: cover;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .6s ease;
+  outline: none; /* handled by focus ring below */
+}
+
+/* focus ring for keyboard users */
+#personal .polaroid .flip:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent, #6aa9ff);
   border-radius: 10px;
-  margin-top: 10px;
 }
 
-/* “photo” variant (keeps white print vibe if you use it) */
-#personal .tile.photo {
-  background: #fff;
-  border: 1px solid var(--border);
-}
-
-/* Push-pin accent */
-#personal .pin {
+/* Face shared styles */
+#personal .polaroid .face {
   position: absolute;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--accent);
-  right: 10px; top: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  box-shadow: var(--shadow-1, 0 6px 16px rgba(0,0,0,.1));
 }
 
-/* Tape accent */
-#personal .tape {
-  position: absolute; left: 12px; top: -8px;
-  width: 64px; height: 18px;
-  background: rgba(255,255,200,.75);
-  transform: rotate(-4deg);
-  border-radius: 4px;
-  border: 1px solid rgba(0,0,0,.08);
+/* Front: classic polaroid look */
+#personal .polaroid .front {
+  background: #fff;
+  border: 1px solid var(--border, #e5e5e5);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 16px; /* bottom padding = caption border */
 }
 
-/* Randomized rotation & stagger for organic layout */
-#personal .tile:nth-child(odd)  { --r: -3deg; }
-#personal .tile:nth-child(even) { --r:  2.5deg; }
-#personal .tile:nth-child(3n)   { translate: 0 6px; }
-#personal .tile:nth-child(4n)   { translate: 0 -4px; }
-#personal .tile:nth-child(5n)   { --r: 1deg; translate: 0 10px; }
-
-/* Slight horizontal jitter to avoid perfect columns */
-#personal .tile:nth-child(6n+1) { margin-left: 4px;  }
-#personal .tile:nth-child(6n+3) { margin-right: 2px; }
-#personal .tile:nth-child(6n+5) { margin-left: -4px; }
-
-/* Chips styling (if you use them) */
-#personal .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-#personal .chip  {
-  border:1px solid var(--border);
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:.85rem;
-  background: var(--card);
+/* Photo area */
+#personal .polaroid .front img {
+  width: 100%;
+  height: 70%;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);
 }
 
-/* Responsive tuning — keep the collage feel on small screens */
-@media (max-width: 1024px) {
-  #personal .tile { width: 200px; margin: -18px 12px 36px; }
-  #personal .tile img { max-height: 150px; }
-}
-@media (max-width: 760px) {
-  #personal .board { justify-content: center; }
-  #personal .tile { width: 44vw; max-width: 280px; margin: -16px 10px 32px; }
-  #personal .tile img { max-height: 140px; }
-}
-@media (max-width: 480px) {
-  #personal .tile { width: 86vw; margin: 8px 0 20px; transform: none; }
-  #personal .tile:hover { transform: none; }
-  #personal .tile img { max-height: 180px; }
+/* Polaroid caption strip */
+#personal .polaroid .caption {
+  margin-top: 10px;
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px dashed var(--border, #ececec);
+  background: #fff;
 }
 
-/* Respect reduced motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  #personal .tile, #personal .tile:hover {
-    transition: none;
-    transform: none;
-  }
+/* Back face */
+#personal .polaroid .back {
+  background: var(--card, #fafafa);
+  border: 1px solid var(--border, #e5e5e5);
+  transform: rotateY(180deg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#personal .polaroid .back h4 {
+  margin: 0 0 8px;
+}
+
+#personal .polaroid .back p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Flip state */
+#personal .polaroid.flipped .flip {
+  transform: rotateY(180deg);
+}
+
+/* Back button */
+#personal .polaroid .back-btn {
+  align-self: center
 }
