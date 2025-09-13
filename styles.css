@@ -219,7 +219,8 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Masonry Photos with Hover Captions (fixed) ==================== */
+/* ==================== Personal: Masonry Photos with Hover Captions (clean) ==================== */
+
 #personal .board {
   column-count: 3;
   column-gap: 20px;
@@ -239,38 +240,52 @@ a.button { color: #fff; text-decoration: none; }
 /* Card */
 #personal .photo-card {
   position: relative;
+  /* keep the rounding ALWAYS via clip-path */
   border-radius: 14px;
-  overflow: hidden;                 /* clip children */
-  /* Extra-robust clipping for transforms/compositing: */
+  overflow: hidden;
   -webkit-clip-path: inset(0 round 14px);
           clip-path: inset(0 round 14px);
+
   box-shadow: var(--shadow-1);
   border: 1px solid var(--border);
   background: #000;
-  max-width: 300px;
-  margin-left: auto;
-  margin-right: auto;
+
+  /* Important for masonry: let the card be full column width (no centering/jitter) */
+  width: 100%;
+
+  /* Reserve space so hover never changes layout */
+  aspect-ratio: var(--ratio, 4/3); /* default 4:3; override with classes below */
+
+  /* Paint containment for faster, glitch-free hovers */
+  contain: paint;
   will-change: transform;
 }
 
-/* Image (container clips; no need to round the img itself) */
+/* Optional helpers for common aspect ratios */
+#personal .ratio-4-3  { --ratio: 4/3; }
+#personal .ratio-16-9 { --ratio: 16/9; }
+#personal .ratio-1-1  { --ratio: 1/1; }
+#personal .ratio-3-4  { --ratio: 3/4; }
+
+/* Image fills the reserved box; scaling will not reflow */
 #personal .photo-card img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
   display: block;
-  width: 100%;
-  height: auto;
-  vertical-align: middle;
-  transition: transform .28s ease, filter .28s ease;  /* align timing with overlay */
+  -webkit-user-drag: none; user-select: none;
+
+  transition: transform .28s ease, filter .28s ease;
   will-change: transform, filter;
+  transform: translateZ(0); /* smooth GPU compositing */
 }
 
 /* Overlay with caption */
 #personal .photo-card .overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-end;
   padding: 14px;
-  /* Keep overlay corners rounded via container clip-path */
+
   background: linear-gradient(
     to top,
     rgba(0,0,0,.55) 0%,
@@ -278,11 +293,13 @@ a.button { color: #fff; text-decoration: none; }
     rgba(0,0,0,0) 70%
   );
   color: #fff;
-  /* Keep a tiny baseline opacity to avoid flash/light jump on exit */
-  opacity: .06;                      /* baseline */
+
+  /* tiny baseline to prevent "flash" on hover out */
+  opacity: .06;
   transform: translateY(6px);
+
   transition: opacity .28s ease, transform .28s ease;
-  pointer-events: none;              /* prevent hover flicker */
+  pointer-events: none; /* prevents hover flicker */
   will-change: opacity, transform;
 }
 
@@ -306,7 +323,7 @@ a.button { color: #fff; text-decoration: none; }
   line-height: 1.35;
 }
 
-/* Hover: coordinated reveal (no corner changes, no flash) */
+/* Hover / focus: coordinated reveal (rounded corners preserved by clip-path) */
 #personal .photo-card:hover .overlay,
 #personal .photo-card:focus-within .overlay {
   opacity: 1;
@@ -314,63 +331,20 @@ a.button { color: #fff; text-decoration: none; }
 }
 #personal .photo-card:hover img,
 #personal .photo-card:focus-within img {
-  transform: scale(1.03);
-  filter: saturate(1.05);
+  transform: scale(1.02);
+  filter: saturate(1.04);
 }
 
-/* Remove clickability (if any anchors remain) */
-#personal .photo-card a { display: none; }
-
-/* Stable card box with reserved space */
-#personal .photo-card {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  -webkit-clip-path: inset(0 round 14px);
-          clip-path: inset(0 round 14px);
-  box-shadow: var(--shadow-1);
-  border: 1px solid var(--border);
-  background: #000;
-  max-width: 300px;
-  margin-left: auto;
-  margin-right: auto;
-
-  /* ✅ Reserve space so hover doesn't change layout */
-  aspect-ratio: var(--ratio, 4/3);  /* default 4:3; override per card via style="--ratio: 16/9" etc. */
+/* Ensure nothing is clickable inside */
+#personal .photo-card a,
+#personal .photo-card button {
+  pointer-events: none !important;
 }
 
-/* Fill the box; scaling won't change layout */
-#personal .photo-card img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  transition: transform .28s ease, filter .28s ease;
-  will-change: transform, filter;
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  #personal .photo-card img,
+  #personal .photo-card .overlay {
+    transition: none;
+  }
 }
-
-/* Overlay stays rounded and non-clickable */
-#personal .photo-card .overlay {
-  position: absolute; inset: 0;
-  display: flex; align-items: flex-end; padding: 14px;
-  background: linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.35) 40%, rgba(0,0,0,0) 70%);
-  color: #fff;
-  opacity: .06; transform: translateY(6px);
-  transition: opacity .28s ease, transform .28s ease;
-  pointer-events: none;
-}
-
-/* Caption bubble */
-#personal .photo-card .caption {
-  background: rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 10px;
-  padding: 12px 14px;
-  backdrop-filter: blur(3px);
-  width: 100%;
-}
-
-#personal .photo-card:hover .overlay,
-#personal .photo-card:focus-within .overlay { opacity: 1; transform: translateY(0); }
-
-#personal .photo-card:hover img,
-#personal .photo-card:focus-within img { transform: scale(1.02); filter: saturate(1.04); }
