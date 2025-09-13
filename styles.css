@@ -219,8 +219,7 @@ a.button { color: #fff; text-decoration: none; }
 /* Make SVGs inherit theme color */
 .skill svg [stroke], .skill svg [fill] { stroke: currentColor; fill: currentColor; }
 
-/* ==================== Personal: Masonry Photos with Hover Captions (clean) ==================== */
-
+/* ==================== Personal: Masonry Photos with Hover Captions ==================== */
 #personal .board {
   column-count: 3;
   column-gap: 20px;
@@ -229,7 +228,7 @@ a.button { color: #fff; text-decoration: none; }
 @media (max-width: 1100px) { #personal .board { column-count: 2; } }
 @media (max-width: 640px)  { #personal .board { column-count: 1; } }
 
-/* Masonry items */
+/* Masonry item wrapper */
 #personal .masonry-item {
   display: inline-block;
   width: 100%;
@@ -240,52 +239,34 @@ a.button { color: #fff; text-decoration: none; }
 /* Card */
 #personal .photo-card {
   position: relative;
-  /* keep the rounding ALWAYS via clip-path */
   border-radius: 14px;
-  overflow: hidden;
-  -webkit-clip-path: inset(0 round 14px);
-          clip-path: inset(0 round 14px);
-
+  overflow: hidden;             /* ✅ clips everything to rounded corners */
   box-shadow: var(--shadow-1);
   border: 1px solid var(--border);
   background: #000;
-
-  /* Important for masonry: let the card be full column width (no centering/jitter) */
-  width: 100%;
-
-  /* Reserve space so hover never changes layout */
-  aspect-ratio: var(--ratio, 4/3); /* default 4:3; override with classes below */
-
-  /* Paint containment for faster, glitch-free hovers */
-  contain: paint;
-  will-change: transform;
+  max-width: 300px;             /* ✅ smaller feel */
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Optional helpers for common aspect ratios */
-#personal .ratio-4-3  { --ratio: 4/3; }
-#personal .ratio-16-9 { --ratio: 16/9; }
-#personal .ratio-1-1  { --ratio: 1/1; }
-#personal .ratio-3-4  { --ratio: 3/4; }
-
-/* Image fills the reserved box; scaling will not reflow */
+/* Image */
 #personal .photo-card img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
   display: block;
-  -webkit-user-drag: none; user-select: none;
-
-  transition: transform .28s ease, filter .28s ease;
-  will-change: transform, filter;
-  transform: translateZ(0); /* smooth GPU compositing */
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+  transition: transform .35s ease, filter .35s ease;
+  border-radius: inherit;       /* ✅ keep corners rounded on hover */
 }
 
 /* Overlay with caption */
 #personal .photo-card .overlay {
-  position: absolute; inset: 0;
-  display: flex; align-items: flex-end;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
   padding: 14px;
-
+  border-radius: inherit;       /* ✅ overlay respects rounded corners */
   background: linear-gradient(
     to top,
     rgba(0,0,0,.55) 0%,
@@ -293,14 +274,9 @@ a.button { color: #fff; text-decoration: none; }
     rgba(0,0,0,0) 70%
   );
   color: #fff;
-
-  /* tiny baseline to prevent "flash" on hover out */
-  opacity: .06;
-  transform: translateY(6px);
-
-  transition: opacity .28s ease, transform .28s ease;
-  pointer-events: none; /* prevents hover flicker */
-  will-change: opacity, transform;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .25s ease, transform .25s ease;
 }
 
 /* Caption bubble */
@@ -323,28 +299,17 @@ a.button { color: #fff; text-decoration: none; }
   line-height: 1.35;
 }
 
-/* Hover / focus: coordinated reveal (rounded corners preserved by clip-path) */
-#personal .photo-card:hover .overlay,
-#personal .photo-card:focus-within .overlay {
+/* Hover/focus effects */
+#personal .photo-card:hover .overlay {
   opacity: 1;
   transform: translateY(0);
 }
-#personal .photo-card:hover img,
-#personal .photo-card:focus-within img {
-  transform: scale(1.02);
-  filter: saturate(1.04);
+#personal .photo-card:hover img {
+  transform: scale(1.03);
+  filter: saturate(1.05);
 }
 
-/* Ensure nothing is clickable inside */
-#personal .photo-card a,
-#personal .photo-card button {
-  pointer-events: none !important;
-}
-
-/* Reduced motion accessibility */
-@media (prefers-reduced-motion: reduce) {
-  #personal .photo-card img,
-  #personal .photo-card .overlay {
-    transition: none;
-  }
+/* ✅ Remove clickability */
+#personal .photo-card a {
+  display: none;
 }
