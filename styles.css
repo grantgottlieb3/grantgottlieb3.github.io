@@ -320,3 +320,57 @@ a.button { color: #fff; text-decoration: none; }
 
 /* Remove clickability (if any anchors remain) */
 #personal .photo-card a { display: none; }
+
+/* Stable card box with reserved space */
+#personal .photo-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  -webkit-clip-path: inset(0 round 14px);
+          clip-path: inset(0 round 14px);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border);
+  background: #000;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+
+  /* ✅ Reserve space so hover doesn't change layout */
+  aspect-ratio: var(--ratio, 4/3);  /* default 4:3; override per card via style="--ratio: 16/9" etc. */
+}
+
+/* Fill the box; scaling won't change layout */
+#personal .photo-card img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .28s ease, filter .28s ease;
+  will-change: transform, filter;
+}
+
+/* Overlay stays rounded and non-clickable */
+#personal .photo-card .overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-end; padding: 14px;
+  background: linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.35) 40%, rgba(0,0,0,0) 70%);
+  color: #fff;
+  opacity: .06; transform: translateY(6px);
+  transition: opacity .28s ease, transform .28s ease;
+  pointer-events: none;
+}
+
+/* Caption bubble */
+#personal .photo-card .caption {
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  padding: 12px 14px;
+  backdrop-filter: blur(3px);
+  width: 100%;
+}
+
+#personal .photo-card:hover .overlay,
+#personal .photo-card:focus-within .overlay { opacity: 1; transform: translateY(0); }
+
+#personal .photo-card:hover img,
+#personal .photo-card:focus-within img { transform: scale(1.02); filter: saturate(1.04); }
