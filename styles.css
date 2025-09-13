@@ -239,12 +239,11 @@ a.button { color: #fff; text-decoration: none; }
 /* Card */
 #personal .photo-card {
   position: relative;
-  border-radius: 14px;
-  overflow: hidden;             /* ✅ clips everything to rounded corners */
+  overflow: hidden;
   box-shadow: var(--shadow-1);
   border: 1px solid var(--border);
   background: #000;
-  max-width: 300px;             /* ✅ smaller feel */
+  max-width: 300px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -256,7 +255,6 @@ a.button { color: #fff; text-decoration: none; }
   height: auto;
   vertical-align: middle;
   transition: transform .35s ease, filter .35s ease;
-  border-radius: inherit;       /* ✅ keep corners rounded on hover */
 }
 
 /* Overlay with caption */
@@ -265,27 +263,18 @@ a.button { color: #fff; text-decoration: none; }
   inset: 0;
   display: flex;
   align-items: flex-end;
-  padding: 14px;
-  border-radius: inherit;       /* ✅ overlay respects rounded corners */
-  background: linear-gradient(
-    to top,
-    rgba(0,0,0,.55) 0%,
-    rgba(0,0,0,.35) 40%,
-    rgba(0,0,0,0) 70%
-  );
+  padding: 0;  /* let caption itself handle spacing */
+  background: rgba(0,0,0,.55);
   color: #fff;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity .25s ease, transform .25s ease;
 }
 
-/* Caption bubble */
+/* Uniform caption bar */
 #personal .photo-card .caption {
-  background: rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 10px;
-  padding: 12px 14px;
-  backdrop-filter: blur(3px);
+  background: rgba(0,0,0,.75);   /* solid bar */
+  padding: 14px;
   width: 100%;
 }
 #personal .photo-card .caption h4 {
@@ -309,7 +298,5 @@ a.button { color: #fff; text-decoration: none; }
   filter: saturate(1.05);
 }
 
-/* ✅ Remove clickability */
-#personal .photo-card a {
-  display: none;
-}
+/* Remove clickability */
+#personal .photo-card a { display: none; }
