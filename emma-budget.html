@@ -222,7 +222,6 @@
       App.state.bins.forEach(b=>{
         const card = document.createElement('div'); card.className='card item';
         card.innerHTML = `
-          <div class="logo"></div>
           <div style="flex:1">
             <div style="display:grid; grid-template-columns: 1fr 140px auto; gap:8px; align-items:center;">
               <input data-k="name" data-id="${b.id}" type="text" value="${b.name}" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
@@ -311,29 +310,49 @@
       $('#monthLabel').textContent = Util.labelYM(UI.currentYM);
 
       // Bin cards
-      const totals = {}; S.bins.forEach(b=>totals[b.id]=0);
-      App.state.expenses[UI.currentYM].forEach(e=>{ totals[e.binId]=(totals[e.binId]||0)+e.amountEUR; });
-      const host = $('#binsSummary'); host.innerHTML='';
-      S.bins.forEach(b=>{
-        const spent = totals[b.id]||0; const rem = b.monthlyEUR - spent; const pct = Math.min(100, Math.max(0, (spent/b.monthlyEUR)*100 || 0));
-        const bar = `<div style=\"height:10px; background:var(--accent-2); border-radius:999px; overflow:hidden;\"><div style=\"height:100%; width:${pct}%; background:var(--accent);\"></div></div>`;
-        const card = document.createElement('div'); card.className='card'; card.style.padding='14px'; card.style.cursor='pointer';
-        card.setAttribute('role','button'); card.setAttribute('aria-label','Add expense to '+b.name);
-        card.onclick = () => Budget.openDialog(b.id);
-        card.innerHTML = `
-          <div class="item" style="padding:0; gap:10px;">
-            <div class="logo"></div>
-            <div style="flex:1">
-              <h3 style="margin:0 0 6px;">${b.name}</h3>
-              ${bar}
-              <div class="meta" style="display:flex; gap:8px; margin-top:6px;">
-                <span class="badge">Budget ${Util.money(Util.eurToDisp(b.monthlyEUR))}</span>
-                <span class="badge" style="border-style:${rem<0?'solid':'dashed'}; color:${rem<0?'#b00020':'var(--muted)'};">Rem ${Util.money(Util.eurToDisp(rem))}</span>
-              </div>
+    const totals = {}; 
+    S.bins.forEach(b => totals[b.id] = 0);
+    App.state.expenses[UI.currentYM].forEach(e => {
+    totals[e.binId] = (totals[e.binId] || 0) + e.amountEUR;
+    });
+    const host = $('#binsSummary');
+    host.innerHTML = '';
+
+    S.bins.forEach(b => {
+    const spent = totals[b.id] || 0;
+    const budget = b.monthlyEUR || 0;
+    const rem = budget - spent;
+    const pct = Math.min(100, Math.max(0, budget > 0 ? (spent / budget) * 100 : 0));
+    const bar = `
+        <div style="height:10px; background:var(--accent-2); border-radius:999px; overflow:hidden;">
+        <div style="height:100%; width:${pct}%; background:var(--accent);"></div>
+        </div>`;
+    const fraction = `${Util.money(Util.eurToDisp(spent))} / ${Util.money(Util.eurToDisp(budget))} spent`;
+    const over = rem < 0;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.padding = '14px';
+    card.style.cursor = 'pointer';
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Add expense to ' + b.name);
+    card.onclick = () => Budget.openDialog(b.id);
+
+    card.innerHTML = `
+        <div class="item" style="padding:0; gap:10px;">
+        <div style="flex:1">
+            <h3 style="margin:0 0 6px;">${b.name}</h3>
+            ${bar}
+            <div class="meta" style="display:flex; gap:8px; margin-top:6px;">
+            <span class="badge" style="border-style:${over ? 'solid' : 'dashed'}; ${over ? 'color:#b00020;' : ''}">
+                ${fraction}
+            </span>
             </div>
-          </div>`;
-        host.appendChild(card);
-      });
+        </div>
+        </div>`;
+    host.appendChild(card);
+    });
+
 
       // Expenses
       const list = $('#expenseList'); list.innerHTML='';
@@ -343,7 +362,6 @@
         const bin = S.bins.find(b=>b.id===e.binId);
         const row = document.createElement('div'); row.className='card item';
         row.innerHTML = `
-          <div class="logo"></div>
           <div style="flex:1">
             <h3>${e.name||'(untitled)'}</h3>
             <div class="meta">${new Date(e.date).toLocaleDateString()} · ${bin?bin.name:'(bin deleted)'}</div>
