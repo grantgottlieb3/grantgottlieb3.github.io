@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <title>NALCAP Budget — Mobile Web</title>
+  <title>$imple Budget Sheet</title>
 
   <!-- Use your provided CSS as-is -->
   <link rel="stylesheet" href="styles.css" />
@@ -17,7 +17,7 @@
   <!-- Smaller sticky header -->
   <header class="header">
     <div class="container nav" style="padding:8px 0;"> <!-- reduced from 14px -->
-      <div class="brand" style="font-size:16px;">NALCAP Budget</div>
+      <div class="brand" style="font-size:16px;"></div>
       <nav class="right tabs view-tabs" role="tablist" aria-label="Primary">
         <button id="tab-budget" class="button ghost tab-btn" aria-selected="true" onclick="UI.switchTab('budget')">Budget</button>
         <button id="tab-profile" class="button ghost tab-btn" aria-selected="false" onclick="UI.switchTab('profile')">Profile</button>
@@ -30,7 +30,7 @@
     <!-- ============ BUDGET VIEW ============ -->
     <section id="view-budget" role="tabpanel" aria-labelledby="tab-budget">
       <div class="section-title" style="margin-top:8px;">
-        <h2>Monthly View</h2>
+        <h2>Monthly Budget</h2>
         <div class="line"></div>
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="button ghost" title="Prev month" onclick="Budget.shiftMonth(-1)">◀</button>
@@ -55,6 +55,49 @@
 
     <!-- ============ PROFILE VIEW ============ -->
     <section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
+        <div class="section-title">
+            <h2>Overall Stats</h2>
+            <div class="line"></div>
+          </div>
+          <section class="card" style="padding:16px;">
+            <div id="overallStats" class="grid cols-3"></div>
+          </section>
+
+      <div class="section-title">
+        <h2>Budget Bins</h2>
+        <div class="line"></div>
+      </div>
+      
+      <section class="card" style="padding:16px;">
+        <!-- Bin list -->
+        <div id="binList" class="grid" style="gap:12px;">
+          <!-- Each bin will be injected here by Profile.renderBins() -->
+        </div>
+      
+        <!-- Add new bin row -->
+        <div class="grid" style="margin-top:16px; grid-template-columns: 1fr 1fr auto; gap:8px;">
+          <input id="newBinName"
+                 type="text"
+                 placeholder="New bin (e.g., Rent)"
+                 style="font-size:16px; padding:12px; border:1px solid var(--border);
+                        border-radius:12px; background:var(--card); width:100%;" />
+          <input id="newBinAmt"
+                 type="number"
+                 inputmode="decimal"
+                 step="0.01"
+                 placeholder="Amount / month (EUR)"
+                 style="font-size:16px; padding:12px; border:1px solid var(--border);
+                        border-radius:12px; background:var(--card); width:100%;" />
+          <button class="button secondary" style="font-size:16px; padding:12px 18px;"
+                  onclick="Profile.addBin()">Add</button>
+        </div>
+      
+        <p class="badge" style="margin-top:12px; font-size:13px;">
+          Bins are stored in EUR; display uses your chosen currency and FX.
+        </p>
+      </section>
+      
+
       <div class="section-title">
         <h2>Profile</h2>
         <div class="line"></div>
@@ -89,28 +132,6 @@
             <span id="saveNote" class="badge" style="border-style:dashed;"> </span>
           </div>
         </div>
-      </section>
-
-      <div class="section-title">
-        <h2>Budget Bins</h2>
-        <div class="line"></div>
-      </div>
-      <section class="card" style="padding:16px;">
-        <div id="binList" class="grid"></div>
-        <div class="grid cols-3" style="margin-top:12px;">
-          <input id="newBinName" type="text" placeholder="New bin (e.g., Rent)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          <input id="newBinAmt" type="number" inputmode="decimal" step="0.01" placeholder="Amount / month (EUR)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          <button class="button secondary" onclick="Profile.addBin()">Add Bin</button>
-        </div>
-        <p class="badge" style="margin-top:10px;">Bins are stored in EUR; display uses your chosen currency and FX.</p>
-      </section>
-
-      <div class="section-title">
-        <h2>Overall Stats</h2>
-        <div class="line"></div>
-      </div>
-      <section class="card" style="padding:16px;">
-        <div id="overallStats" class="grid cols-3"></div>
       </section>
     </section>
   </main>
@@ -253,17 +274,39 @@
     delBin(id){ if(!confirm('Delete this bin?')) return; App.state.bins = App.state.bins.filter(b=>b.id!==id); App.save(); this.renderBins(); Budget.render(); this.renderOverall(); },
     dupBin(id){ const b=App.state.bins.find(x=>x.id===id); if(!b) return; App.state.bins.push({id:Util.id(), name:b.name+' (copy)', monthlyEUR:b.monthlyEUR}); App.save(); this.renderBins(); },
     renderOverall(){
-      const host = $('#overallStats'); host.innerHTML='';
-      const totalBudgetEUR = App.state.bins.reduce((s,b)=>s+b.monthlyEUR,0);
-      let totalSpentEUR=0; Object.values(App.state.expenses).forEach(list=> list.forEach(e=> totalSpentEUR+=e.amountEUR));
-      const totalMonths = Object.keys(App.state.expenses).length;
-      const makeStat = (label,val) => `<div class="card" style="padding:16px;"><div class="meta">${label}</div><div style="font-size:20px; font-weight:700;">${val}</div></div>`;
-      host.innerHTML = [
-        makeStat('Monthly Budget', Util.money(Util.eurToDisp(totalBudgetEUR))),
-        makeStat('Total Spent (all time)', Util.money(Util.eurToDisp(totalSpentEUR))),
-        makeStat('Active Months', totalMonths)
-      ].join('');
-    }
+  const host = $('#overallStats'); host.innerHTML='';
+  const totalBudgetEUR = App.state.bins.reduce((s,b)=>s+b.monthlyEUR,0);
+
+  // Sum all-time spent
+  let totalSpentEUR = 0;
+  Object.values(App.state.expenses).forEach(list => {
+    list.forEach(e => totalSpentEUR += e.amountEUR);
+  });
+
+  // Active months = number of months with any expenses recorded
+  const totalMonths = Object.keys(App.state.expenses).length;
+
+  // Monthly stipend (EUR)
+  const stipendPerMonthEUR = App.state.settings.stipendEUR || 0;
+
+  // Income across active months, and Net = Income - Spent
+  const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
+  const netEUR = totalIncomeEUR - totalSpentEUR;
+
+  const makeStat = (label,val) =>
+    `<div class="card" style="padding:16px;">
+       <div class="meta">${label}</div>
+       <div style="font-size:20px; font-weight:700;">${val}</div>
+     </div>`;
+
+  host.innerHTML = [
+    makeStat('Monthly Budget', Util.money(Util.eurToDisp(totalBudgetEUR))),
+    makeStat('Total Spent (all time)', Util.money(Util.eurToDisp(totalSpentEUR))),
+    makeStat('Active Months', totalMonths),
+    makeStat('Net Total', Util.money(Util.eurToDisp(netEUR)))
+  ].join('');
+}
+
   };
 
   // ---------- Budget Logic ----------
