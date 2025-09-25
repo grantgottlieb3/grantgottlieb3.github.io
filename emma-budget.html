@@ -2,66 +2,89 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <!-- Keep iOS-friendly viewport; avoid weird zoom by ensuring inputs >=16px font-size -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>$imple Budget Sheet</title>
+
   <script>
     (function () {
-      // 👉 bump this on every deploy (any string is fine)
-      const VERSION = '2025-09-25-1';
+      const VERSION = '2025-09-25-2';
       const STORAGE_KEY = 'app_version';
       try {
         const prev = localStorage.getItem(STORAGE_KEY);
-        if (prev && prev !== VERSION) {
-          localStorage.setItem(STORAGE_KEY, VERSION);
-          // Force a full reload to pick up fresh HTML/inline JS from the network
-          location.reload();
-        } else if (!prev) {
-          localStorage.setItem(STORAGE_KEY, VERSION);
-        }
-        // Optional: expose for debugging
+        if (prev && prev !== VERSION) { localStorage.setItem(STORAGE_KEY, VERSION); location.reload(); }
+        else if (!prev) { localStorage.setItem(STORAGE_KEY, VERSION); }
         window.APP_VERSION = VERSION;
-      } catch (e) { /* ignore */ }
+      } catch {}
     })();
-    </script>
-    
-  <!-- Your stylesheet -->
-  <link rel="stylesheet" href="styles.css" />
+  </script>
 
-  <!-- Small inline fixes for mobile form layout & iOS keyboard zoom -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="apple-touch-icon" href="icon.png" />
+
   <style>
-    /* Prevent iOS auto-zoom: keep form controls at 16px+ */
+    :root{
+      --pad:16px;
+    }
+    body{ margin:0; }
     input, select, textarea, button { font-size:16px; }
-    /* Responsive bin-row editor */
-    .bin-row {
-      display:grid;
-      grid-template-columns: minmax(0,1fr) 140px auto;
-      gap:8px; align-items:center;
+    .container{ max-width:960px; margin:0 auto; padding:0 12px; }
+    .header{ position:sticky; top:0; backdrop-filter:saturate(1.2) blur(6px); background:color-mix(in oklab, white 80%, transparent); border-bottom:1px solid var(--border, #e5e5e5); z-index:10; }
+    .nav{ display:flex; align-items:center; padding:8px 0; }
+    .view-tabs{ display:flex; gap:8px; justify-content:center; width:100%; }
+    .tab-btn[aria-selected="true"]{ border-color: var(--accent, #36c); color: var(--accent, #36c); }
+    .section-title{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .section-title h2{ margin:0; font-size:18px; }
+    .line{ height:1px; background:var(--border, #e5e5e5); flex:1; }
+    .grid{ display:grid; gap:8px; }
+    .cols-2{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .cols-3{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .card{ background:var(--card, #fff); border:1px solid var(--border, #e5e5e5); border-radius:12px; padding:var(--pad); }
+    .item{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:8px 0; }
+    .badge{ display:inline-block; padding:4px 8px; border:1px dashed var(--border, #ddd); border-radius:999px; font-size:12px; }
+    .button{ cursor:pointer; border:1px solid var(--border, #e5e5e5); background:transparent; border-radius:12px; padding:8px 12px; }
+    .button.ghost{ background:transparent; }
+    .button.secondary{ background:var(--accent-2, #eef4ff); border-color:var(--accent, #36c); }
+    .meta{ color:var(--muted, #666); font-size:12px; }
+    .brand{ display:none; }
+
+    /* bins editor row */
+    .bin-row{ display:grid; grid-template-columns:minmax(0,1fr) 140px auto; gap:8px; align-items:center; }
+    .bin-actions{ display:flex; gap:6px; }
+
+    /* compact input shell */
+    .fld{ width:100%; padding:12px; border:1px solid var(--border, #e5e5e5); border-radius:12px; background:var(--card, #fff); }
+
+    /* responsive helpers */
+    @media (max-width: 900px){
+      .cols-3{ grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
-    @media (max-width: 540px) {
-      .bin-row { grid-template-columns: 1fr; }
-      .bin-actions { display:flex; gap:6px; }
+    @media (max-width: 540px){
+      .cols-2, .cols-3{ grid-template-columns: 1fr; }
+      .bin-row{ grid-template-columns: 1fr; }
+      .section-title{ flex-direction:column; align-items:flex-start; }
     }
-    /* Add a simple grid helper that won’t overflow on narrow screens */
-    .grid.auto-fit-140 {
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap:8px;
+
+    /* profile layout tuning for narrow phones */
+    .profile-grid{ display:grid; grid-template-columns: repeat(3, minmax(140px,1fr)); gap:8px; }
+    .profile-grid .span-2{ grid-column: span 2; }
+    .profile-actions{ display:flex; align-items:flex-end; gap:8px; }
+    @media (max-width: 420px){
+      .profile-grid{ grid-template-columns: 1fr; }
+      .profile-grid .span-2{ grid-column:auto; }
+      .profile-actions{ flex-wrap:wrap; }
     }
-    /* Canvas card height hint */
+
+    /* chart */
     #overviewChart { width:100%; height:220px; display:block; }
   </style>
-
-  <link rel="apple-touch-icon" href="icon.png" />
 </head>
+
 <body>
-  <!-- Smaller sticky header -->
   <header class="header">
-    <div class="container nav" style="padding:8px 0;">
-      <div class="brand" style="font-size:16px;"></div>
-      <nav class="right tabs view-tabs" role="tablist" aria-label="Primary">
+    <div class="container nav">
+      <nav class="view-tabs" role="tablist" aria-label="Primary">
         <button id="tab-budget" class="button ghost tab-btn" aria-selected="true" onclick="UI.switchTab('budget')">Budget</button>
         <button id="tab-overview" class="button ghost tab-btn" aria-selected="false" onclick="UI.switchTab('overview')">Overview</button>
         <button id="tab-profile" class="button ghost tab-btn" aria-selected="false" onclick="UI.switchTab('profile')">Profile</button>
@@ -69,13 +92,12 @@
     </div>
   </header>
 
-  <main class="container" id="app" style="padding-bottom: 32px;">
+  <main class="container" id="app" style="padding-bottom:32px;">
 
-    <!-- ============ BUDGET VIEW ============ -->
+    <!-- BUDGET -->
     <section id="view-budget" role="tabpanel" aria-labelledby="tab-budget">
       <div class="section-title" style="margin-top:8px;">
-        <h2>Monthly Budget</h2>
-        <div class="line"></div>
+        <h2>Monthly Budget</h2><div class="line"></div>
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="button ghost" title="Prev month" onclick="Budget.shiftMonth(-1)">◀</button>
           <span class="badge" id="monthLabel">—</span>
@@ -83,58 +105,48 @@
         </div>
       </div>
 
-      <!-- Bin summaries (tap a card to add expense) -->
       <div class="grid cols-3" id="binsSummary"></div>
 
-      <!-- Expense list -->
-      <section class="card" style="padding:16px; margin-top:16px;">
+      <section class="card" style="margin-top:16px;">
         <div class="section-title" style="margin:0 0 8px;">
-          <h2>Expenses</h2>
-          <div class="line"></div>
+          <h2>Expenses</h2><div class="line"></div>
         </div>
         <div id="expenseList" class="grid"></div>
         <p id="noExpenses" class="badge" style="margin-top:8px; display:none;">No expenses yet this month.</p>
       </section>
     </section>
 
-    <!-- ============ OVERVIEW VIEW ============ -->
+    <!-- OVERVIEW -->
     <section id="view-overview" role="tabpanel" aria-labelledby="tab-overview" hidden>
       <div class="section-title" style="margin-top:8px;">
-        <h2>Overview</h2>
-        <div class="line"></div>
+        <h2>Overview</h2><div class="line"></div>
       </div>
 
-      <!-- Stats moved from Profile -->
-      <section class="card" style="padding:16px;">
+      <section class="card">
         <div id="overallStats" class="grid cols-3"></div>
       </section>
 
-      <!-- Simple bar chart: Income vs Spent per active month -->
-      <section class="card" style="padding:16px; margin-top:16px;">
+      <section class="card" style="margin-top:16px;">
         <div class="section-title" style="margin:0 0 8px;">
-          <h2>Income vs Spent</h2>
-          <div class="line"></div>
+          <h2>Income vs Spent</h2><div class="line"></div>
         </div>
         <canvas id="overviewChart"></canvas>
       </section>
     </section>
 
-    <!-- ============ PROFILE VIEW ============ -->
+    <!-- PROFILE -->
     <section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
-
-      <!-- Profile section moved to top -->
       <div class="section-title">
-        <h2>Profile</h2>
-        <div class="line"></div>
+        <h2>Profile</h2><div class="line"></div>
       </div>
 
-      <section class="card" style="padding:16px;">
-        <div class="grid auto-fit-140">
-          <div>
+      <section class="card">
+        <div class="profile-grid">
+          <div class="span-2">
             <label class="badge" for="stipend">Monthly Income</label>
-            <div class="grid" style="grid-template-columns: 1fr 120px; gap:8px;">
-              <input id="stipend" type="number" inputmode="decimal" step="0.01" placeholder="1000" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-              <select id="stipendCur" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);">
+            <div class="grid" style="grid-template-columns: 1fr 120px;">
+              <input id="stipend" type="number" inputmode="decimal" step="0.01" placeholder="1000" class="fld" />
+              <select id="stipendCur" class="fld">
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
               </select>
@@ -142,22 +154,20 @@
           </div>
           <div>
             <label class="badge" for="currency">Display currency</label>
-            <select id="currency" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);">
+            <select id="currency" class="fld">
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
             </select>
           </div>
           <div>
             <label class="badge" for="fx">EUR → USD rate</label>
-            <input id="fx" type="number" inputmode="decimal" step="0.0001" placeholder="1.08" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+            <input id="fx" type="number" inputmode="decimal" step="0.0001" placeholder="1.08" class="fld" />
           </div>
-        </div>
-        <div class="grid auto-fit-140" style="margin-top:12px;">
           <div>
             <label class="badge" for="startMonth">Starting month</label>
-            <input id="startMonth" type="month" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+            <input id="startMonth" type="month" class="fld" />
           </div>
-          <div style="display:flex; align-items:flex-end; gap:8px;">
+          <div class="profile-actions">
             <button class="button" onclick="Profile.save()">Save</button>
             <button class="button ghost" onclick="App.resetAll()">Reset All</button>
             <span id="saveNote" class="badge" style="border-style:dashed;"> </span>
@@ -166,53 +176,35 @@
       </section>
 
       <div class="section-title" style="margin-top:16px;">
-        <h2>Budget Bins</h2>
-        <div class="line"></div>
+        <h2>Budget Bins</h2><div class="line"></div>
       </div>
 
-      <section class="card" style="padding:16px;">
-        <!-- Bin list -->
-        <div id="binList" class="grid" style="gap:12px;">
-          <!-- Injected by Profile.renderBins() -->
-        </div>
+      <section class="card">
+        <div id="binList" class="grid" style="gap:12px;"></div>
 
-        <!-- Add new bin row -->
-        <div class="grid" style="margin-top:16px; grid-template-columns: 1fr 1fr auto; gap:8px;">
-          <input id="newBinName"
-                 type="text"
-                 placeholder="New bin (e.g., Rent)"
-                 style="font-size:16px; padding:12px; border:1px solid var(--border);
-                        border-radius:12px; background:var(--card); width:100%;" />
-          <input id="newBinAmt"
-                 type="number"
-                 inputmode="decimal"
-                 step="0.01"
-                 placeholder="Amount / month"
-                 style="font-size:16px; padding:12px; border:1px solid var(--border);
-                        border-radius:12px; background:var(--card); width:100%;" />
-          <button class="button secondary" style="font-size:16px; padding:12px 18px;"
-                  onclick="Profile.addBin()">Add</button>
+        <div class="grid" style="margin-top:16px; grid-template-columns: 1fr 1fr auto;">
+          <input id="newBinName" type="text" placeholder="New bin (e.g., Rent)" class="fld" />
+          <input id="newBinAmt" type="number" inputmode="decimal" step="0.01" placeholder="Amount / month" class="fld" />
+          <button class="button secondary" style="padding:12px 18px;" onclick="Profile.addBin()">Add</button>
         </div>
       </section>
     </section>
   </main>
 
-  <!-- ========== SIMPLE ADD EXPENSE DIALOG ========== -->
   <dialog id="addDialog" style="border:none; border-radius:16px; max-width:560px; width:92vw; padding:0;">
-    <form method="dialog" class="card" style="padding:16px; margin:0;">
+    <form method="dialog" class="card" style="margin:0;">
       <div class="section-title" style="margin:0 0 8px;">
-        <h2 id="dlgTitle">Add Expense</h2>
-        <div class="line"></div>
+        <h2 id="dlgTitle">Add Expense</h2><div class="line"></div>
         <button class="button ghost" value="cancel">Close</button>
       </div>
       <div class="grid cols-2">
         <div>
           <label class="badge">Name</label>
-          <input id="dlgName" type="text" placeholder="e.g., Groceries" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+          <input id="dlgName" type="text" placeholder="e.g., Groceries" class="fld" />
         </div>
         <div>
           <label class="badge">Amount (<span id="dlgCur">$</span>)</label>
-          <input id="dlgAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+          <input id="dlgAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" class="fld" />
         </div>
       </div>
       <div style="display:flex; gap:8px; margin-top:12px;">
@@ -222,434 +214,330 @@
     </form>
   </dialog>
 
-  <!-- ==================== APP SCRIPT ==================== -->
   <script>
-  const $ = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+    const $  = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-  // ---------- App State ----------
-  const App = {
-    key: 'nalcap_budget_v4_simple',
-    state: null,
-    defaultState(){
-      const now = new Date();
-      const ym = Util.fmtYM(now);
-      // Default everything to USD for the user, but store canonical EUR internally
-      const defaultFX = 1.08;
-      const defaultStipendUSD = 1000;
-      return {
-        settings: {
-          stipendEUR: defaultStipendUSD / defaultFX, // store as EUR
-          stipendInputCurrency: 'USD',               // how user prefers to edit stipend
-          currency: 'USD',                           // display currency default
-          fx: defaultFX,
-          startMonth: ym
-        },
-        bins: [
-          { id: Util.id(), name: 'Rent',       monthlyEUR: 500 },
-          { id: Util.id(), name: 'Groceries',  monthlyEUR: 200 },
-          { id: Util.id(), name: 'Transport',  monthlyEUR: 80  },
-        ],
-        // expenses: { 'YYYY-MM': [ {id, date, binId, name, amountEUR} ] }
-        expenses: { }
-      };
-    },
-    load(){
-      try {
-        const raw = localStorage.getItem(this.key);
-        this.state = raw ? JSON.parse(raw) : this.defaultState();
-      } catch {
-        this.state = this.defaultState();
+    const App = {
+      key: 'nalcap_budget_v4_simple',
+      state: null,
+      defaultState(){
+        const ym = Util.fmtYM(new Date());
+        const defaultFX = 1.08;
+        const defaultStipendUSD = 1000;
+        return {
+          settings: {
+            stipendEUR: defaultStipendUSD / defaultFX,
+            stipendInputCurrency: 'USD',
+            currency: 'USD',
+            fx: defaultFX,
+            startMonth: ym
+          },
+          bins: [
+            { id: Util.id(), name: 'Rent',       monthlyEUR: 500 },
+            { id: Util.id(), name: 'Groceries',  monthlyEUR: 200 },
+            { id: Util.id(), name: 'Transport',  monthlyEUR: 80  },
+          ],
+          expenses: {}
+        };
+      },
+      load(){
+        try {
+          const raw = localStorage.getItem(this.key);
+          this.state = raw ? JSON.parse(raw) : this.defaultState();
+        } catch { this.state = this.defaultState(); }
+      },
+      save(){ localStorage.setItem(this.key, JSON.stringify(this.state)); },
+      resetAll(){
+        if(!confirm('Reset all data?')) return;
+        localStorage.removeItem(this.key);
+        location.reload();
       }
-    },
-    save(){ localStorage.setItem(this.key, JSON.stringify(this.state)); },
-    resetAll(){ if(!confirm('Reset all data?')) return; localStorage.removeItem(this.key); location.reload(); }
-  };
+    };
 
-  // ---------- Utilities ----------
-  const Util = {
-    id: () => Math.random().toString(36).slice(2,9),
-    fmtYM: (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
-    labelYM(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y, m-1, 1).toLocaleString(undefined,{month:'long', year:'numeric'}); },
-    ensureMonth(ym){ const S=App.state; if(!S.expenses[ym]) S.expenses[ym]=[]; },
-    eurToDisp(eur){ const {currency,fx} = App.state.settings; return currency==='EUR'? eur : eur*fx; },
-    dispToEur(n){ const {currency,fx} = App.state.settings; return currency==='EUR'? n : n/fx; },
-    money(n){
-      const cur=App.state.settings.currency==='EUR'?'EUR':'USD';
-      return new Intl.NumberFormat(undefined,{style:'currency',currency:cur, maximumFractionDigits:2}).format(n);
-    },
-    // Sort YYYY-MM ascending
-    sortYM(a,b){ return a.localeCompare(b); }
-  };
+    const Util = {
+      id: () => Math.random().toString(36).slice(2,9),
+      fmtYM: (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+      labelYM(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y, m-1, 1).toLocaleString(undefined,{month:'long', year:'numeric'}); },
+      ensureMonth(ym){ const S=App.state; if(!S.expenses[ym]) S.expenses[ym]=[]; },
+      eurToDisp(eur){ const {currency,fx} = App.state.settings; return currency==='EUR'? eur : eur*fx; },
+      dispToEur(n){ const {currency,fx} = App.state.settings; return currency==='EUR'? n : n/fx; },
+      money(n){
+        const cur = App.state.settings.currency==='EUR' ? 'EUR' : 'USD';
+        return new Intl.NumberFormat(undefined,{style:'currency',currency:cur, maximumFractionDigits:2}).format(n);
+      },
+      sortYM(a,b){ return a.localeCompare(b); }
+    };
 
-  // ---------- Tabs & Rendering ----------
-  const UI = {
-    currentYM: null,
-    switchTab(name){
-      const budget   = $('#view-budget');
-      const overview = $('#view-overview');
-      const profile  = $('#view-profile');
-
-      const tb = $('#tab-budget');
-      const to = $('#tab-overview');
-      const tp = $('#tab-profile');
-
-      const isBudget = name==='budget';
-      const isOverview = name==='overview';
-      const isProfile = name==='profile';
-
-      budget.hidden   = !isBudget;
-      overview.hidden = !isOverview;
-      profile.hidden  = !isProfile;
-
-      tb.setAttribute('aria-selected', isBudget);
-      to.setAttribute('aria-selected', isOverview);
-      tp.setAttribute('aria-selected', isProfile);
-
-      if(isBudget) Budget.render();
-      else if(isOverview) Overview.render();
-      else Profile.render();
-    }
-  };
-
-  // ---------- Overview Logic ----------
-  const Overview = {
-    render(){
-      this.renderStats();
-      this.renderChart();
-    },
-    activeMonths(){
-      // Months with at least one expense entry
-      return Object.keys(App.state.expenses).filter(ym => (App.state.expenses[ym]||[]).length>0).sort(Util.sortYM);
-    },
-    renderStats(){
-      const host = $('#overallStats'); host.innerHTML='';
-      const totalBudgetEUR = App.state.bins.reduce((s,b)=>s+b.monthlyEUR,0);
-
-      // Sum all-time spent
-      let totalSpentEUR = 0;
-      Object.values(App.state.expenses).forEach(list => {
-        list.forEach(e => totalSpentEUR += e.amountEUR);
-      });
-
-      const months = this.activeMonths();
-      const totalMonths = months.length;
-
-      const stipendPerMonthEUR = App.state.settings.stipendEUR || 0;
-
-      // Income across active months ONLY
-      const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
-      const netEUR = totalIncomeEUR - totalSpentEUR;
-
-      const makeStat = (label,val) =>
-        `<div class="card" style="padding:16px;">
-           <div class="meta">${label}</div>
-           <div style="font-size:20px; font-weight:700;">${val}</div>
-         </div>`;
-
-      host.innerHTML = [
-        makeStat('Monthly Budget', Util.money(Util.eurToDisp(totalBudgetEUR))),
-        makeStat('Total Spent (all time)', Util.money(Util.eurToDisp(totalSpentEUR))),
-        makeStat('Active Months', totalMonths),
-        makeStat('Net Total', Util.money(Util.eurToDisp(netEUR)))
-      ].join('');
-    },
-    renderChart(){
-      const c = $('#overviewChart');
-      const dpr = window.devicePixelRatio || 1;
-      // Size canvas to its CSS pixel size * DPR for sharpness
-      const rect = c.getBoundingClientRect();
-      c.width  = Math.max(300, rect.width * dpr);
-      c.height = Math.max(180, rect.height * dpr);
-      const ctx = c.getContext('2d');
-      ctx.scale(dpr, dpr);
-
-      // Collect active months sorted, show up to last 6
-      const months = this.activeMonths();
-      const show = months.slice(-6);
-
-      // Data: income (flat stipend) and spent (sum), both in display currency
-      const stipendEUR = App.state.settings.stipendEUR || 0;
-      const incomeDisp = show.map(_ => Util.eurToDisp(stipendEUR));
-      const spentDisp = show.map(ym => {
-        const list = App.state.expenses[ym]||[];
-        const sumEUR = list.reduce((s,e)=>s+e.amountEUR,0);
-        return Util.eurToDisp(sumEUR);
-      });
-
-      // Axes
-      const padL = 36, padR = 12, padT = 20, padB = 28;
-      const W = rect.width, H = rect.height;
-      ctx.clearRect(0,0,W,H);
-      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#111';
-      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#ddd';
-
-      // Y scale
-      const maxVal = Math.max(1, ...incomeDisp, ...spentDisp);
-      const yMax = Math.ceil(maxVal / 10) * 10;
-      const plotW = W - padL - padR;
-      const plotH = H - padT - padB;
-      const y = v => padT + plotH * (1 - v / yMax);
-
-      // Grid line
-      ctx.beginPath();
-      ctx.moveTo(padL, y(0));
-      ctx.lineTo(W - padR, y(0));
-      ctx.stroke();
-
-      // X scale
-      const n = show.length || 1;
-      const groupW = plotW / n;
-      const barW = Math.min(26, (groupW - 12) / 2);
-
-      // Bars
-      for(let i=0;i<n;i++){
-        const gx = padL + i*groupW + (groupW - (2*barW + 6))/2;
-
-        // Income bar
-        const ih = plotH * (incomeDisp[i] / yMax);
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#cde';
-        ctx.fillRect(gx, y(incomeDisp[i]), barW, ih);
-
-        // Spent bar
-        const sx = gx + barW + 6;
-        const sh = plotH * (spentDisp[i] / yMax);
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#36c';
-        ctx.fillRect(sx, y(spentDisp[i]), barW, sh);
-
-        // X labels
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted') || '#666';
-        const lbl = new Date(show[i]+'-01').toLocaleString(undefined,{month:'short'});
-        ctx.textAlign = 'center';
-        ctx.fillText(lbl, padL + i*groupW + groupW/2, H - 10);
+    const UI = {
+      currentYM: null,
+      switchTab(name){
+        const views = {budget: '#view-budget', overview: '#view-overview', profile: '#view-profile'};
+        const tabs  = {budget: '#tab-budget', overview: '#tab-overview', profile: '#tab-profile'};
+        Object.keys(views).forEach(k => $(views[k]).hidden = (k!==name));
+        Object.keys(tabs).forEach(k => $(tabs[k]).setAttribute('aria-selected', String(k===name)));
+        if(name==='budget') Budget.render();
+        else if(name==='overview') Overview.render();
+        else Profile.render();
       }
+    };
 
-      // Legend
-      ctx.textAlign='left';
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#111';
-      ctx.fillText('Income', padL, 14);
-      ctx.fillText('Spent', padL+70, 14);
+    const Overview = {
+      render(){ this.renderStats(); this.renderChart(); },
+      activeMonths(){ return Object.keys(App.state.expenses).filter(ym => (App.state.expenses[ym]||[]).length>0).sort(Util.sortYM); },
+      renderStats(){
+        const host = $('#overallStats'); host.innerHTML='';
+        const totalBudgetEUR = App.state.bins.reduce((s,b)=>s+b.monthlyEUR,0);
+        let totalSpentEUR = 0;
+        Object.values(App.state.expenses).forEach(list => list.forEach(e => totalSpentEUR += e.amountEUR));
+        const months = this.activeMonths();
+        const totalMonths = months.length;
+        const stipendPerMonthEUR = App.state.settings.stipendEUR || 0;
+        const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
+        const netEUR = totalIncomeEUR - totalSpentEUR;
+        const makeStat = (label,val) => `<div class="card"><div class="meta">${label}</div><div style="font-size:20px; font-weight:700;">${val}</div></div>`;
+        host.innerHTML = [
+          makeStat('Monthly Budget', Util.money(Util.eurToDisp(totalBudgetEUR))),
+          makeStat('Total Spent (all time)', Util.money(Util.eurToDisp(totalSpentEUR))),
+          makeStat('Active Months', totalMonths),
+          makeStat('Net Total', Util.money(Util.eurToDisp(netEUR)))
+        ].join('');
+      },
+      renderChart(){
+        const c = $('#overviewChart');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = c.getBoundingClientRect();
+        c.width  = Math.max(300, rect.width * dpr);
+        c.height = Math.max(180, rect.height * dpr);
+        const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+        const months = this.activeMonths();
+        const show = months.slice(-6);
+        const stipendEUR = App.state.settings.stipendEUR || 0;
+        const incomeDisp = show.map(_ => Util.eurToDisp(stipendEUR));
+        const spentDisp = show.map(ym => Util.eurToDisp((App.state.expenses[ym]||[]).reduce((s,e)=>s+e.amountEUR,0)));
 
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#cde';
-      ctx.fillRect(padL-26, 6, 12, 8);
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#36c';
-      ctx.fillRect(padL+44, 6, 12, 8);
-    }
-  };
+        const padL=36, padR=12, padT=20, padB=28;
+        const W=rect.width, H=rect.height, plotW=W-padL-padR, plotH=H-padT-padB;
+        ctx.clearRect(0,0,W,H);
+        const cs = getComputedStyle(document.documentElement);
+        ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        ctx.fillStyle = cs.getPropertyValue('--text') || '#111';
+        ctx.strokeStyle = cs.getPropertyValue('--border') || '#ddd';
 
-  // ---------- Profile Logic ----------
-  const Profile = {
-    render(){
-      const S = App.state;
-      // Show stipend in user's chosen stipend input currency
-      const scur = S.settings.stipendInputCurrency || 'USD';
-      $('#stipendCur').value = scur;
+        const maxVal = Math.max(1, ...incomeDisp, ...spentDisp);
+        const yMax = Math.ceil(maxVal / 10) * 10;
+        const y = v => padT + plotH * (1 - v / yMax);
 
-      const stipendValue =
-        scur === 'EUR' ? (S.settings.stipendEUR || 0)
-                       : (S.settings.stipendEUR || 0) * (S.settings.fx || 1.08);
-      $('#stipend').value = (stipendValue || 0).toFixed(2);
+        ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(W - padR, y(0)); ctx.stroke();
 
-      $('#currency').value = S.settings.currency;
-      $('#fx').value = S.settings.fx;
-      $('#startMonth').value = S.settings.startMonth;
+        const n = show.length || 1;
+        const groupW = plotW / n;
+        const barW = Math.min(26, (groupW - 12) / 2);
 
-      this.renderBins();
-    },
-    save(){
-      const S = App.state;
+        for(let i=0;i<n;i++){
+          const gx = padL + i*groupW + (groupW - (2*barW + 6))/2;
 
-      const scurSel = $('#stipendCur').value;
-      const stipendRaw = parseFloat($('#stipend').value || '0');
-      const fx = parseFloat($('#fx').value || '1.08');
+          const ih = plotH * (incomeDisp[i] / yMax);
+          ctx.fillStyle = cs.getPropertyValue('--accent-2') || '#cde';
+          ctx.fillRect(gx, y(incomeDisp[i]), barW, ih);
 
-      // Convert to canonical EUR for storage
-      S.settings.stipendEUR =
-        scurSel === 'EUR' ? stipendRaw : (stipendRaw / fx);
+          const sx = gx + barW + 6;
+          const sh = plotH * (spentDisp[i] / yMax);
+          ctx.fillStyle = cs.getPropertyValue('--accent') || '#36c';
+          ctx.fillRect(sx, y(spentDisp[i]), barW, sh);
 
-      S.settings.stipendInputCurrency = scurSel;
-      S.settings.currency  = $('#currency').value;
-      S.settings.fx        = fx;
-      S.settings.startMonth= $('#startMonth').value || Util.fmtYM(new Date());
+          ctx.fillStyle = cs.getPropertyValue('--muted') || '#666';
+          const lbl = new Date(show[i]+'-01').toLocaleString(undefined,{month:'short'});
+          ctx.textAlign = 'center';
+          ctx.fillText(lbl, padL + i*groupW + groupW/2, H - 10);
+        }
 
-      App.save();
-      $('#saveNote').textContent = 'Saved ✓'; setTimeout(()=>$('#saveNote').textContent=' ', 1200);
-      Budget.render();
-      Overview.render();
-      this.renderBins();
-    },
-    renderBins(){
-      const host = $('#binList'); host.innerHTML='';
-      App.state.bins.forEach((b, idx)=>{
-        const card = document.createElement('div'); card.className='card item';
-        card.innerHTML = `
-          <div style="flex:1">
-            <div class="bin-row">
-              <input data-k="name" data-id="${b.id}" type="text" value="${b.name}"
-                     style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-              <input data-k="amount" data-id="${b.id}" type="number" inputmode="decimal" step="0.01" value="${b.monthlyEUR}"
-                     style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-              <div class="bin-actions">
-                <button class="button ghost" onclick="Profile.moveBin('${b.id}', -1)" ${idx===0?'disabled':''}>▲</button>
-                <button class="button ghost" onclick="Profile.moveBin('${b.id}', 1)" ${idx===App.state.bins.length-1?'disabled':''}>▼</button>
-                <button class="button ghost" onclick="Profile.delBin('${b.id}')">Delete</button>
+        ctx.textAlign='left';
+        ctx.fillStyle = cs.getPropertyValue('--text') || '#111';
+        ctx.fillText('Income', padL, 14);
+        ctx.fillText('Spent', padL+70, 14);
+        ctx.fillStyle = cs.getPropertyValue('--accent-2') || '#cde'; ctx.fillRect(padL-26, 6, 12, 8);
+        ctx.fillStyle = cs.getPropertyValue('--accent') || '#36c';  ctx.fillRect(padL+44, 6, 12, 8);
+      }
+    };
+
+    const Profile = {
+      render(){
+        const S = App.state;
+        const scur = S.settings.stipendInputCurrency || 'USD';
+        $('#stipendCur').value = scur;
+        const stipendValue = scur === 'EUR' ? (S.settings.stipendEUR || 0) : (S.settings.stipendEUR || 0) * (S.settings.fx || 1.08);
+        $('#stipend').value = (stipendValue || 0).toFixed(2);
+        $('#currency').value = S.settings.currency;
+        $('#fx').value = S.settings.fx;
+        $('#startMonth').value = S.settings.startMonth;
+        this.renderBins();
+      },
+      save(){
+        const S = App.state;
+        const scurSel = $('#stipendCur').value;
+        const stipendRaw = parseFloat($('#stipend').value || '0');
+        const fx = parseFloat($('#fx').value || '1.08');
+        S.settings.stipendEUR = scurSel === 'EUR' ? stipendRaw : (stipendRaw / fx);
+        S.settings.stipendInputCurrency = scurSel;
+        S.settings.currency  = $('#currency').value;
+        S.settings.fx        = fx;
+        S.settings.startMonth= $('#startMonth').value || Util.fmtYM(new Date());
+        App.save();
+        $('#saveNote').textContent = 'Saved ✓'; setTimeout(()=>$('#saveNote').textContent=' ', 1200);
+        Budget.render(); Overview.render(); this.renderBins();
+      },
+      renderBins(){
+        const host = $('#binList'); host.innerHTML='';
+        const bins = App.state.bins;
+        bins.forEach((b, idx)=>{
+          const card = document.createElement('div'); card.className='card item'; card.style.padding='0';
+          card.innerHTML = `
+            <div style="flex:1; padding:12px;">
+              <div class="bin-row">
+                <input data-k="name" data-id="${b.id}" type="text" value="${b.name}" class="fld" />
+                <input data-k="amount" data-id="${b.id}" type="number" inputmode="decimal" step="0.01" value="${b.monthlyEUR}" class="fld" />
+                <div class="bin-actions">
+                  <button class="button ghost" onclick="Profile.moveBin('${b.id}', -1)" ${idx===0?'disabled':''}>▲</button>
+                  <button class="button ghost" onclick="Profile.moveBin('${b.id}', 1)" ${idx===bins.length-1?'disabled':''}>▼</button>
+                  <button class="button ghost" onclick="Profile.delBin('${b.id}')">Delete</button>
+                </div>
               </div>
-            </div>
-          </div>`;
-        host.appendChild(card);
-      });
-      $$('#binList input[data-k]').forEach(inp=>{
-        inp.addEventListener('change', (e)=>{
-          const id = e.target.dataset.id; const k = e.target.dataset.k;
-          const bin = App.state.bins.find(x=>x.id===id); if(!bin) return;
-          if(k==='name') bin.name=e.target.value;
-          else bin.monthlyEUR=parseFloat(e.target.value||'0');
-          App.save(); Budget.render(); Overview.render();
+            </div>`;
+          host.appendChild(card);
         });
-      });
-    },
-    moveBin(id, dir){
-      const a = App.state.bins;
-      const i = a.findIndex(b=>b.id===id);
-      if(i<0) return;
-      const j = i + dir;
-      if(j<0 || j>=a.length) return;
-      const [item] = a.splice(i,1);
-      a.splice(j,0,item);
-      App.save(); this.renderBins(); Budget.render();
-    },
-    addBin(){
-      const name = $('#newBinName').value.trim();
-      const amt = parseFloat($('#newBinAmt').value||'0');
-      if(!name) return alert('Enter a bin name');
-      App.state.bins.push({id:Util.id(), name, monthlyEUR:amt});
-      $('#newBinName').value=''; $('#newBinAmt').value='';
-      App.save(); this.renderBins(); Budget.render(); Overview.render();
-    },
-    delBin(id){
-      if(!confirm('Delete this bin?')) return;
-      App.state.bins = App.state.bins.filter(b=>b.id!==id);
-      App.save(); this.renderBins(); Budget.render(); Overview.render();
-    }
-  };
+        $$('#binList input[data-k]').forEach(inp=>{
+          inp.addEventListener('change', (e)=>{
+            const id = e.target.dataset.id; const k = e.target.dataset.k;
+            const bin = App.state.bins.find(x=>x.id===id); if(!bin) return;
+            if(k==='name') bin.name=e.target.value; else bin.monthlyEUR=parseFloat(e.target.value||'0');
+            App.save(); Budget.render(); Overview.render();
+          });
+        });
+      },
+      moveBin(id, dir){
+        const a = App.state.bins;
+        const i = a.findIndex(b=>b.id===id); if(i<0) return;
+        const j = i + dir; if(j<0 || j>=a.length) return;
+        const [item] = a.splice(i,1); a.splice(j,0,item);
+        App.save(); this.renderBins(); Budget.render();
+      },
+      addBin(){
+        const name = $('#newBinName').value.trim();
+        const amt = parseFloat($('#newBinAmt').value||'0');
+        if(!name) return alert('Enter a bin name');
+        App.state.bins.push({id:Util.id(), name, monthlyEUR:amt});
+        $('#newBinName').value=''; $('#newBinAmt').value='';
+        App.save(); this.renderBins(); Budget.render(); Overview.render();
+      },
+      delBin(id){
+        if(!confirm('Delete this bin?')) return;
+        App.state.bins = App.state.bins.filter(b=>b.id!==id);
+        App.save(); this.renderBins(); Budget.render(); Overview.render();
+      }
+    };
 
-  // ---------- Budget Logic ----------
-  const Budget = {
-    pendingBinId: null,
-    shiftMonth(delta){
-      const [y,m] = UI.currentYM.split('-').map(Number);
-      const d = new Date(y, m-1+delta, 1);
-      UI.currentYM = Util.fmtYM(d);
-      this.render();
-    },
-    openDialog(binId){
-      this.pendingBinId = binId;
-      $('#dlgTitle').textContent = 'Add to ' + (App.state.bins.find(b=>b.id===binId)?.name || 'Bin');
-      $('#dlgCur').textContent = App.state.settings.currency==='EUR' ? '€' : '$';
-      $('#dlgName').value = '';
-      $('#dlgAmt').value = '';
-      $('#addDialog').showModal();
-      setTimeout(()=>$('#dlgName').focus(), 50);
-    },
-    saveDialog(ev){
-      ev.preventDefault();
-      const name = $('#dlgName').value.trim();
-      const amtDisp = parseFloat($('#dlgAmt').value||'0');
-      if(!name || !(amtDisp>0)) { $('#addDialog').close(); return; }
-      Util.ensureMonth(UI.currentYM);
-      const amountEUR = Util.dispToEur(amtDisp);
-      const today = new Date().toISOString().slice(0,10);
-      App.state.expenses[UI.currentYM].push({id:Util.id(), date:today, binId:this.pendingBinId, name, amountEUR});
-      App.save(); $('#addDialog').close(); this.render(); Overview.render();
-    },
-    editExpense(expId){
-      const arr = App.state.expenses[UI.currentYM]; const i = arr.findIndex(e=>e.id===expId); if(i<0) return;
-      const e = arr[i];
-      const newName = prompt('Name', e.name||''); if(newName===null) return; e.name=newName;
-      const newAmt  = prompt('Amount ('+(App.state.settings.currency==='EUR'?'€':'$')+')', Util.eurToDisp(e.amountEUR).toFixed(2)); if(newAmt===null) return; e.amountEUR = Util.dispToEur(parseFloat(newAmt||'0'));
-      App.save(); this.render(); Overview.render();
-    },
-    delExpense(expId){
-      if(!confirm('Delete expense?')) return;
-      const arr=App.state.expenses[UI.currentYM];
-      const i=arr.findIndex(e=>e.id===expId);
-      if(i>=0){ arr.splice(i,1); App.save(); this.render(); Overview.render(); }
-    },
-    render(){
-      const S = App.state;
-      if(!UI.currentYM) UI.currentYM = S.settings.startMonth || Util.fmtYM(new Date());
-      Util.ensureMonth(UI.currentYM);
-      $('#monthLabel').textContent = Util.labelYM(UI.currentYM);
+    const Budget = {
+      pendingBinId: null,
+      shiftMonth(delta){
+        const [y,m] = UI.currentYM.split('-').map(Number);
+        const d = new Date(y, m-1+delta, 1);
+        UI.currentYM = Util.fmtYM(d);
+        this.render();
+      },
+      openDialog(binId){
+        this.pendingBinId = binId;
+        $('#dlgTitle').textContent = 'Add to ' + (App.state.bins.find(b=>b.id===binId)?.name || 'Bin');
+        $('#dlgCur').textContent = App.state.settings.currency==='EUR' ? '€' : '$';
+        $('#dlgName').value = '';
+        $('#dlgAmt').value = '';
+        $('#addDialog').showModal();
+        setTimeout(()=>$('#dlgName').focus(), 50);
+      },
+      saveDialog(ev){
+        ev.preventDefault();
+        const name = $('#dlgName').value.trim();
+        const amtDisp = parseFloat($('#dlgAmt').value||'0');
+        if(!name || !(amtDisp>0)) { $('#addDialog').close(); return; }
+        Util.ensureMonth(UI.currentYM);
+        const amountEUR = Util.dispToEur(amtDisp);
+        const today = new Date().toISOString().slice(0,10);
+        App.state.expenses[UI.currentYM].push({id:Util.id(), date:today, binId:this.pendingBinId, name, amountEUR});
+        App.save(); $('#addDialog').close(); this.render(); Overview.render();
+      },
+      editExpense(expId){
+        const arr = App.state.expenses[UI.currentYM]; const i = arr.findIndex(e=>e.id===expId); if(i<0) return;
+        const e = arr[i];
+        const newName = prompt('Name', e.name||''); if(newName===null) return; e.name=newName;
+        const newAmt  = prompt('Amount ('+(App.state.settings.currency==='EUR'?'€':'$')+')', Util.eurToDisp(e.amountEUR).toFixed(2)); if(newAmt===null) return; e.amountEUR = Util.dispToEur(parseFloat(newAmt||'0'));
+        App.save(); this.render(); Overview.render();
+      },
+      delExpense(expId){
+        if(!confirm('Delete expense?')) return;
+        const arr=App.state.expenses[UI.currentYM];
+        const i=arr.findIndex(e=>e.id===expId);
+        if(i>=0){ arr.splice(i,1); App.save(); this.render(); Overview.render(); }
+      },
+      render(){
+        const S = App.state;
+        if(!UI.currentYM) UI.currentYM = S.settings.startMonth || Util.fmtYM(new Date());
+        Util.ensureMonth(UI.currentYM);
+        $('#monthLabel').textContent = Util.labelYM(UI.currentYM);
 
-      // Bin cards
-      const totals = {};
-      S.bins.forEach(b => totals[b.id] = 0);
-      App.state.expenses[UI.currentYM].forEach(e => {
-        totals[e.binId] = (totals[e.binId] || 0) + e.amountEUR;
-      });
-      const host = $('#binsSummary');
-      host.innerHTML = '';
+        const totals = Object.fromEntries(S.bins.map(b=>[b.id,0]));
+        App.state.expenses[UI.currentYM].forEach(e => totals[e.binId] = (totals[e.binId] || 0) + e.amountEUR);
 
-      S.bins.forEach(b => {
-        const spent = totals[b.id] || 0;
-        const budget = b.monthlyEUR || 0;
-        const rem = budget - spent;
-        const pct = Math.min(100, Math.max(0, budget > 0 ? (spent / budget) * 100 : 0));
-        const bar = `
-          <div style="height:10px; background:var(--accent-2); border-radius:999px; overflow:hidden;">
-            <div style="height:100%; width:${pct}%; background:var(--accent);"></div>
-          </div>`;
-        const fraction = `${Util.money(Util.eurToDisp(spent))} / ${Util.money(Util.eurToDisp(budget))} spent`;
-        const over = rem < 0;
+        const host = $('#binsSummary'); host.innerHTML = '';
+        S.bins.forEach(b => {
+          const spent = totals[b.id] || 0;
+          const budget = b.monthlyEUR || 0;
+          const pct = Math.min(100, Math.max(0, budget > 0 ? (spent / budget) * 100 : 0));
+          const over = (budget - spent) < 0;
 
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.style.padding = '14px';
-        card.style.cursor = 'pointer';
-        card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', 'Add expense to ' + b.name);
-        card.onclick = () => Budget.openDialog(b.id);
+          const card = document.createElement('div');
+          card.className = 'card'; card.style.padding='14px'; card.style.cursor='pointer';
+          card.setAttribute('role','button'); card.setAttribute('aria-label','Add expense to '+b.name);
+          card.onclick = () => Budget.openDialog(b.id);
 
-        card.innerHTML = `
-          <div class="item" style="padding:0; gap:10px;">
-            <div style="flex:1">
+          card.innerHTML = `
+            <div class="item" style="padding:0; gap:10px;">
+              <div style="flex:1">
                 <h3 style="margin:0 0 6px;">${b.name}</h3>
-                ${bar}
+                <div style="height:10px; background:var(--accent-2, #cde); border-radius:999px; overflow:hidden;">
+                  <div style="height:100%; width:${pct}%; background:var(--accent, #36c);"></div>
+                </div>
                 <div class="meta" style="display:flex; gap:8px; margin-top:6px;">
                   <span class="badge" style="border-style:${over ? 'solid' : 'dashed'}; ${over ? 'color:#b00020;' : ''}">
-                    ${fraction}
+                    ${Util.money(Util.eurToDisp(spent))} / ${Util.money(Util.eurToDisp(budget))} spent
                   </span>
                 </div>
+              </div>
+            </div>`;
+          host.appendChild(card);
+        });
+
+        const list = $('#expenseList'); list.innerHTML='';
+        const items = App.state.expenses[UI.currentYM];
+        $('#noExpenses').style.display = items.length? 'none' : 'block';
+        items.slice().reverse().forEach(e=>{
+          const bin = S.bins.find(b=>b.id===e.binId);
+          const row = document.createElement('div'); row.className='card item';
+          row.innerHTML = `
+            <div style="flex:1">
+              <h3>${e.name||'(untitled)'}</h3>
+              <div class="meta">${new Date(e.date).toLocaleDateString()} · ${bin?bin.name:'(bin deleted)'}</div>
             </div>
-          </div>`;
-        host.appendChild(card);
-      });
+            <div style="text-align:right">
+              <div style="font-weight:700">${Util.money(Util.eurToDisp(e.amountEUR))}</div>
+              <div class="meta"><a href="#" onclick="Budget.editExpense('${e.id}'); return false;">Edit</a> · <a href="#" onclick="Budget.delExpense('${e.id}'); return false;">Delete</a></div>
+            </div>`;
+          list.appendChild(row);
+        });
+      }
+    };
 
-      // Expenses
-      const list = $('#expenseList'); list.innerHTML='';
-      const items = App.state.expenses[UI.currentYM];
-      $('#noExpenses').style.display = items.length? 'none' : 'block';
-      items.slice().reverse().forEach(e=>{
-        const bin = S.bins.find(b=>b.id===e.binId);
-        const row = document.createElement('div'); row.className='card item';
-        row.innerHTML = `
-          <div style="flex:1">
-            <h3>${e.name||'(untitled)'}</h3>
-            <div class="meta">${new Date(e.date).toLocaleDateString()} · ${bin?bin.name:'(bin deleted)'}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-weight:700">${Util.money(Util.eurToDisp(e.amountEUR))}</div>
-            <div class="meta"><a href="#" onclick="Budget.editExpense('${e.id}'); return false;">Edit</a> · <a href="#" onclick="Budget.delExpense('${e.id}'); return false;">Delete</a></div>
-          </div>`;
-        list.appendChild(row);
-      });
-    }
-  };
-
-  // ---------- Init ----------
-  App.load();
-  UI.switchTab('budget');
+    App.load();
+    UI.switchTab('budget');
   </script>
 </body>
 </html>
