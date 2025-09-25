@@ -2,24 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- Keep iOS-friendly viewport; avoid weird zoom by ensuring inputs >=16px font-size -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>$imple Budget Sheet</title>
 
-  <!-- Use your provided CSS as-is -->
+  <!-- Your stylesheet -->
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- iOS Add-to-Home-Screen touch-icon (optional) -->
+  <!-- Small inline fixes for mobile form layout & iOS keyboard zoom -->
+  <style>
+    /* Prevent iOS auto-zoom: keep form controls at 16px+ */
+    input, select, textarea, button { font-size:16px; }
+    /* Responsive bin-row editor */
+    .bin-row {
+      display:grid;
+      grid-template-columns: minmax(0,1fr) 140px auto;
+      gap:8px; align-items:center;
+    }
+    @media (max-width: 540px) {
+      .bin-row { grid-template-columns: 1fr; }
+      .bin-actions { display:flex; gap:6px; }
+    }
+    /* Add a simple grid helper that won’t overflow on narrow screens */
+    .grid.auto-fit-140 {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap:8px;
+    }
+    /* Canvas card height hint */
+    #overviewChart { width:100%; height:220px; display:block; }
+  </style>
+
   <link rel="apple-touch-icon" href="icon.png" />
 </head>
 <body>
   <!-- Smaller sticky header -->
   <header class="header">
-    <div class="container nav" style="padding:8px 0;"> <!-- reduced from 14px -->
+    <div class="container nav" style="padding:8px 0;">
       <div class="brand" style="font-size:16px;"></div>
       <nav class="right tabs view-tabs" role="tablist" aria-label="Primary">
         <button id="tab-budget" class="button ghost tab-btn" aria-selected="true" onclick="UI.switchTab('budget')">Budget</button>
+        <button id="tab-overview" class="button ghost tab-btn" aria-selected="false" onclick="UI.switchTab('overview')">Overview</button>
         <button id="tab-profile" class="button ghost tab-btn" aria-selected="false" onclick="UI.switchTab('profile')">Profile</button>
       </nav>
     </div>
@@ -53,27 +78,85 @@
       </section>
     </section>
 
+    <!-- ============ OVERVIEW VIEW ============ -->
+    <section id="view-overview" role="tabpanel" aria-labelledby="tab-overview" hidden>
+      <div class="section-title" style="margin-top:8px;">
+        <h2>Overview</h2>
+        <div class="line"></div>
+      </div>
+
+      <!-- Stats moved from Profile -->
+      <section class="card" style="padding:16px;">
+        <div id="overallStats" class="grid cols-3"></div>
+      </section>
+
+      <!-- Simple bar chart: Income vs Spent per active month -->
+      <section class="card" style="padding:16px; margin-top:16px;">
+        <div class="section-title" style="margin:0 0 8px;">
+          <h2>Income vs Spent</h2>
+          <div class="line"></div>
+        </div>
+        <canvas id="overviewChart"></canvas>
+      </section>
+    </section>
+
     <!-- ============ PROFILE VIEW ============ -->
     <section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
-        <div class="section-title">
-            <h2>Overall Stats</h2>
-            <div class="line"></div>
-          </div>
-          <section class="card" style="padding:16px;">
-            <div id="overallStats" class="grid cols-3"></div>
-          </section>
 
+      <!-- Profile section moved to top -->
       <div class="section-title">
+        <h2>Profile</h2>
+        <div class="line"></div>
+      </div>
+
+      <section class="card" style="padding:16px;">
+        <div class="grid auto-fit-140">
+          <div>
+            <label class="badge" for="stipend">Monthly Income</label>
+            <div class="grid" style="grid-template-columns: 1fr 120px; gap:8px;">
+              <input id="stipend" type="number" inputmode="decimal" step="0.01" placeholder="1000" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+              <select id="stipendCur" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="badge" for="currency">Display currency</label>
+            <select id="currency" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);">
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </div>
+          <div>
+            <label class="badge" for="fx">EUR → USD rate</label>
+            <input id="fx" type="number" inputmode="decimal" step="0.0001" placeholder="1.08" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+          </div>
+        </div>
+        <div class="grid auto-fit-140" style="margin-top:12px;">
+          <div>
+            <label class="badge" for="startMonth">Starting month</label>
+            <input id="startMonth" type="month" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+          </div>
+          <div style="display:flex; align-items:flex-end; gap:8px;">
+            <button class="button" onclick="Profile.save()">Save</button>
+            <button class="button ghost" onclick="App.resetAll()">Reset All</button>
+            <span id="saveNote" class="badge" style="border-style:dashed;"> </span>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-title" style="margin-top:16px;">
         <h2>Budget Bins</h2>
         <div class="line"></div>
       </div>
-      
+
       <section class="card" style="padding:16px;">
         <!-- Bin list -->
         <div id="binList" class="grid" style="gap:12px;">
-          <!-- Each bin will be injected here by Profile.renderBins() -->
+          <!-- Injected by Profile.renderBins() -->
         </div>
-      
+
         <!-- Add new bin row -->
         <div class="grid" style="margin-top:16px; grid-template-columns: 1fr 1fr auto; gap:8px;">
           <input id="newBinName"
@@ -85,52 +168,11 @@
                  type="number"
                  inputmode="decimal"
                  step="0.01"
-                 placeholder="Amount / month (EUR)"
+                 placeholder="Amount / month"
                  style="font-size:16px; padding:12px; border:1px solid var(--border);
                         border-radius:12px; background:var(--card); width:100%;" />
           <button class="button secondary" style="font-size:16px; padding:12px 18px;"
                   onclick="Profile.addBin()">Add</button>
-        </div>
-      
-        <p class="badge" style="margin-top:12px; font-size:13px;">
-          Bins are stored in EUR; display uses your chosen currency and FX.
-        </p>
-      </section>
-      
-
-      <div class="section-title">
-        <h2>Profile</h2>
-        <div class="line"></div>
-      </div>
-
-      <section class="card" style="padding:16px;">
-        <div class="grid cols-3">
-          <div>
-            <label class="badge" for="stipend">Monthly Income (EUR)</label>
-            <input id="stipend" type="number" inputmode="decimal" step="0.01" placeholder="1000" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          </div>
-          <div>
-            <label class="badge" for="currency">Display currency</label>
-            <select id="currency" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);">
-              <option value="EUR">EUR (€)</option>
-              <option value="USD">USD ($)</option>
-            </select>
-          </div>
-          <div>
-            <label class="badge" for="fx">EUR → USD rate</label>
-            <input id="fx" type="number" inputmode="decimal" step="0.0001" placeholder="1.08" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          </div>
-        </div>
-        <div class="grid cols-2" style="margin-top:12px;">
-          <div>
-            <label class="badge" for="startMonth">Starting month</label>
-            <input id="startMonth" type="month" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          </div>
-          <div style="display:flex; align-items:flex-end; gap:8px;">
-            <button class="button" onclick="Profile.save()">Save</button>
-            <button class="button ghost" onclick="App.resetAll()">Reset All</button>
-            <span id="saveNote" class="badge" style="border-style:dashed;"> </span>
-          </div>
         </div>
       </section>
     </section>
@@ -147,11 +189,11 @@
       <div class="grid cols-2">
         <div>
           <label class="badge">Name</label>
-          <input id="dlgName" type="text" placeholder="e.g., Groceries" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+          <input id="dlgName" type="text" placeholder="e.g., Groceries" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
         </div>
         <div>
-          <label class="badge">Amount (<span id="dlgCur">€</span>)</label>
-          <input id="dlgAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+          <label class="badge">Amount (<span id="dlgCur">$</span>)</label>
+          <input id="dlgAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
         </div>
       </div>
       <div style="display:flex; gap:8px; margin-top:12px;">
@@ -168,24 +210,38 @@
 
   // ---------- App State ----------
   const App = {
-    key: 'nalcap_budget_v3_simple',
+    key: 'nalcap_budget_v4_simple',
     state: null,
     defaultState(){
       const now = new Date();
       const ym = Util.fmtYM(now);
+      // Default everything to USD for the user, but store canonical EUR internally
+      const defaultFX = 1.08;
+      const defaultStipendUSD = 1000;
       return {
-        settings: { stipendEUR: 1000, currency: 'EUR', fx: 1.08, startMonth: ym },
+        settings: {
+          stipendEUR: defaultStipendUSD / defaultFX, // store as EUR
+          stipendInputCurrency: 'USD',               // how user prefers to edit stipend
+          currency: 'USD',                           // display currency default
+          fx: defaultFX,
+          startMonth: ym
+        },
         bins: [
-          { id: Util.id(), name: 'Rent', monthlyEUR: 500 },
-          { id: Util.id(), name: 'Groceries', monthlyEUR: 200 },
-          { id: Util.id(), name: 'Transport', monthlyEUR: 80 },
+          { id: Util.id(), name: 'Rent',       monthlyEUR: 500 },
+          { id: Util.id(), name: 'Groceries',  monthlyEUR: 200 },
+          { id: Util.id(), name: 'Transport',  monthlyEUR: 80  },
         ],
-        expenses: { } // { 'YYYY-MM': [ {id, date, binId, name, amountEUR} ] }
+        // expenses: { 'YYYY-MM': [ {id, date, binId, name, amountEUR} ] }
+        expenses: { }
       };
     },
     load(){
-      try { const raw = localStorage.getItem(this.key); this.state = raw ? JSON.parse(raw) : this.defaultState(); }
-      catch { this.state = this.defaultState(); }
+      try {
+        const raw = localStorage.getItem(this.key);
+        this.state = raw ? JSON.parse(raw) : this.defaultState();
+      } catch {
+        this.state = this.defaultState();
+      }
     },
     save(){ localStorage.setItem(this.key, JSON.stringify(this.state)); },
     resetAll(){ if(!confirm('Reset all data?')) return; localStorage.removeItem(this.key); location.reload(); }
@@ -199,21 +255,167 @@
     ensureMonth(ym){ const S=App.state; if(!S.expenses[ym]) S.expenses[ym]=[]; },
     eurToDisp(eur){ const {currency,fx} = App.state.settings; return currency==='EUR'? eur : eur*fx; },
     dispToEur(n){ const {currency,fx} = App.state.settings; return currency==='EUR'? n : n/fx; },
-    money(n){ const cur=App.state.settings.currency==='EUR'?'EUR':'USD'; return new Intl.NumberFormat(undefined,{style:'currency',currency:cur, maximumFractionDigits:2}).format(n); },
+    money(n){
+      const cur=App.state.settings.currency==='EUR'?'EUR':'USD';
+      return new Intl.NumberFormat(undefined,{style:'currency',currency:cur, maximumFractionDigits:2}).format(n);
+    },
+    // Sort YYYY-MM ascending
+    sortYM(a,b){ return a.localeCompare(b); }
   };
 
   // ---------- Tabs & Rendering ----------
   const UI = {
     currentYM: null,
     switchTab(name){
-      const budget = $('#view-budget');
-      const profile = $('#view-profile');
+      const budget   = $('#view-budget');
+      const overview = $('#view-overview');
+      const profile  = $('#view-profile');
+
       const tb = $('#tab-budget');
+      const to = $('#tab-overview');
       const tp = $('#tab-profile');
+
       const isBudget = name==='budget';
-      budget.hidden = !isBudget; profile.hidden = isBudget;
-      tb.setAttribute('aria-selected', isBudget); tp.setAttribute('aria-selected', !isBudget);
-      if(isBudget) Budget.render(); else Profile.render();
+      const isOverview = name==='overview';
+      const isProfile = name==='profile';
+
+      budget.hidden   = !isBudget;
+      overview.hidden = !isOverview;
+      profile.hidden  = !isProfile;
+
+      tb.setAttribute('aria-selected', isBudget);
+      to.setAttribute('aria-selected', isOverview);
+      tp.setAttribute('aria-selected', isProfile);
+
+      if(isBudget) Budget.render();
+      else if(isOverview) Overview.render();
+      else Profile.render();
+    }
+  };
+
+  // ---------- Overview Logic ----------
+  const Overview = {
+    render(){
+      this.renderStats();
+      this.renderChart();
+    },
+    activeMonths(){
+      // Months with at least one expense entry
+      return Object.keys(App.state.expenses).filter(ym => (App.state.expenses[ym]||[]).length>0).sort(Util.sortYM);
+    },
+    renderStats(){
+      const host = $('#overallStats'); host.innerHTML='';
+      const totalBudgetEUR = App.state.bins.reduce((s,b)=>s+b.monthlyEUR,0);
+
+      // Sum all-time spent
+      let totalSpentEUR = 0;
+      Object.values(App.state.expenses).forEach(list => {
+        list.forEach(e => totalSpentEUR += e.amountEUR);
+      });
+
+      const months = this.activeMonths();
+      const totalMonths = months.length;
+
+      const stipendPerMonthEUR = App.state.settings.stipendEUR || 0;
+
+      // Income across active months ONLY
+      const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
+      const netEUR = totalIncomeEUR - totalSpentEUR;
+
+      const makeStat = (label,val) =>
+        `<div class="card" style="padding:16px;">
+           <div class="meta">${label}</div>
+           <div style="font-size:20px; font-weight:700;">${val}</div>
+         </div>`;
+
+      host.innerHTML = [
+        makeStat('Monthly Budget', Util.money(Util.eurToDisp(totalBudgetEUR))),
+        makeStat('Total Spent (all time)', Util.money(Util.eurToDisp(totalSpentEUR))),
+        makeStat('Active Months', totalMonths),
+        makeStat('Net Total', Util.money(Util.eurToDisp(netEUR)))
+      ].join('');
+    },
+    renderChart(){
+      const c = $('#overviewChart');
+      const dpr = window.devicePixelRatio || 1;
+      // Size canvas to its CSS pixel size * DPR for sharpness
+      const rect = c.getBoundingClientRect();
+      c.width  = Math.max(300, rect.width * dpr);
+      c.height = Math.max(180, rect.height * dpr);
+      const ctx = c.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      // Collect active months sorted, show up to last 6
+      const months = this.activeMonths();
+      const show = months.slice(-6);
+
+      // Data: income (flat stipend) and spent (sum), both in display currency
+      const stipendEUR = App.state.settings.stipendEUR || 0;
+      const incomeDisp = show.map(_ => Util.eurToDisp(stipendEUR));
+      const spentDisp = show.map(ym => {
+        const list = App.state.expenses[ym]||[];
+        const sumEUR = list.reduce((s,e)=>s+e.amountEUR,0);
+        return Util.eurToDisp(sumEUR);
+      });
+
+      // Axes
+      const padL = 36, padR = 12, padT = 20, padB = 28;
+      const W = rect.width, H = rect.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#111';
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#ddd';
+
+      // Y scale
+      const maxVal = Math.max(1, ...incomeDisp, ...spentDisp);
+      const yMax = Math.ceil(maxVal / 10) * 10;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const y = v => padT + plotH * (1 - v / yMax);
+
+      // Grid line
+      ctx.beginPath();
+      ctx.moveTo(padL, y(0));
+      ctx.lineTo(W - padR, y(0));
+      ctx.stroke();
+
+      // X scale
+      const n = show.length || 1;
+      const groupW = plotW / n;
+      const barW = Math.min(26, (groupW - 12) / 2);
+
+      // Bars
+      for(let i=0;i<n;i++){
+        const gx = padL + i*groupW + (groupW - (2*barW + 6))/2;
+
+        // Income bar
+        const ih = plotH * (incomeDisp[i] / yMax);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#cde';
+        ctx.fillRect(gx, y(incomeDisp[i]), barW, ih);
+
+        // Spent bar
+        const sx = gx + barW + 6;
+        const sh = plotH * (spentDisp[i] / yMax);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#36c';
+        ctx.fillRect(sx, y(spentDisp[i]), barW, sh);
+
+        // X labels
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted') || '#666';
+        const lbl = new Date(show[i]+'-01').toLocaleString(undefined,{month:'short'});
+        ctx.textAlign = 'center';
+        ctx.fillText(lbl, padL + i*groupW + groupW/2, H - 10);
+      }
+
+      // Legend
+      ctx.textAlign='left';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#111';
+      ctx.fillText('Income', padL, 14);
+      ctx.fillText('Spent', padL+70, 14);
+
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#cde';
+      ctx.fillRect(padL-26, 6, 12, 8);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#36c';
+      ctx.fillRect(padL+44, 6, 12, 8);
     }
   };
 
@@ -221,91 +423,96 @@
   const Profile = {
     render(){
       const S = App.state;
-      $('#stipend').value = S.settings.stipendEUR;
+      // Show stipend in user's chosen stipend input currency
+      const scur = S.settings.stipendInputCurrency || 'USD';
+      $('#stipendCur').value = scur;
+
+      const stipendValue =
+        scur === 'EUR' ? (S.settings.stipendEUR || 0)
+                       : (S.settings.stipendEUR || 0) * (S.settings.fx || 1.08);
+      $('#stipend').value = (stipendValue || 0).toFixed(2);
+
       $('#currency').value = S.settings.currency;
       $('#fx').value = S.settings.fx;
       $('#startMonth').value = S.settings.startMonth;
+
       this.renderBins();
-      this.renderOverall();
     },
     save(){
       const S = App.state;
-      S.settings.stipendEUR = parseFloat($('#stipend').value||'1000');
+
+      const scurSel = $('#stipendCur').value;
+      const stipendRaw = parseFloat($('#stipend').value || '0');
+      const fx = parseFloat($('#fx').value || '1.08');
+
+      // Convert to canonical EUR for storage
+      S.settings.stipendEUR =
+        scurSel === 'EUR' ? stipendRaw : (stipendRaw / fx);
+
+      S.settings.stipendInputCurrency = scurSel;
       S.settings.currency  = $('#currency').value;
-      S.settings.fx        = parseFloat($('#fx').value||'1.08');
+      S.settings.fx        = fx;
       S.settings.startMonth= $('#startMonth').value || Util.fmtYM(new Date());
+
       App.save();
       $('#saveNote').textContent = 'Saved ✓'; setTimeout(()=>$('#saveNote').textContent=' ', 1200);
-      Budget.render(); this.renderBins(); this.renderOverall();
+      Budget.render();
+      Overview.render();
+      this.renderBins();
     },
     renderBins(){
       const host = $('#binList'); host.innerHTML='';
-      App.state.bins.forEach(b=>{
+      App.state.bins.forEach((b, idx)=>{
         const card = document.createElement('div'); card.className='card item';
         card.innerHTML = `
           <div style="flex:1">
-            <div style="display:grid; grid-template-columns: 1fr 140px auto; gap:8px; align-items:center;">
-              <input data-k="name" data-id="${b.id}" type="text" value="${b.name}" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-              <input data-k="amount" data-id="${b.id}" type="number" inputmode="decimal" step="0.01" value="${b.monthlyEUR}" style="padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-              <div style="display:flex; gap:6px;">
-                <button class="button ghost" onclick="Profile.dupBin('${b.id}')">Duplicate</button>
+            <div class="bin-row">
+              <input data-k="name" data-id="${b.id}" type="text" value="${b.name}"
+                     style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+              <input data-k="amount" data-id="${b.id}" type="number" inputmode="decimal" step="0.01" value="${b.monthlyEUR}"
+                     style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+              <div class="bin-actions">
+                <button class="button ghost" onclick="Profile.moveBin('${b.id}', -1)" ${idx===0?'disabled':''}>▲</button>
+                <button class="button ghost" onclick="Profile.moveBin('${b.id}', 1)" ${idx===App.state.bins.length-1?'disabled':''}>▼</button>
                 <button class="button ghost" onclick="Profile.delBin('${b.id}')">Delete</button>
               </div>
             </div>
-            <div class="meta">EUR/mo</div>
           </div>`;
         host.appendChild(card);
       });
       $$('#binList input[data-k]').forEach(inp=>{
         inp.addEventListener('change', (e)=>{
-          const id = e.target.dataset.id; const k = e.target.dataset.k; const bin = App.state.bins.find(x=>x.id===id); if(!bin) return;
-          if(k==='name') bin.name=e.target.value; else bin.monthlyEUR=parseFloat(e.target.value||'0');
-          App.save(); Budget.render(); Profile.renderOverall();
+          const id = e.target.dataset.id; const k = e.target.dataset.k;
+          const bin = App.state.bins.find(x=>x.id===id); if(!bin) return;
+          if(k==='name') bin.name=e.target.value;
+          else bin.monthlyEUR=parseFloat(e.target.value||'0');
+          App.save(); Budget.render(); Overview.render();
         });
       });
     },
+    moveBin(id, dir){
+      const a = App.state.bins;
+      const i = a.findIndex(b=>b.id===id);
+      if(i<0) return;
+      const j = i + dir;
+      if(j<0 || j>=a.length) return;
+      const [item] = a.splice(i,1);
+      a.splice(j,0,item);
+      App.save(); this.renderBins(); Budget.render();
+    },
     addBin(){
-      const name = $('#newBinName').value.trim(); const amt = parseFloat($('#newBinAmt').value||'0');
+      const name = $('#newBinName').value.trim();
+      const amt = parseFloat($('#newBinAmt').value||'0');
       if(!name) return alert('Enter a bin name');
       App.state.bins.push({id:Util.id(), name, monthlyEUR:amt});
       $('#newBinName').value=''; $('#newBinAmt').value='';
-      App.save(); this.renderBins(); Budget.render(); this.renderOverall();
+      App.save(); this.renderBins(); Budget.render(); Overview.render();
     },
-    delBin(id){ if(!confirm('Delete this bin?')) return; App.state.bins = App.state.bins.filter(b=>b.id!==id); App.save(); this.renderBins(); Budget.render(); this.renderOverall(); },
-    dupBin(id){ const b=App.state.bins.find(x=>x.id===id); if(!b) return; App.state.bins.push({id:Util.id(), name:b.name+' (copy)', monthlyEUR:b.monthlyEUR}); App.save(); this.renderBins(); },
-    renderOverall(){
-  const host = $('#overallStats'); host.innerHTML='';
-  const totalBudgetEUR = App.state.bins.reduce((s,b)=>s+b.monthlyEUR,0);
-
-  // Sum all-time spent
-  let totalSpentEUR = 0;
-  Object.values(App.state.expenses).forEach(list => {
-    list.forEach(e => totalSpentEUR += e.amountEUR);
-  });
-
-  // Active months = number of months with any expenses recorded
-  const totalMonths = Object.keys(App.state.expenses).length;
-
-  // Monthly stipend (EUR)
-  const stipendPerMonthEUR = App.state.settings.stipendEUR || 0;
-
-  // Income across active months, and Net = Income - Spent
-  const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
-  const netEUR = totalIncomeEUR - totalSpentEUR;
-
-  const makeStat = (label,val) =>
-    `<div class="card" style="padding:16px;">
-       <div class="meta">${label}</div>
-       <div style="font-size:20px; font-weight:700;">${val}</div>
-     </div>`;
-
-  host.innerHTML = [
-    makeStat('Monthly Budget', Util.money(Util.eurToDisp(totalBudgetEUR))),
-    makeStat('Total Spent (all time)', Util.money(Util.eurToDisp(totalSpentEUR))),
-    makeStat('Net Total', Util.money(Util.eurToDisp(netEUR)))
-  ].join('');
-}
-
+    delBin(id){
+      if(!confirm('Delete this bin?')) return;
+      App.state.bins = App.state.bins.filter(b=>b.id!==id);
+      App.save(); this.renderBins(); Budget.render(); Overview.render();
+    }
   };
 
   // ---------- Budget Logic ----------
@@ -335,16 +542,21 @@
       const amountEUR = Util.dispToEur(amtDisp);
       const today = new Date().toISOString().slice(0,10);
       App.state.expenses[UI.currentYM].push({id:Util.id(), date:today, binId:this.pendingBinId, name, amountEUR});
-      App.save(); $('#addDialog').close(); this.render(); Profile.renderOverall();
+      App.save(); $('#addDialog').close(); this.render(); Overview.render();
     },
     editExpense(expId){
       const arr = App.state.expenses[UI.currentYM]; const i = arr.findIndex(e=>e.id===expId); if(i<0) return;
       const e = arr[i];
       const newName = prompt('Name', e.name||''); if(newName===null) return; e.name=newName;
       const newAmt  = prompt('Amount ('+(App.state.settings.currency==='EUR'?'€':'$')+')', Util.eurToDisp(e.amountEUR).toFixed(2)); if(newAmt===null) return; e.amountEUR = Util.dispToEur(parseFloat(newAmt||'0'));
-      App.save(); this.render(); Profile.renderOverall();
+      App.save(); this.render(); Overview.render();
     },
-    delExpense(expId){ if(!confirm('Delete expense?')) return; const arr=App.state.expenses[UI.currentYM]; const i=arr.findIndex(e=>e.id===expId); if(i>=0){ arr.splice(i,1); App.save(); this.render(); Profile.renderOverall(); } },
+    delExpense(expId){
+      if(!confirm('Delete expense?')) return;
+      const arr=App.state.expenses[UI.currentYM];
+      const i=arr.findIndex(e=>e.id===expId);
+      if(i>=0){ arr.splice(i,1); App.save(); this.render(); Overview.render(); }
+    },
     render(){
       const S = App.state;
       if(!UI.currentYM) UI.currentYM = S.settings.startMonth || Util.fmtYM(new Date());
@@ -352,49 +564,48 @@
       $('#monthLabel').textContent = Util.labelYM(UI.currentYM);
 
       // Bin cards
-    const totals = {}; 
-    S.bins.forEach(b => totals[b.id] = 0);
-    App.state.expenses[UI.currentYM].forEach(e => {
-    totals[e.binId] = (totals[e.binId] || 0) + e.amountEUR;
-    });
-    const host = $('#binsSummary');
-    host.innerHTML = '';
+      const totals = {};
+      S.bins.forEach(b => totals[b.id] = 0);
+      App.state.expenses[UI.currentYM].forEach(e => {
+        totals[e.binId] = (totals[e.binId] || 0) + e.amountEUR;
+      });
+      const host = $('#binsSummary');
+      host.innerHTML = '';
 
-    S.bins.forEach(b => {
-    const spent = totals[b.id] || 0;
-    const budget = b.monthlyEUR || 0;
-    const rem = budget - spent;
-    const pct = Math.min(100, Math.max(0, budget > 0 ? (spent / budget) * 100 : 0));
-    const bar = `
-        <div style="height:10px; background:var(--accent-2); border-radius:999px; overflow:hidden;">
-        <div style="height:100%; width:${pct}%; background:var(--accent);"></div>
-        </div>`;
-    const fraction = `${Util.money(Util.eurToDisp(spent))} / ${Util.money(Util.eurToDisp(budget))} spent`;
-    const over = rem < 0;
+      S.bins.forEach(b => {
+        const spent = totals[b.id] || 0;
+        const budget = b.monthlyEUR || 0;
+        const rem = budget - spent;
+        const pct = Math.min(100, Math.max(0, budget > 0 ? (spent / budget) * 100 : 0));
+        const bar = `
+          <div style="height:10px; background:var(--accent-2); border-radius:999px; overflow:hidden;">
+            <div style="height:100%; width:${pct}%; background:var(--accent);"></div>
+          </div>`;
+        const fraction = `${Util.money(Util.eurToDisp(spent))} / ${Util.money(Util.eurToDisp(budget))} spent`;
+        const over = rem < 0;
 
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.style.padding = '14px';
-    card.style.cursor = 'pointer';
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', 'Add expense to ' + b.name);
-    card.onclick = () => Budget.openDialog(b.id);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.padding = '14px';
+        card.style.cursor = 'pointer';
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', 'Add expense to ' + b.name);
+        card.onclick = () => Budget.openDialog(b.id);
 
-    card.innerHTML = `
-        <div class="item" style="padding:0; gap:10px;">
-        <div style="flex:1">
-            <h3 style="margin:0 0 6px;">${b.name}</h3>
-            ${bar}
-            <div class="meta" style="display:flex; gap:8px; margin-top:6px;">
-            <span class="badge" style="border-style:${over ? 'solid' : 'dashed'}; ${over ? 'color:#b00020;' : ''}">
-                ${fraction}
-            </span>
+        card.innerHTML = `
+          <div class="item" style="padding:0; gap:10px;">
+            <div style="flex:1">
+                <h3 style="margin:0 0 6px;">${b.name}</h3>
+                ${bar}
+                <div class="meta" style="display:flex; gap:8px; margin-top:6px;">
+                  <span class="badge" style="border-style:${over ? 'solid' : 'dashed'}; ${over ? 'color:#b00020;' : ''}">
+                    ${fraction}
+                  </span>
+                </div>
             </div>
-        </div>
-        </div>`;
-    host.appendChild(card);
-    });
-
+          </div>`;
+        host.appendChild(card);
+      });
 
       // Expenses
       const list = $('#expenseList'); list.innerHTML='';
