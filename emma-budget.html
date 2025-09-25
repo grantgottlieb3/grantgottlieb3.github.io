@@ -10,17 +10,14 @@
   <!-- Use your provided CSS as-is -->
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- XLSX for importing the Excel you mentioned -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <!-- iOS Add-to-Home-Screen touch-icon (optional, can remove) -->
+  <!-- iOS Add-to-Home-Screen touch-icon (optional) -->
   <link rel="apple-touch-icon" href="icon.png" />
 </head>
 <body>
-  <!-- Sticky header with two primary tabs -->
+  <!-- Smaller sticky header -->
   <header class="header">
-    <div class="container nav">
-      <div class="brand">NALCAP Budget</div>
+    <div class="container nav" style="padding:8px 0;"> <!-- reduced from 14px -->
+      <div class="brand" style="font-size:16px;">NALCAP Budget</div>
       <nav class="right tabs view-tabs" role="tablist" aria-label="Primary">
         <button id="tab-budget" class="button ghost tab-btn" aria-selected="true" onclick="UI.switchTab('budget')">Budget</button>
         <button id="tab-profile" class="button ghost tab-btn" aria-selected="false" onclick="UI.switchTab('profile')">Profile</button>
@@ -28,11 +25,11 @@
     </div>
   </header>
 
-  <main class="container" id="app" style="padding-bottom: 120px;">
+  <main class="container" id="app" style="padding-bottom: 32px;">
 
     <!-- ============ BUDGET VIEW ============ -->
     <section id="view-budget" role="tabpanel" aria-labelledby="tab-budget">
-      <div class="section-title">
+      <div class="section-title" style="margin-top:8px;">
         <h2>Monthly View</h2>
         <div class="line"></div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -42,81 +39,17 @@
         </div>
       </div>
 
-      <!-- Bin summaries -->
+      <!-- Bin summaries (tap a card to add expense) -->
       <div class="grid cols-3" id="binsSummary"></div>
-
-      <!-- Quick add expense -->
-      <section class="card" style="padding:16px; margin-top:16px;">
-        <div class="section-title" style="margin:0 0 10px;">
-          <h2>Add Expense</h2>
-          <div class="line"></div>
-        </div>
-        <div class="grid cols-3">
-          <div>
-            <label class="badge" for="qaBin">Bin</label>
-            <select id="qaBin" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);"></select>
-          </div>
-          <div>
-            <label class="badge" for="qaName">Name</label>
-            <input id="qaName" type="text" placeholder="e.g., Groceries" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          </div>
-          <div>
-            <label class="badge" for="qaAmt">Amount (<span id="qaCurLbl">€</span>)</label>
-            <input id="qaAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);"/>
-          </div>
-        </div>
-        <div class="grid cols-2" style="margin-top:12px;">
-          <div>
-            <label class="badge" for="qaDate">Date</label>
-            <input id="qaDate" type="date" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
-          </div>
-          <div style="display:flex; align-items:flex-end; gap:8px;">
-            <button class="button" onclick="Budget.saveQuickAdd()">Add</button>
-            <button class="button ghost" onclick="Budget.clearQuickAdd()">Clear</button>
-          </div>
-        </div>
-      </section>
 
       <!-- Expense list -->
       <section class="card" style="padding:16px; margin-top:16px;">
         <div class="section-title" style="margin:0 0 8px;">
           <h2>Expenses</h2>
           <div class="line"></div>
-          <button class="button ghost" onclick="IO.exportCSV()">Export CSV</button>
-          <button class="button ghost" onclick="IO.exportJSON()">Export JSON</button>
         </div>
         <div id="expenseList" class="grid"></div>
         <p id="noExpenses" class="badge" style="margin-top:8px; display:none;">No expenses yet this month.</p>
-      </section>
-
-      <!-- Import from Excel/CSV -->
-      <section class="card" style="padding:16px; margin-top:16px;">
-        <div class="section-title" style="margin:0 0 8px;">
-          <h2>Import</h2>
-          <div class="line"></div>
-        </div>
-        <div class="grid cols-2">
-          <div>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button class="button secondary" onclick="IO.openMapper()">Map Columns</button>
-            <button class="button ghost" onclick="IO.copyData()">Copy Data</button>
-          </div>
-        </div>
-        <p class="badge" style="margin-top:8px;">Expected columns (auto-detected or map manually): <code class="inline">date</code>, <code class="inline">bin</code> (or <code class="inline">category</code>), <code class="inline">name</code>, <code class="inline">amount</code>, <code class="inline">currency</code>.</p>
-        <div id="mapper" style="display:none; margin-top:10px;">
-          <div class="grid cols-3">
-            <div><label class="badge">Date</label><select id="map-date"></select></div>
-            <div><label class="badge">Bin</label><select id="map-bin"></select></div>
-            <div><label class="badge">Name</label><select id="map-name"></select></div>
-          </div>
-          <div class="grid cols-3" style="margin-top:8px;">
-            <div><label class="badge">Amount</label><select id="map-amount"></select></div>
-            <div><label class="badge">Currency</label><select id="map-currency"></select></div>
-            <div style="display:flex; align-items:flex-end;"><button class="button" onclick="IO.applyMapping()">Import</button></div>
-          </div>
-        </div>
       </section>
     </section>
 
@@ -182,13 +115,30 @@
     </section>
   </main>
 
-  <!-- Bottom actions for quick access on iOS -->
-  <footer class="footer" style="position:fixed; left:0; right:0; bottom:0; background:color-mix(in srgb, var(--bg) 92%, transparent); border-top:1px solid var(--border);">
-    <div class="container" style="display:flex; gap:8px;">
-      <button class="button" style="flex:1;" onclick="Budget.focusQuickAdd()">＋ Quick Add</button>
-      <button class="button ghost" style="flex:1;" onclick="IO.copyData()">Share</button>
-    </div>
-  </footer>
+  <!-- ========== SIMPLE ADD EXPENSE DIALOG ========== -->
+  <dialog id="addDialog" style="border:none; border-radius:16px; max-width:560px; width:92vw; padding:0;">
+    <form method="dialog" class="card" style="padding:16px; margin:0;">
+      <div class="section-title" style="margin:0 0 8px;">
+        <h2 id="dlgTitle">Add Expense</h2>
+        <div class="line"></div>
+        <button class="button ghost" value="cancel">Close</button>
+      </div>
+      <div class="grid cols-2">
+        <div>
+          <label class="badge">Name</label>
+          <input id="dlgName" type="text" placeholder="e.g., Groceries" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+        </div>
+        <div>
+          <label class="badge">Amount (<span id="dlgCur">€</span>)</label>
+          <input id="dlgAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card);" />
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="button" onclick="Budget.saveDialog(event)">Save</button>
+        <button class="button ghost" value="cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- ==================== APP SCRIPT ==================== -->
   <script>
@@ -197,7 +147,7 @@
 
   // ---------- App State ----------
   const App = {
-    key: 'nalcap_budget_v2',
+    key: 'nalcap_budget_v3_simple',
     state: null,
     defaultState(){
       const now = new Date();
@@ -319,33 +269,38 @@
 
   // ---------- Budget Logic ----------
   const Budget = {
+    pendingBinId: null,
     shiftMonth(delta){
       const [y,m] = UI.currentYM.split('-').map(Number);
       const d = new Date(y, m-1+delta, 1);
       UI.currentYM = Util.fmtYM(d);
       this.render();
     },
-    focusQuickAdd(){ $('#qaName').focus(); },
-    clearQuickAdd(){ $('#qaName').value=''; $('#qaAmt').value=''; },
-    saveQuickAdd(){
+    openDialog(binId){
+      this.pendingBinId = binId;
+      $('#dlgTitle').textContent = 'Add to ' + (App.state.bins.find(b=>b.id===binId)?.name || 'Bin');
+      $('#dlgCur').textContent = App.state.settings.currency==='EUR' ? '€' : '$';
+      $('#dlgName').value = '';
+      $('#dlgAmt').value = '';
+      $('#addDialog').showModal();
+      setTimeout(()=>$('#dlgName').focus(), 50);
+    },
+    saveDialog(ev){
+      ev.preventDefault();
+      const name = $('#dlgName').value.trim();
+      const amtDisp = parseFloat($('#dlgAmt').value||'0');
+      if(!name || !(amtDisp>0)) { $('#addDialog').close(); return; }
       Util.ensureMonth(UI.currentYM);
-      const binId = $('#qaBin').value;
-      const name  = $('#qaName').value.trim();
-      const date  = $('#qaDate').value || new Date().toISOString().slice(0,10);
-      const amtDisp = parseFloat($('#qaAmt').value||'0');
       const amountEUR = Util.dispToEur(amtDisp);
-      App.state.expenses[UI.currentYM].push({id:Util.id(), date, binId, name, amountEUR});
-      App.save(); this.clearQuickAdd(); this.render(); Profile.renderOverall();
+      const today = new Date().toISOString().slice(0,10);
+      App.state.expenses[UI.currentYM].push({id:Util.id(), date:today, binId:this.pendingBinId, name, amountEUR});
+      App.save(); $('#addDialog').close(); this.render(); Profile.renderOverall();
     },
     editExpense(expId){
       const arr = App.state.expenses[UI.currentYM]; const i = arr.findIndex(e=>e.id===expId); if(i<0) return;
       const e = arr[i];
       const newName = prompt('Name', e.name||''); if(newName===null) return; e.name=newName;
       const newAmt  = prompt('Amount ('+(App.state.settings.currency==='EUR'?'€':'$')+')', Util.eurToDisp(e.amountEUR).toFixed(2)); if(newAmt===null) return; e.amountEUR = Util.dispToEur(parseFloat(newAmt||'0'));
-      const newDate = prompt('Date (YYYY-MM-DD)', e.date); if(newDate===null) return; e.date = newDate;
-      const binNames = App.state.bins.map(b=>b.name).join(', ');
-      const newBinName = prompt('Bin name ('+binNames+')', (App.state.bins.find(b=>b.id===e.binId)||{}).name||'');
-      if(newBinName!==null){ const b=App.state.bins.find(x=>x.name===newBinName); if(b) e.binId=b.id; }
       App.save(); this.render(); Profile.renderOverall();
     },
     delExpense(expId){ if(!confirm('Delete expense?')) return; const arr=App.state.expenses[UI.currentYM]; const i=arr.findIndex(e=>e.id===expId); if(i>=0){ arr.splice(i,1); App.save(); this.render(); Profile.renderOverall(); } },
@@ -355,20 +310,16 @@
       Util.ensureMonth(UI.currentYM);
       $('#monthLabel').textContent = Util.labelYM(UI.currentYM);
 
-      // Fill quick add defaults
-      const now = new Date(); const prefDate = new Date(parseInt(UI.currentYM.slice(0,4)), parseInt(UI.currentYM.slice(5))-1, Math.min(28, now.getDate()));
-      $('#qaDate').value = prefDate.toISOString().slice(0,10);
-      const sel = $('#qaBin'); sel.innerHTML=''; S.bins.forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name; sel.appendChild(o); });
-      $('#qaCurLbl').textContent = S.settings.currency==='EUR' ? '€' : '$';
-
-      // Summaries
+      // Bin cards
       const totals = {}; S.bins.forEach(b=>totals[b.id]=0);
       App.state.expenses[UI.currentYM].forEach(e=>{ totals[e.binId]=(totals[e.binId]||0)+e.amountEUR; });
       const host = $('#binsSummary'); host.innerHTML='';
       S.bins.forEach(b=>{
         const spent = totals[b.id]||0; const rem = b.monthlyEUR - spent; const pct = Math.min(100, Math.max(0, (spent/b.monthlyEUR)*100 || 0));
         const bar = `<div style=\"height:10px; background:var(--accent-2); border-radius:999px; overflow:hidden;\"><div style=\"height:100%; width:${pct}%; background:var(--accent);\"></div></div>`;
-        const card = document.createElement('div'); card.className='card'; card.style.padding='14px';
+        const card = document.createElement('div'); card.className='card'; card.style.padding='14px'; card.style.cursor='pointer';
+        card.setAttribute('role','button'); card.setAttribute('aria-label','Add expense to '+b.name);
+        card.onclick = () => Budget.openDialog(b.id);
         card.innerHTML = `
           <div class="item" style="padding:0; gap:10px;">
             <div class="logo"></div>
@@ -405,70 +356,6 @@
       });
     }
   };
-
-  // ---------- Import / Export ----------
-  const IO = {
-    lastSheetRows: [],
-    header: [],
-    exportCSV(){
-      const rows = [['ym','date','bin','name','amount','currency']];
-      for(const [ym, list] of Object.entries(App.state.expenses)){
-        list.forEach(e=>{ const bin=App.state.bins.find(b=>b.id===e.binId); rows.push([ym, e.date, bin?bin.name:'', e.name||'', Util.eurToDisp(e.amountEUR).toFixed(2), App.state.settings.currency]); });
-      }
-      const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-      IO._download('nalcap-budget.csv','text/csv',csv);
-    },
-    exportJSON(){ IO._download('nalcap-budget.json','application/json', JSON.stringify(App.state,null,2)); },
-    _download(name,type,data){ const blob = new Blob([data],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); },
-    copyData(){ navigator.clipboard?.writeText(JSON.stringify(App.state,null,2)).then(()=>alert('Data copied to clipboard')).catch(()=>alert('Copy failed')); },
-
-    openMapper(){ const m=$('#mapper'); if(!IO.lastSheetRows.length){ alert('Choose an Excel/CSV file first.'); return; } m.style.display='block'; },
-    fillMapper(){ const selects=['map-date','map-bin','map-name','map-amount','map-currency'].map(id=>$('#'+id)); selects.forEach(s=>{ s.innerHTML=''; IO.header.forEach(h=>{ const o=document.createElement('option'); o.value=h; o.textContent=h; s.appendChild(o); });});
-      // try auto map by common names
-      const map = {date:['date','fecha'], bin:['bin','category','categoria'], name:['name','description','desc'], amount:['amount','importe','monto','value'], currency:['currency','divisa']};
-      for(const [id,keys] of Object.entries(map)){ const sel=$('#map-'+id); const guess = IO.header.find(h=> keys.includes(h.toLowerCase())); if(guess) sel.value=guess; }
-    },
-    applyMapping(){
-      const col = k=>$('#map-'+k).value;
-      const rows = IO.lastSheetRows.map(r=>({
-        date: r[col('date')] || '',
-        bin: r[col('bin')] || 'Misc',
-        name: r[col('name')] || '',
-        amount: parseFloat(r[col('amount')]||'0'),
-        currency: (r[col('currency')]||'EUR').toString().toUpperCase()
-      }));
-      rows.forEach(o=>{
-        const ym = o.date? o.date.slice(0,7) : Util.fmtYM(new Date());
-        Util.ensureMonth(ym);
-        const bin = IO.ensureBin(o.bin);
-        const amountEUR = o.currency==='USD' ? o.amount / App.state.settings.fx : o.amount;
-        App.state.expenses[ym].push({id:Util.id(), date:o.date||ym+'-15', binId:bin.id, name:o.name, amountEUR});
-      });
-      App.save(); Budget.render(); Profile.renderOverall(); alert('Import complete');
-    },
-    ensureBin(name){ let b=App.state.bins.find(x=>x.name===name); if(!b){ b={id:Util.id(), name, monthlyEUR:0}; App.state.bins.push(b);} return b; }
-  };
-
-  // File input handler (CSV / XLSX)
-  $('#fileInput').addEventListener('change', async (ev)=>{
-    const file = ev.target.files[0]; if(!file) return;
-    const name = file.name.toLowerCase();
-    if(name.endsWith('.csv')){
-      const text = await file.text();
-      const rows = text.split(/\r?\n/).filter(Boolean).map(line => line.match(/(?:\"([^\"]*)\")|([^,]+)/g)?.map(x=>x?.replace(/^\"|\"$/g,'').replace(/\"\"/g,'"')) || []);
-      IO.header = rows.shift();
-      IO.lastSheetRows = rows.map(r=> Object.fromEntries(IO.header.map((h,i)=>[h,r[i]])) );
-      IO.fillMapper(); IO.openMapper();
-    } else {
-      const data = await file.arrayBuffer();
-      const wb = XLSX.read(data, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(ws, {defval:'', header:1});
-      IO.header = (json.shift()||[]).map(h=> String(h||''));
-      IO.lastSheetRows = json.map(r=> Object.fromEntries(IO.header.map((h,i)=>[h, r[i]])) );
-      IO.fillMapper(); IO.openMapper();
-    }
-  });
 
   // ---------- Init ----------
   App.load();
