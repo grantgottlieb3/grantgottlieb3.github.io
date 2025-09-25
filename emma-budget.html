@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>NALCAP Budget</title>
+  <style>
+    :root{
+      --bg:#0b0c10; --card:#12131a; --ink:#eff3f8; --muted:#a8b0bb; --brand:#4f8cff; --ok:#19c37d; --warn:#ffb020; --bad:#ff6464;
+      --hair:#202230; --ring:#2a2d40; --ios-safe-top: env(safe-area-inset-top);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .container{max-width:760px;margin:0 auto;padding:calc(8px + var(--ios-safe-top)) 16px 90px}
+    h1,h2,h3{margin:0 0 8px}
+    h1{font-size:1.4rem}
+    h2{font-size:1.1rem;color:var(--muted)}
+    .tabs{position:sticky;top:calc(0px + var(--ios-safe-top));z-index:3;background:linear-gradient(180deg,rgba(11,12,16,.95),rgba(11,12,16,.6));backdrop-filter:blur(8px);padding:10px 16px;border-bottom:1px solid var(--hair)}
+    .tabbar{display:flex;gap:8px}
+    .tabbar button{flex:1;padding:10px 12px;border:1px solid var(--ring);background:transparent;color:var(--ink);border-radius:12px}
+    .tabbar button.active{background:var(--brand);border-color:transparent;color:white;font-weight:600}
+
+    .card{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:14px 14px;margin:12px 0}
+    .row{display:flex;gap:10px;align-items:center}
+    .grid{display:grid;gap:10px}
+    .g2{grid-template-columns:1fr 1fr}
+    .g3{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:560px){.g3{grid-template-columns:1fr 1fr}}
+
+    label{font-size:.84rem;color:var(--muted)}
+    input,select,button,textarea{font:inherit}
+    input[type="text"], input[type="number"], input[type="date"], select{
+      width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--ring);background:#0e0f15;color:var(--ink);
+    }
+    input::placeholder{color:#748095}
+    .btn{padding:12px 14px;border-radius:12px;border:1px solid var(--ring);background:#151728;color:var(--ink);cursor:pointer}
+    .btn.brand{background:var(--brand);border-color:transparent;color:white}
+    .btn.ghost{background:transparent}
+    .btn.danger{background:#2a1010;border-color:#603131;color:#ffd0d0}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ring);padding:6px 10px;border-radius:999px;font-size:.9rem;background:#0f111a}
+    .small{font-size:.88rem}
+    .muted{color:var(--muted)}
+    .right{margin-left:auto}
+
+    .footerbar{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:10px 14px env(safe-area-inset-bottom);background:linear-gradient(0deg,rgba(11,12,16,.98),rgba(11,12,16,.6));backdrop-filter:blur(10px);border-top:1px solid var(--hair)}
+    .footerbar .bar{max-width:760px;margin:0 auto;display:flex;gap:8px}
+    .footerbar .bar button{flex:1}
+
+    .bin{display:flex;align-items:center;gap:10px;padding:10px;border:1px dashed #2f3349;border-radius:12px}
+    progress{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:999px;background:#1b1d2a;overflow:hidden}
+    progress::-webkit-progress-bar{background:#1b1d2a}
+    progress::-webkit-progress-value{background:var(--ok)}
+    .low progress::-webkit-progress-value{background:var(--warn)}
+    .neg progress::-webkit-progress-value{background:var(--bad)}
+
+    .list{display:flex;flex-direction:column;gap:8px}
+    .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--ring);border-radius:12px;background:#0f1119}
+    .item .meta{font-size:.85rem;color:var(--muted)}
+
+    .topbar{display:flex;gap:8px;align-items:center;margin:8px 0 0}
+    .month-sw{display:flex;gap:8px;align-items:center}
+
+    .hidden{display:none}
+  </style>
+  <!-- Optional XLSX support for importing Excel files -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="tabs">
+    <div class="tabbar">
+      <button id="tab-budget" class="active" onclick="switchTab('budget')">Budget</button>
+      <button id="tab-profile" onclick="switchTab('profile')">Profile</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- BUDGET TAB -->
+    <section id="view-budget">
+      <div class="topbar">
+        <div class="month-sw">
+          <button class="btn" onclick="shiftMonth(-1)">◀</button>
+          <div class="pill" id="monthLabel"></div>
+          <button class="btn" onclick="shiftMonth(1)">▶</button>
+        </div>
+        <span class="right muted small">Tap + to add an expense</span>
+      </div>
+
+      <div class="card">
+        <h1>Budgets this month</h1>
+        <div id="binsSummary" class="grid g2" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h1>Expenses</h1>
+          <button class="btn brand" onclick="openQuickAdd()">＋ Add</button>
+        </div>
+        <div class="list" id="expenseList" style="margin-top:8px"></div>
+        <div id="noExpenses" class="muted small" style="margin-top:8px">No expenses yet this month.</div>
+      </div>
+
+      <div class="card">
+        <h2>Import / Export</h2>
+        <div class="grid g2" style="margin-top:8px">
+          <button class="btn" onclick="exportCSV()">Export CSV</button>
+          <button class="btn" onclick="exportJSON()">Export JSON</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileImport(event)">
+        </div>
+        <p class="muted small" style="margin-top:6px">Excel/CSV columns supported: <code>date</code>, <code>bin</code>, <code>name</code>, <code>amount</code>, <code>currency</code> (EUR or USD). Amounts in USD are converted using your Profile exchange rate.</p>
+      </div>
+    </section>
+
+    <!-- PROFILE TAB -->
+    <section id="view-profile" class="hidden">
+      <div class="card">
+        <h1>Profile</h1>
+        <div class="grid g2" style="margin-top:8px">
+          <div>
+            <label>Monthly stipend (EUR)</label>
+            <input id="stipend" type="number" inputmode="decimal" step="0.01" placeholder="1000" />
+          </div>
+          <div>
+            <label>Display currency</label>
+            <select id="currency">
+              <option value="EUR">EUR (€)</option>
+              <option value="USD">USD ($)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid g2" style="margin-top:8px">
+          <div>
+            <label>EUR → USD rate</label>
+            <input id="fx" type="number" inputmode="decimal" step="0.0001" placeholder="1.08" />
+          </div>
+          <div>
+            <label>Starting month</label>
+            <input id="startMonth" type="month" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn brand" onclick="saveProfile()">Save</button>
+          <button class="btn ghost" onclick="resetAll()">Reset All</button>
+          <span class="right muted small" id="profileSaved"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Budget Bins</h1>
+        <div id="binList" class="list" style="margin-top:8px"></div>
+        <div class="grid g3" style="margin-top:10px">
+          <input id="newBinName" type="text" placeholder="New bin name (e.g., Rent)" />
+          <input id="newBinAmt" type="number" inputmode="decimal" step="0.01" placeholder="Amount / month (EUR)" />
+          <button class="btn brand" onclick="addBin()">Add Bin</button>
+        </div>
+        <p class="muted small" style="margin-top:8px">Tip: Bins are stored in EUR internally. Display converts using your chosen currency.</p>
+      </div>
+
+      <div class="card">
+        <h1>Overall Stats</h1>
+        <div id="overallStats" class="grid g2" style="margin-top:8px"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footerbar">
+    <div class="bar">
+      <button class="btn" onclick="openQuickAdd()">＋ Quick Add</button>
+      <button class="btn" onclick="shareData()">Share</button>
+    </div>
+  </div>
+
+  <!-- QUICK ADD SHEET -->
+  <dialog id="quickAdd" style="border:none;border-radius:16px;max-width:640px;width:90vw;background:#0e1018;color:var(--ink);">
+    <form method="dialog" style="padding:14px">
+      <div class="row" style="justify-content:space-between">
+        <h2>Add Expense</h2>
+        <button class="btn ghost" onclick="document.getElementById('quickAdd').close()">✕</button>
+      </div>
+      <div class="grid g2" style="margin-top:10px">
+        <div>
+          <label>Bin</label>
+          <select id="qaBin"></select>
+        </div>
+        <div>
+          <label>Date</label>
+          <input id="qaDate" type="date" />
+        </div>
+      </div>
+      <div class="grid g2" style="margin-top:10px">
+        <div>
+          <label>Name</label>
+          <input id="qaName" type="text" placeholder="e.g., Groceries" />
+        </div>
+        <div>
+          <label>Amount (<span id="qaCurLbl">€</span>)</label>
+          <input id="qaAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn brand" onclick="saveQuickAdd(event)">Save</button>
+        <button class="btn" onclick="document.getElementById('quickAdd').close()">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // ---------- State & Helpers ----------
+    const $ = sel => document.querySelector(sel);
+    const state = load();
+
+    function defaultState(){
+      const now = new Date();
+      const ym = fmtYM(now);
+      return {
+        settings:{ stipendEUR:1000, currency:'EUR', fx:1.08, startMonth: ym },
+        bins:[
+          {id:id(), name:'Rent', monthlyEUR:500},
+          {id:id(), name:'Groceries', monthlyEUR:200},
+          {id:id(), name:'Transport', monthlyEUR:80},
+        ],
+        expenses:{} // map YYYY-MM -> [ {id, date, binId, name, amountEUR} ]
+      };
+    }
+
+    function load(){
+      try{
+        const raw = localStorage.getItem('nalcap_budget_v1');
+        return raw? JSON.parse(raw) : defaultState();
+      }catch(e){ return defaultState(); }
+    }
+    function save(){ localStorage.setItem('nalcap_budget_v1', JSON.stringify(state)); }
+
+    function id(){ return Math.random().toString(36).slice(2,9); }
+    function fmtYM(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+    function labelYM(ym){ const [y,m]=ym.split('-'); return new Date(+y, +m-1, 1).toLocaleString(undefined,{month:'long', year:'numeric'}); }
+
+    function eurToDisp(eur){ return state.settings.currency==='EUR'? eur : eur*state.settings.fx; }
+    function dispToEur(amount){ return state.settings.currency==='EUR'? amount : amount/state.settings.fx; }
+    function money(n){
+      const cur = state.settings.currency==='EUR' ? 'EUR' : 'USD';
+      return new Intl.NumberFormat(undefined,{style:'currency',currency:cur, maximumFractionDigits:2}).format(n);
+    }
+
+    // current month shown
+    let currentYM = state.settings.startMonth || fmtYM(new Date());
+
+    // ---------- Tabs ----------
+    function switchTab(name){
+      $('#tab-budget').classList.toggle('active', name==='budget');
+      $('#tab-profile').classList.toggle('active', name==='profile');
+      $('#view-budget').classList.toggle('hidden', name!=='budget');
+      $('#view-profile').classList.toggle('hidden', name!=='profile');
+      if(name==='budget') renderBudget(); else renderProfile();
+    }
+
+    // ---------- Profile ----------
+    function renderProfile(){
+      $('#stipend').value = state.settings.stipendEUR;
+      $('#currency').value = state.settings.currency;
+      $('#fx').value = state.settings.fx;
+      $('#startMonth').value = state.settings.startMonth;
+      renderBinList();
+      renderOverall();
+    }
+
+    function saveProfile(){
+      const stipend = parseFloat($('#stipend').value||'1000');
+      const currency = $('#currency').value;
+      const fx = parseFloat($('#fx').value||'1.08');
+      const startMonth = $('#startMonth').value || fmtYM(new Date());
+      state.settings.stipendEUR = stipend;
+      state.settings.currency = currency;
+      state.settings.fx = fx;
+      state.settings.startMonth = startMonth;
+      save();
+      $('#profileSaved').textContent = 'Saved ✓';
+      setTimeout(()=>$('#profileSaved').textContent='', 1400);
+      $('#qaCurLbl').textContent = currency==='EUR'? '€':'$';
+      renderBudget();
+      renderBinList();
+      renderOverall();
+    }
+
+    function resetAll(){ if(confirm('Reset all data? This cannot be undone.')){ localStorage.removeItem('nalcap_budget_v1'); location.reload(); } }
+
+    function renderBinList(){
+      const host = $('#binList'); host.innerHTML='';
+      state.bins.forEach(b=>{
+        const wrap = document.createElement('div');
+        wrap.className='bin';
+        wrap.innerHTML = `
+          <input data-k="name" data-id="${b.id}" type="text" value="${b.name}" />
+          <input data-k="amount" data-id="${b.id}" type="number" inputmode="decimal" step="0.01" value="${b.monthlyEUR}" />
+          <span class="muted small">EUR/mo</span>
+          <button class="btn" onclick="dupBin('${b.id}')">Duplicate</button>
+          <button class="btn danger" onclick="delBin('${b.id}')">Delete</button>
+        `;
+        host.appendChild(wrap);
+      });
+      host.querySelectorAll('input[data-k]').forEach(inp=>{
+        inp.addEventListener('change', e=>{
+          const id = e.target.dataset.id; const k = e.target.dataset.k; const bin = state.bins.find(x=>x.id===id);
+          if(!bin) return; if(k==='name') bin.name = e.target.value; else bin.monthlyEUR = parseFloat(e.target.value||'0'); save(); renderBudget(); renderOverall();
+        });
+      });
+    }
+    function addBin(){
+      const name = $('#newBinName').value.trim(); const amt = parseFloat($('#newBinAmt').value||'0');
+      if(!name){ alert('Enter a bin name'); return; }
+      state.bins.push({id:id(), name, monthlyEUR:amt});
+      $('#newBinName').value=''; $('#newBinAmt').value=''; save(); renderBinList(); renderBudget(); renderOverall();
+    }
+    function delBin(binId){ if(!confirm('Delete this bin?')) return; state.bins = state.bins.filter(b=>b.id!==binId); save(); renderBinList(); renderBudget(); renderOverall(); }
+    function dupBin(binId){ const b = state.bins.find(x=>x.id===binId); if(!b) return; state.bins.push({id:id(), name:b.name+' (copy)', monthlyEUR:b.monthlyEUR}); save(); renderBinList(); renderBudget(); renderOverall(); }
+
+    function renderOverall(){
+      const stats = { totalBudgetEUR: state.bins.reduce((s,b)=>s+b.monthlyEUR,0), months: Object.keys(state.expenses).length };
+      let totalSpentEUR = 0; Object.values(state.expenses).forEach(list=> list.forEach(e=> totalSpentEUR += e.amountEUR));
+      const host = $('#overallStats');
+      host.innerHTML = `
+        <div class="card">
+          <div class="small muted">Total Budget (per month)</div>
+          <div style="font-size:1.2rem">${money(eurToDisp(stats.totalBudgetEUR))}</div>
+        </div>
+        <div class="card">
+          <div class="small muted">Total Spent (all time)</div>
+          <div style="font-size:1.2rem">${money(eurToDisp(totalSpentEUR))}</div>
+        </div>`;
+    }
+
+    // ---------- Budget View ----------
+    function shiftMonth(delta){
+      const [y,m] = currentYM.split('-').map(Number);
+      const d = new Date(y, m-1+delta, 1);
+      currentYM = fmtYM(d);
+      renderBudget();
+    }
+
+    function ensureMonth(){ if(!state.expenses[currentYM]) state.expenses[currentYM]=[]; }
+
+    function renderBudget(){
+      $('#monthLabel').textContent = labelYM(currentYM);
+      ensureMonth();
+      // Summary per bin
+      const totals = {}; state.bins.forEach(b=>totals[b.id]=0);
+      state.expenses[currentYM].forEach(e=>{ totals[e.binId]=(totals[e.binId]||0)+e.amountEUR; });
+      const host = $('#binsSummary'); host.innerHTML='';
+      state.bins.forEach(b=>{
+        const spent = totals[b.id]||0; const rem = b.monthlyEUR - spent; const pct = Math.min(100, Math.max(0, (spent/b.monthlyEUR)*100 || 0));
+        const cls = rem < 0 ? 'neg' : (rem/b.monthlyEUR < 0.25 ? 'low' : '');
+        const div = document.createElement('div'); div.className='card';
+        div.innerHTML = `
+          <div class="row" style="justify-content:space-between;gap:8px">
+            <strong>${b.name}</strong>
+            <span class="small muted">Budget ${money(eurToDisp(b.monthlyEUR))}</span>
+          </div>
+          <div class="row" style="gap:10px;margin-top:6px">
+            <progress class="${cls}" max="100" value="${pct}"></progress>
+            <span class="small ${rem<0?'" style=\"color:var(--bad)\"':''}">Rem: ${money(eurToDisp(rem))}</span>
+          </div>`;
+        host.appendChild(div);
+      });
+
+      // Expenses list
+      const listHost = $('#expenseList'); listHost.innerHTML='';
+      const items = state.expenses[currentYM];
+      $('#noExpenses').style.display = items.length? 'none':'block';
+      items.slice().reverse().forEach(e=>{
+        const bin = state.bins.find(b=>b.id===e.binId); const when = new Date(e.date);
+        const row = document.createElement('div'); row.className='item';
+        row.innerHTML = `
+          <div style="flex:1">
+            <div><strong>${e.name||'(untitled)'}</strong></div>
+            <div class="meta">${when.toLocaleDateString()} · ${bin?bin.name:'(bin deleted)'}</div>
+          </div>
+          <div style="text-align:right">
+            <div>${money(eurToDisp(e.amountEUR))}</div>
+            <div class="meta"><button class="btn ghost small" onclick="editExpense('${e.id}')">Edit</button> · <button class="btn ghost small" onclick="delExpense('${e.id}')">Delete</button></div>
+          </div>`;
+        listHost.appendChild(row);
+      });
+
+      // Fill QA select
+      const sel = $('#qaBin'); sel.innerHTML='';
+      state.bins.forEach(b=>{ const opt=document.createElement('option'); opt.value=b.id; opt.textContent=b.name; sel.appendChild(opt); });
+      $('#qaCurLbl').textContent = state.settings.currency==='EUR'? '€':'$';
+    }
+
+    // ---------- Quick Add ----------
+    function openQuickAdd(){
+      const dlg = $('#quickAdd');
+      $('#qaName').value=''; $('#qaAmt').value='';
+      const d = new Date(); const monthDate = new Date(+currentYM.split('-')[0], +currentYM.split('-')[1]-1, Math.min(28,d.getDate()));
+      $('#qaDate').value = monthDate.toISOString().slice(0,10);
+      dlg.showModal();
+    }
+    function saveQuickAdd(ev){
+      ev.preventDefault(); ensureMonth();
+      const binId = $('#qaBin').value; const name = $('#qaName').value.trim();
+      const date = $('#qaDate').value || new Date().toISOString().slice(0,10);
+      const amtDisp = parseFloat($('#qaAmt').value||'0');
+      const amountEUR = dispToEur(amtDisp);
+      state.expenses[currentYM].push({id:id(), date, binId, name, amountEUR});
+      save(); $('#quickAdd').close(); renderBudget(); renderOverall();
+    }
+
+    function editExpense(expId){
+      const arr = state.expenses[currentYM]; const idx = arr.findIndex(e=>e.id===expId); if(idx<0) return;
+      const e = arr[idx];
+      const newName = prompt('Name', e.name||''); if(newName===null) return; e.name=newName;
+      const newAmtDisp = prompt('Amount ('+(state.settings.currency==='EUR'?'€':'$')+')', (eurToDisp(e.amountEUR)).toFixed(2)); if(newAmtDisp===null) return; e.amountEUR = dispToEur(parseFloat(newAmtDisp||'0'));
+      const newDate = prompt('Date (YYYY-MM-DD)', e.date); if(newDate===null) return; e.date=newDate;
+      const binNames = state.bins.map(b=>b.name).join(', ');
+      const newBin = prompt('Bin name ('+binNames+')', (state.bins.find(b=>b.id===e.binId)||{}).name||'');
+      if(newBin!==null){ const b = state.bins.find(x=>x.name===newBin); if(b) e.binId=b.id; }
+      save(); renderBudget(); renderOverall();
+    }
+    function delExpense(expId){ if(!confirm('Delete expense?')) return; const arr = state.expenses[currentYM]; const i = arr.findIndex(e=>e.id===expId); if(i>=0){ arr.splice(i,1); save(); renderBudget(); renderOverall(); }}
+
+    // ---------- Import / Export ----------
+    function exportCSV(){
+      const rows = [['ym','date','bin','name','amount','currency']];
+      for(const [ym, list] of Object.entries(state.expenses)){
+        list.forEach(e=>{
+          const bin = state.bins.find(b=>b.id===e.binId); rows.push([ym, e.date, bin?bin.name:'', e.name||'', eurToDisp(e.amountEUR).toFixed(2), state.settings.currency]);
+        });
+      }
+      const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      download('nalcap-budget.csv', 'text/csv', csv);
+    }
+    function exportJSON(){ download('nalcap-budget.json','application/json', JSON.stringify(state,null,2)); }
+
+    function download(name, type, data){
+      const blob = new Blob([data], {type}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    async function handleFileImport(ev){
+      const file = ev.target.files[0]; if(!file) return;
+      const name = file.name.toLowerCase();
+      if(name.endsWith('.csv')){ const text = await file.text(); importCSV(text); }
+      else { // try xlsx
+        const data = await file.arrayBuffer(); const wb = XLSX.read(data, {type:'array'}); const ws = wb.Sheets[wb.SheetNames[0]]; const json = XLSX.utils.sheet_to_json(ws, {defval:''}); importJSONRows(json);
+      }
+      save(); renderBudget(); renderOverall(); alert('Import complete');
+    }
+
+    function importCSV(csv){
+      const rows = csv.split(/\r?\n/).filter(Boolean).map(line=>
+        line.match(/(?:\"([^\"]*)\")|([^,]+)/g)?.map(x=>x?.replace(/^\"|\"$/g,'').replace(/\"\"/g,'"')) || []);
+      const hdr = rows.shift().map(h=>h.trim().toLowerCase());
+      const idx = k=> hdr.indexOf(k);
+      const iDate=idx('date'), iBin=idx('bin'), iName=idx('name'), iAmt=idx('amount'), iCur=idx('currency'), iYm=idx('ym');
+      rows.forEach(r=>{
+        const ym = (iYm>=0?r[iYm]:fmtYM(new Date(r[iDate]||Date.now())));
+        const date = r[iDate] || ym+'-15';
+        const binName = r[iBin]||'Misc'; const bin = ensureBinByName(binName);
+        const name = r[iName]||'';
+        const cur = (iCur>=0? String(r[iCur]).toUpperCase() : 'EUR');
+        const amt = parseFloat(r[iAmt]||'0'); const amountEUR = cur==='USD' ? amt/state.settings.fx : amt;
+        if(!state.expenses[ym]) state.expenses[ym]=[];
+        state.expenses[ym].push({id:id(), date, binId:bin.id, name, amountEUR});
+      });
+    }
+
+    function importJSONRows(rows){
+      rows.forEach(o=>{
+        const ym = o.ym || fmtYM(new Date(o.date||Date.now()));
+        const date = o.date || ym+'-15';
+        const bin = ensureBinByName(o.bin||'Misc');
+        const cur = (o.currency||'EUR').toUpperCase();
+        const amt = parseFloat(o.amount||'0'); const amountEUR = cur==='USD'? amt/state.settings.fx: amt;
+        if(!state.expenses[ym]) state.expenses[ym]=[];
+        state.expenses[ym].push({id:id(), date, binId:bin.id, name:o.name||'', amountEUR});
+      });
+    }
+
+    function ensureBinByName(name){ let b = state.bins.find(x=>x.name===name); if(!b){ b={id:id(), name, monthlyEUR:0}; state.bins.push(b);} return b; }
+
+    // ---------- Share (copy) ----------
+    async function shareData(){
+      const payload = JSON.stringify(state, null, 2);
+      try{
+        await navigator.clipboard.writeText(payload);
+        alert('Data copied to clipboard. You can paste it to save/share.');
+      }catch{ alert('Copy failed. Use Export JSON instead.'); }
+    }
+
+    // ---------- Init ----------
+    renderBudget();
+  </script>
+</body>
+</html>
