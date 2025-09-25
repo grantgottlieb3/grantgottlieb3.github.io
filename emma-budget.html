@@ -7,7 +7,26 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>$imple Budget Sheet</title>
-
+  <script>
+    (function () {
+      // 👉 bump this on every deploy (any string is fine)
+      const VERSION = '2025-09-25-1';
+      const STORAGE_KEY = 'app_version';
+      try {
+        const prev = localStorage.getItem(STORAGE_KEY);
+        if (prev && prev !== VERSION) {
+          localStorage.setItem(STORAGE_KEY, VERSION);
+          // Force a full reload to pick up fresh HTML/inline JS from the network
+          location.reload();
+        } else if (!prev) {
+          localStorage.setItem(STORAGE_KEY, VERSION);
+        }
+        // Optional: expose for debugging
+        window.APP_VERSION = VERSION;
+      } catch (e) { /* ignore */ }
+    })();
+    </script>
+    
   <!-- Your stylesheet -->
   <link rel="stylesheet" href="styles.css" />
 
@@ -210,7 +229,7 @@
 
   // ---------- App State ----------
   const App = {
-    key: 'nalcap_budget_v4_simple',
+    key: 'nalcap_budget_v3_simple',
     state: null,
     defaultState(){
       const now = new Date();
