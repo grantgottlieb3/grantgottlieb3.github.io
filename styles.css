@@ -346,6 +346,3 @@ a.button { color: #fff; text-decoration: none; }
     transform: none;
   }
 }
-.profile-grid > * { min-width:0; }
-input[type="month"].fld { width:100%; max-width:100%; box-sizing:border-box; }
-.ios-shrink { overflow:hidden; }
