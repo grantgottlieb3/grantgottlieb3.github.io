@@ -49,7 +49,6 @@
       </p>
       <div class="actions">
         <!-- EDIT ME: add demo and/or source links if you publish them -->
-        <a class="button secondary" href="#" target="_blank" rel="noopener">View Demo (add link)</a>
         <a class="button ghost" href="#design">System Design</a>
         <a class="button ghost" href="#gallery">Gallery</a>
       </div>
@@ -65,23 +64,22 @@
     <div class="section-title"><h2>System Design</h2><div class="line"></div></div>
     <div class="grid cols-2">
       <article class="card item">
-        <div class="logo"></div>
         <div>
           <h3>Electronics & Control</h3>
           <ul>
             <li>Arduino reads RC/Wi-Fi commands and outputs PWM to motor driver and servos.</li>
-            <li>Optional lighting and battery monitoring for safe cutoff.</li>
+            <li>Designed a simple control interface allowing anyone to operate with ease.</li>
             <!-- EDIT ME: add exact board, driver, and battery specs -->
           </ul>
         </div>
       </article>
       <article class="card item">
-        <div class="logo"></div>
         <div>
           <h3>Mechanical</h3>
           <ul>
-            <li>PTC Creo CAD; 3D-printed mounts for electronics and steering linkages.</li>
-            <li>Serviceable shell with quick fasteners; labeled looms and strain relief.</li>
+            <li>3D-printed mounts for electronics and frame.</li>
+            <li>Removable shell with interference fit for quick adjustments and changes.</li>
+            <li>Skeleton model for rocker bogey mechanism and two arm linkage for opening.</li>
             <!-- EDIT ME: add gearing, wheelbase, turning radius, mass -->
           </ul>
         </div>
@@ -93,10 +91,35 @@
   <section id="gallery">
     <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
     <div class="grid cols-3">
-      <!-- Replace with photos or keep placeholders -->
-      <div class="thumb blank-gray card" role="img" aria-label="Chassis & electronics placeholder"></div>
-      <div class="thumb blank-gray card" role="img" aria-label="PTC Creo assembly placeholder"></div>
-      <div class="thumb blank-gray card" role="img" aria-label="Finished model placeholder"></div>
+      <div>
+        <figure class="media-small">
+          <video class="media-el" controls playsinline preload="metadata" poster="starship.MP4">
+            <!-- Put your real file here -->
+            <source src="starship.MP4" type="video/mp4">
+            <!-- Optional secondary format -->
+            <!-- <source src="edwin-pov.webm" type="video/webm"> -->
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+            Short demo of Project Starship
+          </figcaption>
+        </figure>
+      </div>
+      <div>
+        <figure class="media-small">
+          <video class="media-el" controls playsinline preload="metadata" poster="creo.MOV">
+            <!-- Put your real file here -->
+            <source src="creo.MOV" type="video/mp4">
+            <!-- Optional secondary format -->
+            <!-- <source src="edwin-pov.webm" type="video/webm"> -->
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+            Short video of Project Starship mid-design phase
+          </figcaption>
+        </figure>
+      </div>
+      <div class="media-small" role="img" src="peopleschoice.png" aria-label="People's Choice Award"></div>
     </div>
   </section>
 </main>
