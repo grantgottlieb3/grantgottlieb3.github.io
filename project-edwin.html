@@ -60,7 +60,7 @@
     <div class="headshot card">
       <!-- If edwin.png isn’t present yet, swap the <img> for the gray box below. -->
       <!-- <div class="headshot card blank-gray" role="img" aria-label="Edwin hero placeholder"></div> -->
-      <img src="project-edwin/edwin.png" alt="Edwin smart door concept">
+      <img src="edwin.png" alt="Edwin smart door concept">
     </div>
   </section>
 
@@ -121,15 +121,22 @@
   <!-- =============================== Gallery =============================== -->
   <!-- Replace your entire Gallery section with this -->
   <section id="gallery">
-    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="section-title">
+      <h2>Gallery</h2>
+      <div class="line"></div>
+    </div>
+  
     <div class="card item" style="padding:16px;">
       <div>
         <figure class="media-small">
-          <video class="media-el" controls playsinline preload="metadata" poster="edwin-pov.jpg">
-            <!-- Put your real file here -->
+          <!-- Use a poster image for the thumbnail -->
+          <video class="media-el"
+                 controls
+                 playsinline
+                 preload="metadata"
+                 poster="edwin-pov-thumb.jpg"
+                 style="width:100%; height:auto; display:block;">
             <source src="edwin-pov.mp4" type="video/mp4">
-            <!-- Optional secondary format -->
-            <!-- <source src="edwin-pov.webm" type="video/webm"> -->
             Your browser does not support the video tag.
           </video>
           <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
@@ -139,7 +146,7 @@
       </div>
     </div>
   </section>
-
+  
 </main>
 
 <footer class="container footer">

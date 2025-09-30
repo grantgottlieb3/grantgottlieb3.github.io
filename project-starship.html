@@ -89,15 +89,16 @@
 
   <!-- =============================== Gallery =============================== -->
   <section id="gallery">
-    <div class="section-title"><h2>Gallery</h2><div class="line"></div></div>
+    <div class="section-title">
+      <h2>Gallery</h2>
+      <div class="line"></div>
+    </div>
+  
     <div class="grid cols-3">
       <div>
         <figure class="media-small">
-          <video class="media-el" controls playsinline preload="metadata" poster="starship.MP4">
-            <!-- Put your real file here -->
+          <video class="media-el" controls playsinline preload="metadata" poster="starship.jpg" style="width:100%; height:auto; display:block;">
             <source src="starship.MP4" type="video/mp4">
-            <!-- Optional secondary format -->
-            <!-- <source src="edwin-pov.webm" type="video/webm"> -->
             Your browser does not support the video tag.
           </video>
           <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
@@ -107,11 +108,8 @@
       </div>
       <div>
         <figure class="media-small">
-          <video class="media-el" controls playsinline preload="metadata" poster="creo.MOV">
-            <!-- Put your real file here -->
+          <video class="media-el" controls playsinline preload="metadata" poster="creo.jpg" style="width:100%; height:auto; display:block;">
             <source src="creo.MOV" type="video/mp4">
-            <!-- Optional secondary format -->
-            <!-- <source src="edwin-pov.webm" type="video/webm"> -->
             Your browser does not support the video tag.
           </video>
           <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
@@ -119,9 +117,16 @@
           </figcaption>
         </figure>
       </div>
-      <div class="media-small" role="img" src="peopleschoice.png" aria-label="People's Choice Award"></div>
+      <div>
+        <figure class="media-small">
+          <img src="peopleschoice.png" alt="People's Choice Award Certificate" style="width:100%; height:auto; display:block;">
+          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+            People's Choice Award Certificate
+          </figcaption>
+        </figure>
+      </div>
     </div>
-  </section>
+  </section>  
 </main>
 
 <footer class="container footer">
