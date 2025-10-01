@@ -42,49 +42,64 @@
   <section class="hero" id="top">
     <div>
       <div class="badge">FEA • Heat Transfer • Stress</div>
-      <h1 class="title">Finite Element Analysis Labs</h1>
-      <p class="subtitle">Sequential heat→stress workflows and steady-state conduction problems.</p>
-      <div class="actions">
-        <!-- EDIT ME: ensure filenames match what you commit in /assets/pdfs/ -->
-        <a class="button ghost" href="assets/pdfs/ME489-LAB5-solution-2024.pdf" target="_blank" rel="noopener">TSV Thermal Stress (PDF)</a>
-        <a class="button ghost" href="assets/pdfs/Lab4-report-heatsink.pdf" target="_blank" rel="noopener">Heat Sink Report (PDF)</a>
-      </div>
+      <h1 class="title">Thermal FEA</h1>
+      <p class="subtitle">Exploring thermal stress and heat transfer using a TSV model and heat-sink conduction study.</p>
     </div>
     <!-- No hero image? Gray placeholder -->
-    <div class="headshot card blank-gray" role="img" aria-label="FEA hero placeholder"></div>
+    <div class="headshot card blank-gray" role="img" src="fea.png"></div>
   </section>
 
   <section>
-    <div class="section-title"><h2>TSV Thermal Mismatch (3D)</h2><div class="line"></div></div>
+    <div class="section-title"><h2>TSV Thermal Mismatch</h2><div class="line"></div></div>
     <article class="card item">
       <div class="logo"></div>
       <div>
         <p>
-          Copper via in silicon/ceramic stack. Cases: (1) uniform ΔT thermal stress, (2) heat transfer with BCs and source, then (3) import temperature field into stress analysis to study thermally induced stresses and shear.
+          Silicon and cermaic stack with a copper via. Studied the effects of thermally induced stresses and shear.
         </p>
       </div>
     </article>
-    <div class="grid cols-3" style="margin-top:12px;">
-      <div class="thumb blank-gray card" role="img" aria-label="TSV mesh/BCs placeholder"></div>
-      <div class="thumb blank-gray card" role="img" aria-label="Temperature field placeholder"></div>
-      <div class="thumb blank-gray card" role="img" aria-label="Stress contours placeholder"></div>
+    <div>
+      <figure class="media-small">
+        <img src="tsv1.png" style="width:100%; height:auto; display:block;">
+      </figure>
+    </div>
+    <div>
+      <figure class="media-small">
+        <img src="tsv2.png" style="width:100%; height:auto; display:block;">
+      </figure>
+    </div>
+    <div>
+      <figure class="media-small">
+        <img src="tsv3.png" style="width:100%; height:auto; display:block;">
+      </figure>
     </div>
   </section>
 
   <section>
-    <div class="section-title"><h2>Heat Sink (Steady State)</h2><div class="line"></div></div>
+    <div class="section-title"><h2>Heat Sink</h2><div class="line"></div></div>
     <article class="card item">
       <div class="logo"></div>
       <div>
         <p>
-          Encapsulated CPU with copper fin heat sink; explored boundary conditions, heat-flux loading, and a defective attachment area. Reported CPU temps and heat-flux vectors; compared thermal performance under variations.
+          Encapsulated CPU with copper fin heat sink; explored boundary conditions, heat-flux loading, and a defective attachment area. Reported CPU temps and heat-flux vectors, comparing thermal performance under variations.
         </p>
       </div>
     </article>
-    <div class="grid cols-3" style="margin-top:12px;">
-      <div class="thumb blank-gray card" role="img" aria-label="Assembly placeholder"></div>
-      <div class="thumb blank-gray card" role="img" aria-label="Temperature field placeholder"></div>
-      <div class="thumb blank-gray card" role="img" aria-label="Heat flux vectors placeholder"></div>
+    <div>
+      <figure class="media-small">
+        <img src="heatsink1.png" style="width:100%; height:auto; display:block;">
+      </figure>
+    </div>
+    <div>
+      <figure class="media-small">
+        <img src="heatsink2.png" style="width:100%; height:auto; display:block;">
+      </figure>
+    </div>
+    <div>
+      <figure class="media-small">
+        <img src="heatsink3.png" style="width:100%; height:auto; display:block;">
+      </figure>
     </div>
   </section>
 </main>
