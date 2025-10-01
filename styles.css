@@ -346,3 +346,33 @@ a.button { color: #fff; text-decoration: none; }
     transform: none;
   }
 }
+
+/* Gallery media should fit the column, not 420px fixed */
+#gallery .grid.cols-3 .media-small { width: 100%; margin: 0; }
+
+/* A consistent frame for videos/images (16:9; adjust if you prefer) */
+#gallery .media-frame {
+  aspect-ratio: 16 / 9;
+  background: var(--accent-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Make media fill the frame without distortion */
+#gallery .media-frame > video,
+#gallery .media-frame > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;  /* use 'cover' if you prefer edge-to-edge crop */
+  display: block;
+}
+
+/* Optional: keep captions tidy */
+#gallery figcaption {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: .75;
+  margin-top: 6px;
+}
+
