@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,135 +11,201 @@
 
   <!-- Match index formatting -->
   <style>
-    a { text-decoration: none; color: inherit; }
-    a:hover, a:focus { opacity: 0.95; }
-    a.button { color: #fff !important; }
-    .button.ghost { color: var(--text) !important; background: transparent; border: 1px solid var(--border); }
-    .button.ghost:hover { background: var(--accent-2); }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    a:hover,
+    a:focus {
+      opacity: 0.95;
+    }
+
+    a.button {
+      color: #fff !important;
+    }
+
+    .button.ghost {
+      color: var(--text) !important;
+      background: transparent;
+      border: 1px solid var(--border);
+    }
+
+    .button.ghost:hover {
+      background: var(--accent-2);
+    }
 
     .item .logo {
-      width: 42px; height: 42px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      background: transparent; border: 0; box-shadow: none;
-    }
-    .item .logo::after {
-      content: ""; width: 22px; height: 22px; border-radius: 50%;
-      border: 2px solid var(--text); background: transparent; display: block;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
     }
 
-    .blank-gray { background: #eef1f5; border: 1px dashed var(--border); }
-    .thumb.blank-gray { aspect-ratio: 16/9; }
-       
-    /* Headshot size (keeps your current scaling) */
-       .hero .headshot { width: 220px; height: 220px; }
+    .item .logo::after {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--text);
+      background: transparent;
+      display: block;
+    }
+
+    .blank-gray {
+      background: #eef1f5;
+      border: 1px dashed var(--border);
+    }
+
+    .thumb.blank-gray {
+      aspect-ratio: 16/9;
+    }
+
+    .hero .headshot {
+      width: 220px;
+      height: 220px;
+      display: flex;
+      /* lets us center contents */
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      /* makes sure nothing spills */
+    }
+
     @media (min-width: 900px) {
-      .hero .headshot { width: 320px; height: 320px; }
+      .hero .headshot {
+        width: 320px;
+        height: 320px;
+      }
+    }
+
+    .hero .headshot img {
+      max-width: 70%;
+      /* shrink image inside the box */
+      max-height: 70%;
+      /* prevents it from filling */
+      object-fit: contain;
+      /* keep aspect ratio */
     }
   </style>
 </head>
+
 <body>
-<header class="header">
-  <div class="container nav">
-    <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
-    <nav class="right"><a href="index.html#projects">← Back to Projects</a></nav>
-  </div>
-</header>
-
-<main class="container">
-  <!-- =============================== Hero =============================== -->
-  <section class="hero" id="top">
-    <div>
-      <div class="badge">Mechatronics • Prototyping</div>
-      <h1 class="title">Starship Delivery Robot — Wi-Fi RC Toy</h1>
-      <p class="subtitle">
-        Remote-controlled replica inspired by campus delivery robots. Custom chassis and linkages designed in PTC Creo; Arduino firmware drives DC and servo actuators.
-      </p>
-      <div class="actions">
-        <!-- EDIT ME: add demo and/or source links if you publish them -->
-        <a class="button ghost" href="#design">System Design</a>
-        <a class="button ghost" href="#gallery">Gallery</a>
-      </div>
+  <header class="header">
+    <div class="container nav">
+      <div class="left"><a href="index.html" class="brand">Grant Gottlieb</a></div>
+      <nav class="right"><a href="index.html#projects">← Back to Projects</a></nav>
     </div>
-    <div class="headshot card">
-      <!-- If starship.png is missing, swap this <img> for: <div class="headshot card blank-gray"></div> -->
-      <img src="starship.png" alt="Starship delivery robot RC build" width="80%" height="80%">
-    </div>
-  </section>
+  </header>
 
-  <!-- ============================== System Design ============================== -->
-  <section id="design">
-    <div class="section-title"><h2>System Design</h2><div class="line"></div></div>
-    <div class="grid cols-2">
-      <article class="card item">
-        <div>
-          <h3>Electronics & Control</h3>
-          <ul>
-            <li>Arduino reads RC/Wi-Fi commands and outputs PWM to motor driver and servos.</li>
-            <li>Designed a simple control interface allowing anyone to operate with ease.</li>
-            <!-- EDIT ME: add exact board, driver, and battery specs -->
-          </ul>
+  <main class="container">
+    <!-- =============================== Hero =============================== -->
+    <section class="hero" id="top">
+      <div>
+        <div class="badge">Mechatronics • Prototyping</div>
+        <h1 class="title">Starship Delivery Robot — Wi-Fi RC Toy</h1>
+        <p class="subtitle">
+          Remote-controlled replica inspired by campus delivery robots. Custom chassis and linkages designed in PTC
+          Creo; Arduino firmware drives DC and servo actuators.
+        </p>
+        <div class="actions">
+          <!-- EDIT ME: add demo and/or source links if you publish them -->
+          <a class="button ghost" href="#design">System Design</a>
+          <a class="button ghost" href="#gallery">Gallery</a>
         </div>
-      </article>
-      <article class="card item">
+      </div>
+      <div class="headshot card">
+        <!-- If starship.png is missing, swap this <img> for: <div class="headshot card blank-gray"></div> -->
+        <img src="starship.png" alt="Starship delivery robot RC build">
+      </div>
+    </section>
+
+    <!-- ============================== System Design ============================== -->
+    <section id="design">
+      <div class="section-title">
+        <h2>System Design</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid cols-2">
+        <article class="card item">
+          <div>
+            <h3>Electronics & Control</h3>
+            <ul>
+              <li>Arduino reads RC/Wi-Fi commands and outputs PWM to motor driver and servos.</li>
+              <li>Designed a simple control interface allowing anyone to operate with ease.</li>
+              <!-- EDIT ME: add exact board, driver, and battery specs -->
+            </ul>
+          </div>
+        </article>
+        <article class="card item">
+          <div>
+            <h3>Mechanical</h3>
+            <ul>
+              <li>3D-printed mounts for electronics and frame.</li>
+              <li>Removable shell with interference fit for quick adjustments and changes.</li>
+              <li>Skeleton model for rocker bogey mechanism and two arm linkage for opening.</li>
+              <!-- EDIT ME: add gearing, wheelbase, turning radius, mass -->
+            </ul>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- =============================== Gallery =============================== -->
+    <section id="gallery">
+      <div class="section-title">
+        <h2>Gallery</h2>
+        <div class="line"></div>
+      </div>
+
+      <div class="grid cols-3">
         <div>
-          <h3>Mechanical</h3>
-          <ul>
-            <li>3D-printed mounts for electronics and frame.</li>
-            <li>Removable shell with interference fit for quick adjustments and changes.</li>
-            <li>Skeleton model for rocker bogey mechanism and two arm linkage for opening.</li>
-            <!-- EDIT ME: add gearing, wheelbase, turning radius, mass -->
-          </ul>
+          <figure class="media-small">
+            <video class="media-el" controls playsinline preload="metadata" poster="starship.jpg"
+              style="height:100%; width:auto; display:block;">
+              <source src="starship.MP4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+              Short demo of Project Starship
+            </figcaption>
+          </figure>
         </div>
-      </article>
-    </div>
-  </section>
+        <div>
+          <figure class="media-small">
+            <video class="media-el" controls playsinline preload="metadata" poster="creo.jpg"
+              style="height:100%; width:auto; display:block;">
+              <source src="creo.MOV" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+              Short video of Project Starship mid-design phase
+            </figcaption>
+          </figure>
+        </div>
+        <div>
+          <figure class="media-small">
+            <img src="peopleschoice.png" alt="People's Choice Award Certificate"
+              style="width:100%; height:auto; display:block;">
+            <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
+              People's Choice Award Certificate
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+  </main>
 
-  <!-- =============================== Gallery =============================== -->
-  <section id="gallery">
-    <div class="section-title">
-      <h2>Gallery</h2>
-      <div class="line"></div>
-    </div>
-  
-    <div class="grid cols-3">
-      <div>
-        <figure class="media-small">
-          <video class="media-el" controls playsinline preload="metadata" poster="starship.jpg" style="height:100%; width:auto; display:block;">
-            <source src="starship.MP4" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
-            Short demo of Project Starship
-          </figcaption>
-        </figure>
-      </div>
-      <div>
-        <figure class="media-small">
-          <video class="media-el" controls playsinline preload="metadata" poster="creo.jpg" style="height:100%; width:auto; display:block;">
-            <source src="creo.MOV" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
-            Short video of Project Starship mid-design phase
-          </figcaption>
-        </figure>
-      </div>
-      <div>
-        <figure class="media-small">
-          <img src="peopleschoice.png" alt="People's Choice Award Certificate" style="width:100%; height:auto; display:block;">
-          <figcaption style="text-align:center; font-size:0.9rem; opacity:.75; margin-top:6px;">
-            People's Choice Award Certificate
-          </figcaption>
-        </figure>
-      </div>
-    </div>
-  </section>  
-</main>
-
-<footer class="container footer">
-  <div>&copy; <span id="year"></span> Grant Gottlieb</div>
-  <div>Built with clean HTML/CSS/JS.</div>
-</footer>
-<script src="script.js"></script>
+  <footer class="container footer">
+    <div>&copy; <span id="year"></span> Grant Gottlieb</div>
+    <div>Built with clean HTML/CSS/JS.</div>
+  </footer>
+  <script src="script.js"></script>
 </body>
+
 </html>
