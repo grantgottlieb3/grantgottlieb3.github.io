@@ -30,6 +30,12 @@
     /* Gray placeholders when images are missing */
     .blank-gray { background: #eef1f5; border: 1px dashed var(--border); }
     .thumb.blank-gray { aspect-ratio: 16/9; }
+
+    /* Headshot size (keeps your current scaling) */
+    .hero .headshot { width: 220px; height: 220px; }
+    @media (min-width: 900px) {
+      .hero .headshot { width: 320px; height: 320px; }
+    }
   </style>
 </head>
 <body>
