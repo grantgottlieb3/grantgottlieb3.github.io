@@ -567,10 +567,9 @@ if(chartNote){
     }
   });
 
-  const monthsText = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses. `;
   const catsText   = catBits.length ? incomeColHTML + catBits.join('') : incomeColHTML;
 
-  chartNote.innerHTML = monthsText + catsText;
+  chartNote.innerHTML = catsText;
 }
 
       }
