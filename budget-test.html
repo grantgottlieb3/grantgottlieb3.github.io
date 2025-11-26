@@ -131,22 +131,27 @@
     <section id="view-overview" role="tabpanel" aria-labelledby="tab-overview" hidden>
       <div class="section-title" style="margin-top:8px;">
         <h2>Overview</h2><div class="line"></div>
-      </div>
-
-      <!-- Graph first -->
+              </div>
+    
+       <!-- Graph first -->
       <section class="card">
-        <div class="section-title" style="margin:0 0 8px;">
-          <h2>Income vs Spent</h2><div class="line"></div>
-        </div>
-        <canvas id="overviewChart"></canvas>
-      </section>
-
-      <!-- Then only Net, Earned, Spent -->
-      <section class="card" style="margin-top:16px;">
-        <div id="overallStats" class="grid cols-3"></div>
-      </section>
-    </section>
-
+              <div class="section-title" style="margin:0 0 8px;">
+              <h2>Income vs Spent</h2><div class="line"></div>
+            </div>
+            <canvas id="overviewChart"></canvas>
+            <p id="chartNote" class="meta" style="margin-top:8px;"></p>
+          </section>
+    
+          <!-- Summary: This month + overall -->
+          <section class="card" style="margin-top:16px;">
+            <div class="section-title" style="margin:0 0 8px;">
+              <h2>Summary</h2><div class="line"></div>
+            </div>
+            <div id="overallStats" class="grid cols-3"></div>
+            <p id="overviewNote" class="meta" style="margin-top:8px;"></p>
+          </section>
+        </section>
+    
     <!-- PROFILE -->
     <section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
       <div class="section-title">
@@ -298,87 +303,235 @@
     };
 
     const Overview = {
-      render(){ this.renderChart(); this.renderStats(); },
-      activeMonths(){ return Object.keys(App.state.expenses).filter(ym => (App.state.expenses[ym]||[]).length>0).sort(Util.sortYM); },
+      render(){
+        this.renderChart();
+        this.renderStats();
+      },
+      activeMonths(){
+        return Object.keys(App.state.expenses)
+          .filter(ym => (App.state.expenses[ym] || []).length > 0)
+          .sort(Util.sortYM);
+      },
       renderStats(){
-        const host = $('#overallStats'); host.innerHTML='';
+        const host = $('#overallStats'); 
+        host.innerHTML = '';
+
+        const S = App.state;
+        const stipendPerMonthEUR = S.settings.stipendEUR || 0;
+
+        // current month (the "starting" month in focus)
+        const currentYM = UI.currentYM || S.settings.startMonth || Util.fmtYM(new Date());
+        Util.ensureMonth(currentYM);
+        const monthExpenses = S.expenses[currentYM] || [];
+        let monthSpentEUR = 0;
+        monthExpenses.forEach(e => monthSpentEUR += e.amountEUR);
+        const monthIncomeEUR = stipendPerMonthEUR;
+        const monthNetEUR = monthIncomeEUR - monthSpentEUR;
+
+        // overall
         let totalSpentEUR = 0;
-        Object.values(App.state.expenses).forEach(list => list.forEach(e => totalSpentEUR += e.amountEUR));
+        Object.values(S.expenses).forEach(list => list.forEach(e => totalSpentEUR += e.amountEUR));
         const months = this.activeMonths();
         const totalMonths = months.length;
-        const stipendPerMonthEUR = App.state.settings.stipendEUR || 0;
         const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
         const netEUR = totalIncomeEUR - totalSpentEUR;
 
-        const makeStat = (label, val, cls='') => `
+        const makeStat = (label, val, scope, cls='') => `
           <div class="card">
-            <div class="meta">${label}</div>
+            <div class="meta">${scope}</div>
             <div class="stat-val ${cls}">${val}</div>
+            <div class="meta">${label}</div>
           </div>`;
 
-        const netClass = netEUR >= 0 ? 'stat-good' : 'stat-bad';
+        const monthNetClass = monthNetEUR >= 0 ? 'stat-good' : 'stat-bad';
+        const netClass      = netEUR      >= 0 ? 'stat-good' : 'stat-bad';
+
+        const monthLabel = Util.labelYM(currentYM);
+
+        const monthNetDisp   = Util.money(Util.eurToDisp(monthNetEUR));
+        const monthIncDisp   = Util.money(Util.eurToDisp(monthIncomeEUR));
+        const monthSpentDisp = Util.money(Util.eurToDisp(monthSpentEUR));
+
+        const totalNetDisp   = Util.money(Util.eurToDisp(netEUR));
+        const totalIncDisp   = Util.money(Util.eurToDisp(totalIncomeEUR));
+        const totalSpentDisp = Util.money(Util.eurToDisp(totalSpentEUR));
+
         host.innerHTML = [
-          makeStat('Net Total', Util.money(Util.eurToDisp(netEUR)), netClass),
-          makeStat('Total Earned', Util.money(Util.eurToDisp(totalIncomeEUR))),
-          makeStat('Total Spent', Util.money(Util.eurToDisp(totalSpentEUR)))
+          // this month
+          makeStat('Net',   monthNetDisp,   monthLabel, monthNetClass),
+          makeStat('Earned',monthIncDisp,   monthLabel),
+          makeStat('Spent', monthSpentDisp, monthLabel),
+
+          // overall (based on months with any expenses)
+          makeStat('Net',   totalNetDisp,   'All months', netClass),
+          makeStat('Earned',totalIncDisp,   'All months'),
+          makeStat('Spent', totalSpentDisp, 'All months')
         ].join('');
+
+        const note = $('#overviewNote');
+        if(note){
+          if(!months.length && !monthExpenses.length){
+            note.textContent = 'No expenses recorded yet. Add some in the Budget tab to start tracking.';
+          }else{
+            note.textContent =
+              `Current month (${monthLabel}): earned ${monthIncDisp}, spent ${monthSpentDisp}, net ${monthNetDisp}.`;
+          }
+        }
       },
       renderChart(){
         const c = $('#overviewChart');
         const dpr = window.devicePixelRatio || 1;
         const rect = c.getBoundingClientRect();
-        c.width  = Math.max(300, rect.width * dpr);
-        c.height = Math.max(200, rect.height * dpr);
-        const ctx = c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+        const Wcss = Math.max(300, rect.width || 300);
+        const Hcss = Math.max(200, rect.height || 200);
+
+        c.width  = Wcss * dpr;
+        c.height = Hcss * dpr;
+
+        const ctx = c.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const W = Wcss;
+        const H = Hcss;
+
+        ctx.clearRect(0, 0, W, H);
+
+        const cs = getComputedStyle(document.documentElement);
+        const textColor  = cs.getPropertyValue('--text')   || '#111';
+        const borderCol  = cs.getPropertyValue('--border') || '#e5e5e5';
+        const mutedColor = cs.getPropertyValue('--muted')  || '#666';
+        const incomeCol  = cs.getPropertyValue('--accent-2') || '#cde';
+        const spentCol   = cs.getPropertyValue('--accent')   || '#36c';
 
         const months = this.activeMonths();
-        const show = months.slice(-6);
-        const stipendEUR = App.state.settings.stipendEUR || 0;
-        const incomeDisp = show.map(_ => Util.eurToDisp(stipendEUR));
-        const spentDisp = show.map(ym => Util.eurToDisp((App.state.expenses[ym]||[]).reduce((s,e)=>s+e.amountEUR,0)));
+        const show   = months.slice(-6);
 
-        const padL=40, padR=12, padT=56, padB=30; /* extra top space for legend */
-        const W=rect.width, H=rect.height, plotW=W-padL-padR, plotH=H-padT-padB;
-        ctx.clearRect(0,0,W,H);
-        const cs = getComputedStyle(document.documentElement);
+        const chartNote = $('#chartNote');
+
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        ctx.fillStyle = cs.getPropertyValue('--text') || '#111';
-        ctx.strokeStyle = cs.getPropertyValue('--border') || '#ddd';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = textColor;
 
-        /* legend */
-        ctx.textAlign='left';
-        ctx.fillStyle = cs.getPropertyValue('--text') || '#111';
+        if(!show.length){
+          ctx.textAlign = 'center';
+          ctx.fillStyle = mutedColor;
+          ctx.fillText('No data yet', W / 2, H / 2);
+          if(chartNote){
+            chartNote.textContent = 'Add expenses in the Budget tab to see your history.';
+          }
+          return;
+        }
+
+        // data in display currency
+        const stipendEUR = App.state.settings.stipendEUR || 0;
+        const incomeDisp = show.map(_  => Util.eurToDisp(stipendEUR));
+        const spentDisp  = show.map(ym => Util.eurToDisp((App.state.expenses[ym] || [])
+                                   .reduce((s, e) => s + e.amountEUR, 0)));
+
+        const padL = 54, padR = 12, padT = 56, padB = 32; // extra left/top for labels and legend
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        // legend
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = textColor;
         ctx.fillText('Income', padL, 18);
-        ctx.fillText('Spent', padL+90, 18);
-        ctx.fillStyle = cs.getPropertyValue('--accent-2') || '#cde'; ctx.fillRect(padL-28, 10, 12, 8);
-        ctx.fillStyle = cs.getPropertyValue('--accent') || '#36c';  ctx.fillRect(padL+62, 10, 12, 8);
+        ctx.fillText('Spent',  padL + 90, 18);
+        ctx.fillStyle = incomeCol; ctx.fillRect(padL - 28, 12, 12, 8);
+        ctx.fillStyle = spentCol;  ctx.fillRect(padL + 62, 12, 12, 8);
 
-        /* axis */
-        const maxVal = Math.max(1, ...incomeDisp, ...spentDisp);
-        const yMax = Math.ceil(maxVal / 10) * 10;
+        // y scale
+        const maxValRaw = Math.max(1, ...incomeDisp, ...spentDisp);
+        const magnitude = Math.pow(10, Math.floor(Math.log10(maxValRaw)));
+        const niceStep  = magnitude / 2;
+        const yMax      = Math.ceil(maxValRaw / niceStep) * niceStep;
+
         const y = v => padT + plotH * (1 - v / yMax);
-        ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(W - padR, y(0)); ctx.stroke();
 
+        // gridlines and y labels
+        const ticks = 4;
+        ctx.save();
+        for(let i = 0; i <= ticks; i++){
+          const v  = (yMax / ticks) * i;
+          const yy = y(v);
+
+          // line
+          ctx.beginPath();
+          ctx.strokeStyle = borderCol;
+          ctx.globalAlpha = i === 0 ? 0.9 : 0.3;
+          ctx.moveTo(padL, yy);
+          ctx.lineTo(W - padR, yy);
+          ctx.stroke();
+
+          // label (skip if not a nice number)
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = mutedColor;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+
+          const label = Util.money(v).replace(/\.00$/, '');
+          ctx.fillText(label, padL - 6, yy);
+        }
+        ctx.restore();
+
+        // x groups and bars
         const n = show.length || 1;
         const groupW = plotW / n;
-        const barW = Math.min(26, (groupW - 14) / 2);
+        const barW   = Math.min(26, (groupW - 14) / 2);
 
-        for(let i=0;i<n;i++){
-          const cx = padL + i*groupW + (groupW - (2*barW + 8))/2;
+        for(let i = 0; i < n; i++){
+          const xCenter = padL + i * groupW + groupW / 2;
+          const groupLeft = xCenter - (2 * barW + 8) / 2;
 
-          const ih = plotH * (incomeDisp[i] / yMax);
-          ctx.fillStyle = cs.getPropertyValue('--accent-2') || '#cde';
-          ctx.fillRect(cx, y(incomeDisp[i]), barW, ih);
+          // vertical guideline
+          ctx.save();
+          ctx.beginPath();
+          ctx.strokeStyle = borderCol;
+          ctx.globalAlpha = 0.2;
+          ctx.moveTo(xCenter, padT);
+          ctx.lineTo(xCenter, padT + plotH);
+          ctx.stroke();
+          ctx.restore();
 
-          const sx = cx + barW + 8;
-          const sh = plotH * (spentDisp[i] / yMax);
-          ctx.fillStyle = cs.getPropertyValue('--accent') || '#36c';
-          ctx.fillRect(sx, y(spentDisp[i]), barW, sh);
+          const incomeVal = incomeDisp[i];
+          const spentVal  = spentDisp[i];
 
-          ctx.fillStyle = cs.getPropertyValue('--muted') || '#666';
-          const lbl = new Date(show[i]+'-01').toLocaleString(undefined,{month:'short'});
+          const ih = plotH * (incomeVal / yMax);
+          const sh = plotH * (spentVal  / yMax);
+
+          const incomeX = groupLeft;
+          const spentX  = groupLeft + barW + 8;
+
+          // income bar
+          ctx.fillStyle = incomeCol;
+          ctx.fillRect(incomeX, y(incomeVal), barW, ih);
+
+          // spent bar
+          ctx.fillStyle = spentCol;
+          ctx.fillRect(spentX, y(spentVal), barW, sh);
+
+          // spent value label above bar
+          if(spentVal > 0){
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const txt = Util.money(spentVal).replace(/\.00$/, '');
+            const tx = spentX + barW / 2;
+            const ty = y(spentVal) - 4;
+            ctx.fillText(txt, tx, ty);
+          }
+
+          // month label on x axis
+          ctx.fillStyle = mutedColor;
           ctx.textAlign = 'center';
-          ctx.fillText(lbl, padL + i*groupW + groupW/2, H - 10);
+          ctx.textBaseline = 'alphabetic';
+          const lbl = new Date(show[i] + '-01').toLocaleString(undefined, { month: 'short' });
+          ctx.fillText(lbl, xCenter, H - 10);
+        }
+
+        if(chartNote){
+          chartNote.textContent = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses.`;
         }
       }
     };

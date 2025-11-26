@@ -376,3 +376,10 @@ a.button { color: #fff; text-decoration: none; }
   margin-top: 6px;
 }
 
+    /* overview extras */
+    #overallStats .card {
+      padding: 12px;
+    }
+    #overallStats .card .meta + .stat-val {
+      margin-top: 2px;
+    }
