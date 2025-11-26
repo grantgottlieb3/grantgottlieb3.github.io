@@ -319,16 +319,7 @@
         const S = App.state;
         const stipendPerMonthEUR = S.settings.stipendEUR || 0;
 
-        // current month (the "starting" month in focus)
-        const currentYM = UI.currentYM || S.settings.startMonth || Util.fmtYM(new Date());
-        Util.ensureMonth(currentYM);
-        const monthExpenses = S.expenses[currentYM] || [];
-        let monthSpentEUR = 0;
-        monthExpenses.forEach(e => monthSpentEUR += e.amountEUR);
-        const monthIncomeEUR = stipendPerMonthEUR;
-        const monthNetEUR = monthIncomeEUR - monthSpentEUR;
-
-        // overall
+        // overall totals across all months with any expenses
         let totalSpentEUR = 0;
         Object.values(S.expenses).forEach(list => list.forEach(e => totalSpentEUR += e.amountEUR));
         const months = this.activeMonths();
@@ -336,48 +327,34 @@
         const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
         const netEUR = totalIncomeEUR - totalSpentEUR;
 
-        const makeStat = (label, val, scope, cls='') => `
+        const makeStat = (label, val, cls='') => `
           <div class="card">
-            <div class="meta">${scope}</div>
-            <div class="stat-val ${cls}">${val}</div>
             <div class="meta">${label}</div>
+            <div class="stat-val ${cls}">${val}</div>
           </div>`;
 
-        const monthNetClass = monthNetEUR >= 0 ? 'stat-good' : 'stat-bad';
-        const netClass      = netEUR      >= 0 ? 'stat-good' : 'stat-bad';
-
-        const monthLabel = Util.labelYM(currentYM);
-
-        const monthNetDisp   = Util.money(Util.eurToDisp(monthNetEUR));
-        const monthIncDisp   = Util.money(Util.eurToDisp(monthIncomeEUR));
-        const monthSpentDisp = Util.money(Util.eurToDisp(monthSpentEUR));
+        const netClass = netEUR >= 0 ? 'stat-good' : 'stat-bad';
 
         const totalNetDisp   = Util.money(Util.eurToDisp(netEUR));
         const totalIncDisp   = Util.money(Util.eurToDisp(totalIncomeEUR));
         const totalSpentDisp = Util.money(Util.eurToDisp(totalSpentEUR));
 
         host.innerHTML = [
-          // this month
-          makeStat('Net',   monthNetDisp,   monthLabel, monthNetClass),
-          makeStat('Earned',monthIncDisp,   monthLabel),
-          makeStat('Spent', monthSpentDisp, monthLabel),
-
-          // overall (based on months with any expenses)
-          makeStat('Net',   totalNetDisp,   'All months', netClass),
-          makeStat('Earned',totalIncDisp,   'All months'),
-          makeStat('Spent', totalSpentDisp, 'All months')
+          makeStat('Net Total',   totalNetDisp,   netClass),
+          makeStat('Total Earned',totalIncDisp),
+          makeStat('Total Spent', totalSpentDisp)
         ].join('');
 
         const note = $('#overviewNote');
         if(note){
-          if(!months.length && !monthExpenses.length){
+          if(!months.length){
             note.textContent = 'No expenses recorded yet. Add some in the Budget tab to start tracking.';
           }else{
-            note.textContent =
-              `Current month (${monthLabel}): earned ${monthIncDisp}, spent ${monthSpentDisp}, net ${monthNetDisp}.`;
+            note.textContent = 'Totals are based on all months that have any recorded expenses.';
           }
         }
       },
+
       renderChart(){
         const c = $('#overviewChart');
         const dpr = window.devicePixelRatio || 1;
@@ -401,7 +378,6 @@
         const borderCol  = cs.getPropertyValue('--border') || '#e5e5e5';
         const mutedColor = cs.getPropertyValue('--muted')  || '#666';
         const incomeCol  = cs.getPropertyValue('--accent-2') || '#cde';
-        const spentCol   = cs.getPropertyValue('--accent')   || '#36c';
 
         const months = this.activeMonths();
         const show   = months.slice(-6);
@@ -422,41 +398,85 @@
           return;
         }
 
-        // data in display currency
-        const stipendEUR = App.state.settings.stipendEUR || 0;
-        const incomeDisp = show.map(_  => Util.eurToDisp(stipendEUR));
-        const spentDisp  = show.map(ym => Util.eurToDisp((App.state.expenses[ym] || [])
-                                   .reduce((s, e) => s + e.amountEUR, 0)));
+        // bin colors and mapping
+        const bins = App.state.bins || [];
+        const binColors = [
+          '#4c6fff',
+          '#ff8a4c',
+          '#4cc9b0',
+          '#ff6fa9',
+          '#9b8cff',
+          '#ffd66b',
+          '#54b397'
+        ];
+        const colorMap = {};
+        bins.forEach((b, idx) => {
+          colorMap[b.id] = binColors[idx % binColors.length];
+        });
 
-        const padL = 54, padR = 12, padT = 56, padB = 32; // extra left/top for labels and legend
+        const stipendEUR = App.state.settings.stipendEUR || 0;
+
+        const incomeVals = [];
+        const spentVals  = [];
+        const monthBinVals = []; // per month: { totalDisp, segments: [{binId, valDisp}] }
+
+        show.forEach(ym => {
+          const incomeVal = Util.eurToDisp(stipendEUR);
+          incomeVals.push(incomeVal);
+
+          const expenses = App.state.expenses[ym] || [];
+          const segMap = {};
+          let monthTotalEUR = 0;
+          expenses.forEach(e => {
+            monthTotalEUR += e.amountEUR;
+            segMap[e.binId] = (segMap[e.binId] || 0) + e.amountEUR;
+          });
+
+          const totalDisp = Util.eurToDisp(monthTotalEUR);
+          spentVals.push(totalDisp);
+
+          const segments = [];
+          Object.entries(segMap).forEach(([binId, amtEUR]) => {
+            const vDisp = Util.eurToDisp(amtEUR);
+            if(vDisp > 0){
+              segments.push({ binId, valDisp: vDisp });
+            }
+          });
+          // largest first, purely visual
+          segments.sort((a, b) => b.valDisp - a.valDisp);
+
+          monthBinVals.push({ totalDisp, segments });
+        });
+
+        const padL = 54, padR = 12, padT = 56, padB = 32;
         const plotW = W - padL - padR;
         const plotH = H - padT - padB;
 
-        // legend
+        // legend for income and "spent by category"
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = textColor;
         ctx.fillText('Income', padL, 18);
-        ctx.fillText('Spent',  padL + 90, 18);
+        ctx.fillText('Spent by category', padL + 90, 18);
         ctx.fillStyle = incomeCol; ctx.fillRect(padL - 28, 12, 12, 8);
-        ctx.fillStyle = spentCol;  ctx.fillRect(padL + 62, 12, 12, 8);
+        ctx.strokeStyle = mutedColor;
+        ctx.strokeRect(padL + 62, 12, 12, 8);
 
-        // y scale
-        const maxValRaw = Math.max(1, ...incomeDisp, ...spentDisp);
+        // y scale based on income and total spent
+        const maxValRaw = Math.max(1, ...incomeVals, ...spentVals);
         const magnitude = Math.pow(10, Math.floor(Math.log10(maxValRaw)));
         const niceStep  = magnitude / 2;
         const yMax      = Math.ceil(maxValRaw / niceStep) * niceStep;
 
         const y = v => padT + plotH * (1 - v / yMax);
 
-        // gridlines and y labels
+        // horizontal gridlines and y labels
         const ticks = 4;
         ctx.save();
         for(let i = 0; i <= ticks; i++){
           const v  = (yMax / ticks) * i;
           const yy = y(v);
 
-          // line
           ctx.beginPath();
           ctx.strokeStyle = borderCol;
           ctx.globalAlpha = i === 0 ? 0.9 : 0.3;
@@ -464,7 +484,6 @@
           ctx.lineTo(W - padR, yy);
           ctx.stroke();
 
-          // label (skip if not a nice number)
           ctx.globalAlpha = 1;
           ctx.fillStyle = mutedColor;
           ctx.textAlign = 'right';
@@ -475,13 +494,13 @@
         }
         ctx.restore();
 
-        // x groups and bars
+        // groups and bars
         const n = show.length || 1;
         const groupW = plotW / n;
         const barW   = Math.min(26, (groupW - 14) / 2);
 
         for(let i = 0; i < n; i++){
-          const xCenter = padL + i * groupW + groupW / 2;
+          const xCenter   = padL + i * groupW + groupW / 2;
           const groupLeft = xCenter - (2 * barW + 8) / 2;
 
           // vertical guideline
@@ -494,25 +513,34 @@
           ctx.stroke();
           ctx.restore();
 
-          const incomeVal = incomeDisp[i];
-          const spentVal  = spentDisp[i];
-
-          const ih = plotH * (incomeVal / yMax);
-          const sh = plotH * (spentVal  / yMax);
+          const incomeVal = incomeVals[i];
+          const spentVal  = spentVals[i];
+          const monthData = monthBinVals[i];
 
           const incomeX = groupLeft;
           const spentX  = groupLeft + barW + 8;
 
-          // income bar
+          // income bar (single color)
+          const ih = plotH * (incomeVal / yMax);
           ctx.fillStyle = incomeCol;
           ctx.fillRect(incomeX, y(incomeVal), barW, ih);
 
-          // spent bar
-          ctx.fillStyle = spentCol;
-          ctx.fillRect(spentX, y(spentVal), barW, sh);
+          // spent bar stacked by bin
+          if(spentVal > 0 && monthData && monthData.segments.length){
+            let acc = 0;
+            monthData.segments.forEach(seg => {
+              const segVal = seg.valDisp;
+              const topVal = acc + segVal;
+              const segTop = y(topVal);
+              const segBottom = y(acc);
+              const h = segBottom - segTop;
+              const color = colorMap[seg.binId] || binColors[0];
+              ctx.fillStyle = color;
+              ctx.fillRect(spentX, segTop, barW, h);
+              acc = topVal;
+            });
 
-          // spent value label above bar
-          if(spentVal > 0){
+            // label total spent above the stack
             ctx.fillStyle = textColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
@@ -530,10 +558,25 @@
           ctx.fillText(lbl, xCenter, H - 10);
         }
 
+        // HTML legend under the chart showing which color is which bin
         if(chartNote){
-          chartNote.textContent = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses.`;
+          const legendBits = [];
+          bins.forEach((b, idx) => {
+            if(idx < 6){
+              const color = colorMap[b.id] || binColors[idx % binColors.length];
+              legendBits.push(
+                `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;">
+                  <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${color};"></span>${b.name}
+                 </span>`
+              );
+            }
+          });
+          const monthsText = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses.`;
+          const catsText   = legendBits.length ? ' Categories: ' + legendBits.join('') : '';
+          chartNote.innerHTML = monthsText + catsText;
         }
       }
+
     };
 
     const Profile = {
