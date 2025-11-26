@@ -171,7 +171,7 @@
             </div>
           </div>
           <div>
-            <label class="badge" for="currency">Display currency</label>
+            <label class="badge" for="currency">Display Currency</label>
             <select id="currency" class="fld">
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
@@ -182,7 +182,7 @@
             <input id="fx" type="number" inputmode="decimal" step="0.0001" placeholder="1.08" class="fld" />
           </div>
           <div>
-            <label class="badge" for="startMonth">Starting month</label>
+            <label class="badge" for="startMonth">Current Month</label>
             <input id="startMonth" type="month" class="fld" />
           </div>
           <div class="profile-actions">
@@ -452,16 +452,6 @@
         const plotW = W - padL - padR;
         const plotH = H - padT - padB;
 
-        // legend for income and "spent by category"
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = textColor;
-        ctx.fillText('Income', padL, 18);
-        ctx.fillText('Spent by category', padL + 90, 18);
-        ctx.fillStyle = incomeCol; ctx.fillRect(padL - 28, 12, 12, 8);
-        ctx.strokeStyle = mutedColor;
-        ctx.strokeRect(padL + 62, 12, 12, 8);
-
         // y scale based on income and total spent
         const maxValRaw = Math.max(1, ...incomeVals, ...spentVals);
         const magnitude = Math.pow(10, Math.floor(Math.log10(maxValRaw)));
@@ -559,22 +549,30 @@
         }
 
         // HTML legend under the chart showing which color is which bin
-        if(chartNote){
-          const legendBits = [];
-          bins.forEach((b, idx) => {
-            if(idx < 6){
-              const color = colorMap[b.id] || binColors[idx % binColors.length];
-              legendBits.push(
-                `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;">
-                  <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${color};"></span>${b.name}
-                 </span>`
-              );
-            }
-          });
-          const monthsText = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses.`;
-          const catsText   = legendBits.length ? ' Categories: ' + legendBits.join('') : '';
-          chartNote.innerHTML = monthsText + catsText;
-        }
+if(chartNote){
+  const incomeColHTML =
+    `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
+       <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${incomeCol};"></span>Income
+     </span>`;
+
+  const catBits = [];
+  bins.forEach((b, idx) => {
+    if(idx < 6){
+      const color = colorMap[b.id] || binColors[idx % binColors.length];
+      catBits.push(
+        `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
+           <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${color};"></span>${b.name}
+         </span>`
+      );
+    }
+  });
+
+  const monthsText = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses. `;
+  const catsText   = catBits.length ? incomeColHTML + catBits.join('') : incomeColHTML;
+
+  chartNote.innerHTML = monthsText + catsText;
+}
+
       }
 
     };
