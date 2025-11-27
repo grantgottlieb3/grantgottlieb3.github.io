@@ -9,7 +9,7 @@
 
   <script>
     (function () {
-      const VERSION = '2025-09-25-4';
+      const VERSION = '2025-09-25-5';
       const STORAGE_KEY = 'app_version';
       try {
         const prev = localStorage.getItem(STORAGE_KEY);
@@ -111,7 +111,7 @@
         <h2>Monthly Budget</h2><div class="line"></div>
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="button ghost" title="Prev month" onclick="Budget.shiftMonth(-1)">◀</button>
-          <span class="badge" id="monthLabel">—</span>
+          <span class="badge" id="monthLabel">-</span>
           <button class="button ghost" title="Next month" onclick="Budget.shiftMonth(1)">▶</button>
         </div>
       </div>
@@ -131,27 +131,27 @@
     <section id="view-overview" role="tabpanel" aria-labelledby="tab-overview" hidden>
       <div class="section-title" style="margin-top:8px;">
         <h2>Overview</h2><div class="line"></div>
-              </div>
-    
-       <!-- Graph first -->
+      </div>
+
+      <!-- Graph first -->
       <section class="card">
-              <div class="section-title" style="margin:0 0 8px;">
-              <h2>Income vs Spent</h2><div class="line"></div>
-            </div>
-            <canvas id="overviewChart"></canvas>
-            <p id="chartNote" class="meta" style="margin-top:8px;"></p>
-          </section>
-    
-          <!-- Summary: This month + overall -->
-          <section class="card" style="margin-top:16px;">
-            <div class="section-title" style="margin:0 0 8px;">
-              <h2>Summary</h2><div class="line"></div>
-            </div>
-            <div id="overallStats" class="grid cols-3"></div>
-            <p id="overviewNote" class="meta" style="margin-top:8px;"></p>
-          </section>
-        </section>
-    
+        <div class="section-title" style="margin:0 0 8px;">
+          <h2>Income vs Spent</h2><div class="line"></div>
+        </div>
+        <canvas id="overviewChart"></canvas>
+        <p id="chartNote" class="meta" style="margin-top:8px;"></p>
+      </section>
+
+      <!-- Summary: overall only -->
+      <section class="card" style="margin-top:16px;">
+        <div class="section-title" style="margin:0 0 8px;">
+          <h2>Summary</h2><div class="line"></div>
+        </div>
+        <div id="overallStats" class="grid cols-3"></div>
+        <p id="overviewNote" class="meta" style="margin-top:8px;"></p>
+      </section>
+    </section>
+
     <!-- PROFILE -->
     <section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
       <div class="section-title">
@@ -278,10 +278,37 @@
       fmtYM: (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
       labelYM(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y, m-1, 1).toLocaleString(undefined,{month:'long', year:'numeric'}); },
       ensureMonth(ym){ const S=App.state; if(!S.expenses[ym]) S.expenses[ym]=[]; },
-      eurToDisp(eur){ const {currency,fx} = App.state.settings; return currency==='EUR'? eur : eur*fx; },
-      dispToEur(n){ const {currency,fx} = App.state.settings; return currency==='EUR'? n : n/fx; },
-      eurToStipendDisp(eur){ const {stipendInputCurrency, fx} = App.state.settings; return stipendInputCurrency==='EUR' ? eur : eur*fx; },
-      stipendDispToEur(n){ const {stipendInputCurrency, fx} = App.state.settings; return stipendInputCurrency==='EUR' ? n : n/(fx||1); },
+
+      // generic conversions for planning numbers (stipend, budgets)
+      eurToDisp(eur){
+        const {currency,fx} = App.state.settings;
+        return currency==='EUR'? eur : eur*fx;
+      },
+      dispToEur(n){
+        const {currency,fx} = App.state.settings;
+        return currency==='EUR'? n : n/fx;
+      },
+
+      // per-expense conversions using snapshot FX
+      expenseToDisp(e){
+        const {currency, fx} = App.state.settings;
+        const rate = e.fxAtEntry || fx || 1;
+        return currency === 'EUR' ? e.amountEUR : e.amountEUR * rate;
+      },
+      expenseDispToEur(amountDisp, e){
+        const {currency, fx} = App.state.settings;
+        const rate = e.fxAtEntry || fx || 1;
+        return currency === 'EUR' ? amountDisp : amountDisp / rate;
+      },
+
+      eurToStipendDisp(eur){
+        const {stipendInputCurrency, fx} = App.state.settings;
+        return stipendInputCurrency==='EUR' ? eur : eur*fx;
+      },
+      stipendDispToEur(n){
+        const {stipendInputCurrency, fx} = App.state.settings;
+        return stipendInputCurrency==='EUR' ? n : n/(fx||1);
+      },
       money(n){
         const cur = App.state.settings.currency==='EUR' ? 'EUR' : 'USD';
         return new Intl.NumberFormat(undefined,{style:'currency',currency:cur, maximumFractionDigits:2}).format(n);
@@ -321,11 +348,23 @@
 
         // overall totals across all months with any expenses
         let totalSpentEUR = 0;
-        Object.values(S.expenses).forEach(list => list.forEach(e => totalSpentEUR += e.amountEUR));
+        let totalSpentDispRaw = 0;
+        Object.values(S.expenses).forEach(list => list.forEach(e => {
+          totalSpentEUR += e.amountEUR;
+          totalSpentDispRaw += Util.expenseToDisp(e);
+        }));
+
         const months = this.activeMonths();
         const totalMonths = months.length;
         const totalIncomeEUR = totalMonths * stipendPerMonthEUR;
         const netEUR = totalIncomeEUR - totalSpentEUR;
+
+        const totalIncomeDispRaw = Util.eurToDisp(totalIncomeEUR);
+        const totalNetDispRaw = totalIncomeDispRaw - totalSpentDispRaw;
+
+        const totalNetDisp   = Util.money(totalNetDispRaw);
+        const totalIncDisp   = Util.money(totalIncomeDispRaw);
+        const totalSpentDisp = Util.money(totalSpentDispRaw);
 
         const makeStat = (label, val, cls='') => `
           <div class="card">
@@ -334,10 +373,6 @@
           </div>`;
 
         const netClass = netEUR >= 0 ? 'stat-good' : 'stat-bad';
-
-        const totalNetDisp   = Util.money(Util.eurToDisp(netEUR));
-        const totalIncDisp   = Util.money(Util.eurToDisp(totalIncomeEUR));
-        const totalSpentDisp = Util.money(Util.eurToDisp(totalSpentEUR));
 
         host.innerHTML = [
           makeStat('Net Total',   totalNetDisp,   netClass),
@@ -426,31 +461,40 @@
 
           const expenses = App.state.expenses[ym] || [];
           const segMap = {};
-          let monthTotalEUR = 0;
+          let monthTotalDisp = 0;
           expenses.forEach(e => {
-            monthTotalEUR += e.amountEUR;
-            segMap[e.binId] = (segMap[e.binId] || 0) + e.amountEUR;
+            const dispVal = Util.expenseToDisp(e);
+            monthTotalDisp += dispVal;
+            segMap[e.binId] = (segMap[e.binId] || 0) + dispVal;
           });
 
-          const totalDisp = Util.eurToDisp(monthTotalEUR);
-          spentVals.push(totalDisp);
+          spentVals.push(monthTotalDisp);
 
           const segments = [];
-          Object.entries(segMap).forEach(([binId, amtEUR]) => {
-            const vDisp = Util.eurToDisp(amtEUR);
-            if(vDisp > 0){
-              segments.push({ binId, valDisp: vDisp });
+          Object.entries(segMap).forEach(([binId, amtDisp]) => {
+            if(amtDisp > 0){
+              segments.push({ binId, valDisp: amtDisp });
             }
           });
           // largest first, purely visual
           segments.sort((a, b) => b.valDisp - a.valDisp);
 
-          monthBinVals.push({ totalDisp, segments });
+          monthBinVals.push({ totalDisp: monthTotalDisp, segments });
         });
 
         const padL = 54, padR = 12, padT = 56, padB = 32;
         const plotW = W - padL - padR;
         const plotH = H - padT - padB;
+
+        // legend for canvas (top left)
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = textColor;
+        ctx.fillText('Income', padL, 18);
+        ctx.fillText('Spent by category', padL + 90, 18);
+        ctx.fillStyle = incomeCol; ctx.fillRect(padL - 28, 12, 12, 8);
+        ctx.strokeStyle = mutedColor;
+        ctx.strokeRect(padL + 62, 12, 12, 8);
 
         // y scale based on income and total spent
         const maxValRaw = Math.max(1, ...incomeVals, ...spentVals);
@@ -549,31 +593,30 @@
         }
 
         // HTML legend under the chart showing which color is which bin
-if(chartNote){
-  const incomeColHTML =
-    `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
-       <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${incomeCol};"></span>Income
-     </span>`;
+        if(chartNote){
+          const incomeColHTML =
+            `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
+               <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${incomeCol};"></span>Income
+             </span>`;
 
-  const catBits = [];
-  bins.forEach((b, idx) => {
-    if(idx < 6){
-      const color = colorMap[b.id] || binColors[idx % binColors.length];
-      catBits.push(
-        `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
-           <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${color};"></span>${b.name}
-         </span>`
-      );
-    }
-  });
+          const catBits = [];
+          bins.forEach((b, idx) => {
+            if(idx < 6){
+              const color = colorMap[b.id] || binColors[idx % binColors.length];
+              catBits.push(
+                `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
+                   <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${color};"></span>${b.name}
+                 </span>`
+              );
+            }
+          });
 
-  const catsText   = catBits.length ? incomeColHTML + catBits.join('') : incomeColHTML;
+          const monthsText = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses. `;
+          const catsText   = catBits.length ? incomeColHTML + catBits.join('') : incomeColHTML;
 
-  chartNote.innerHTML = catsText;
-}
-
+          chartNote.innerHTML = monthsText + catsText;
+        }
       }
-
     };
 
     const Profile = {
@@ -581,7 +624,9 @@ if(chartNote){
         const S = App.state;
         const scur = S.settings.stipendInputCurrency || 'USD';
         $('#stipendCur').value = scur;
-        const stipendValue = scur === 'EUR' ? (S.settings.stipendEUR || 0) : (S.settings.stipendEUR || 0) * (S.settings.fx || 1.08);
+        const stipendValue = scur === 'EUR'
+          ? (S.settings.stipendEUR || 0)
+          : (S.settings.stipendEUR || 0) * (S.settings.fx || 1.08);
         $('#stipend').value = (stipendValue || 0).toFixed(2);
         $('#currency').value = S.settings.currency;
         $('#fx').value = S.settings.fx;
@@ -665,7 +710,7 @@ if(chartNote){
     const Budget = {
       pendingBinId: null,
       shiftMonth(delta){
-        const [y,m] = UI.currentYM.split('-').map(Number);
+        const [y,m] = (UI.currentYM || App.state.settings.startMonth || Util.fmtYM(new Date())).split('-').map(Number);
         const d = new Date(y, m-1+delta, 1);
         UI.currentYM = Util.fmtYM(d);
         this.render();
@@ -686,15 +731,33 @@ if(chartNote){
         if(!name || !(amtDisp>0)) { $('#addDialog').close(); return; }
         Util.ensureMonth(UI.currentYM);
         const amountEUR = Util.dispToEur(amtDisp);
+        const fxAtEntry = App.state.settings.fx || 1;
         const today = new Date().toISOString().slice(0,10);
-        App.state.expenses[UI.currentYM].push({id:Util.id(), date:today, binId:this.pendingBinId, name, amountEUR});
+        App.state.expenses[UI.currentYM].push({
+          id: Util.id(),
+          date: today,
+          binId: this.pendingBinId,
+          name,
+          amountEUR,
+          fxAtEntry
+        });
         App.save(); $('#addDialog').close(); this.render(); Overview.render();
       },
       editExpense(expId){
         const arr = App.state.expenses[UI.currentYM]; const i = arr.findIndex(e=>e.id===expId); if(i<0) return;
         const e = arr[i];
-        const newName = prompt('Name', e.name||''); if(newName===null) return; e.name=newName;
-        const newAmt  = prompt('Amount ('+(App.state.settings.currency==='EUR'?'€':'$')+')', Util.eurToDisp(e.amountEUR).toFixed(2)); if(newAmt===null) return; e.amountEUR = Util.dispToEur(parseFloat(newAmt||'0'));
+        const newName = prompt('Name', e.name || '');
+        if(newName === null) return;
+        e.name = newName;
+
+        const curSym = App.state.settings.currency === 'EUR' ? '€' : '$';
+        const defaultAmt = Util.expenseToDisp(e).toFixed(2);
+        const newAmt = prompt('Amount (' + curSym + ')', defaultAmt);
+        if(newAmt === null) return;
+
+        const parsed = parseFloat(newAmt || '0');
+        e.amountEUR = Util.expenseDispToEur(parsed, e);
+
         App.save(); this.render(); Overview.render();
       },
       delExpense(expId){
@@ -753,7 +816,7 @@ if(chartNote){
               <div class="meta">${new Date(e.date).toLocaleDateString()} · ${bin?bin.name:'(bin deleted)'}</div>
             </div>
             <div style="text-align:right">
-              <div style="font-weight:700">${Util.money(Util.eurToDisp(e.amountEUR))}</div>
+              <div style="font-weight:700">${Util.money(Util.expenseToDisp(e))}</div>
               <div class="meta"><a href="#" onclick="Budget.editExpense('${e.id}'); return false;">Edit</a> · <a href="#" onclick="Budget.delExpense('${e.id}'); return false;">Delete</a></div>
             </div>`;
           list.appendChild(row);
