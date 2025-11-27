@@ -9,7 +9,7 @@
 
   <script>
     (function () {
-      const VERSION = '2025-09-25-5';
+      const VERSION = '2025-11-27-1';
       const STORAGE_KEY = 'app_version';
       try {
         const prev = localStorage.getItem(STORAGE_KEY);
@@ -53,18 +53,14 @@
     .meta{ color:var(--muted, #666); font-size:12px; }
     .brand{ display:none; }
 
-    /* bins editor row */
     .bin-row{ display:grid; grid-template-columns:minmax(0,1fr) 140px auto; gap:8px; align-items:center; }
     .bin-actions{ display:flex; gap:6px; }
 
-    /* compact input shell */
     .fld{ width:100%; padding:12px; border:1px solid var(--border, #e5e5e5); border-radius:12px; background:var(--card, #fff); color:var(--text); min-width:0; }
 
-    /* expense list padding fix */
     .card.item{ padding:16px; }
     .card.item h3{ margin:0 0 4px; }
 
-    /* responsive helpers */
     @media (max-width: 900px){
       .cols-3{ grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
@@ -74,7 +70,6 @@
       .section-title{ flex-direction:column; align-items:flex-start; }
     }
 
-    /* profile layout tuning for narrow phones */
     .profile-grid{ display:grid; grid-template-columns: repeat(3, minmax(140px,1fr)); gap:8px; }
     .profile-grid .span-2{ grid-column: span 2; }
     .profile-actions{ display:flex; align-items:flex-end; gap:8px; }
@@ -84,7 +79,6 @@
       .profile-actions{ flex-wrap:wrap; }
     }
 
-    /* chart */
     #overviewChart { width:100%; height:240px; display:block; }
     .stat-val{ font-size:20px; font-weight:700; }
     .stat-good{ color:var(--good); }
@@ -105,7 +99,6 @@
 
   <main class="container" id="app" style="padding-bottom:32px;">
 
-    <!-- BUDGET -->
     <section id="view-budget" role="tabpanel" aria-labelledby="tab-budget">
       <div class="section-title" style="margin-top:8px;">
         <h2>Monthly Budget</h2><div class="line"></div>
@@ -127,13 +120,11 @@
       </section>
     </section>
 
-    <!-- OVERVIEW -->
     <section id="view-overview" role="tabpanel" aria-labelledby="tab-overview" hidden>
       <div class="section-title" style="margin-top:8px;">
         <h2>Overview</h2><div class="line"></div>
       </div>
 
-      <!-- Graph first -->
       <section class="card">
         <div class="section-title" style="margin:0 0 8px;">
           <h2>Income vs Spent</h2><div class="line"></div>
@@ -142,7 +133,6 @@
         <p id="chartNote" class="meta" style="margin-top:8px;"></p>
       </section>
 
-      <!-- Summary: overall only -->
       <section class="card" style="margin-top:16px;">
         <div class="section-title" style="margin:0 0 8px;">
           <h2>Summary</h2><div class="line"></div>
@@ -152,7 +142,6 @@
       </section>
     </section>
 
-    <!-- PROFILE -->
     <section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
       <div class="section-title">
         <h2>Profile</h2><div class="line"></div>
@@ -279,17 +268,17 @@
       labelYM(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y, m-1, 1).toLocaleString(undefined,{month:'long', year:'numeric'}); },
       ensureMonth(ym){ const S=App.state; if(!S.expenses[ym]) S.expenses[ym]=[]; },
 
-      // generic conversions for planning numbers (stipend, budgets)
       eurToDisp(eur){
         const {currency,fx} = App.state.settings;
-        return currency==='EUR'? eur : eur*fx;
+        const rate = fx || 1;
+        return currency==='EUR'? eur : eur*rate;
       },
       dispToEur(n){
         const {currency,fx} = App.state.settings;
-        return currency==='EUR'? n : n/fx;
+        const rate = fx || 1;
+        return currency==='EUR'? n : n/rate;
       },
 
-      // per-expense conversions using snapshot FX
       expenseToDisp(e){
         const {currency, fx} = App.state.settings;
         const rate = e.fxAtEntry || fx || 1;
@@ -303,11 +292,13 @@
 
       eurToStipendDisp(eur){
         const {stipendInputCurrency, fx} = App.state.settings;
-        return stipendInputCurrency==='EUR' ? eur : eur*fx;
+        const rate = fx || 1;
+        return stipendInputCurrency==='EUR' ? eur : eur*rate;
       },
       stipendDispToEur(n){
         const {stipendInputCurrency, fx} = App.state.settings;
-        return stipendInputCurrency==='EUR' ? n : n/(fx||1);
+        const rate = fx || 1;
+        return stipendInputCurrency==='EUR' ? n : n/(rate);
       },
       money(n){
         const cur = App.state.settings.currency==='EUR' ? 'EUR' : 'USD';
@@ -346,7 +337,6 @@
         const S = App.state;
         const stipendPerMonthEUR = S.settings.stipendEUR || 0;
 
-        // overall totals across all months with any expenses
         let totalSpentEUR = 0;
         let totalSpentDispRaw = 0;
         Object.values(S.expenses).forEach(list => list.forEach(e => {
@@ -433,7 +423,6 @@
           return;
         }
 
-        // bin colors and mapping
         const bins = App.state.bins || [];
         const binColors = [
           '#4c6fff',
@@ -450,15 +439,12 @@
         });
 
         const stipendEUR = App.state.settings.stipendEUR || 0;
+        const incomeVal = Util.eurToDisp(stipendEUR);
 
-        const incomeVals = [];
         const spentVals  = [];
-        const monthBinVals = []; // per month: { totalDisp, segments: [{binId, valDisp}] }
+        const monthBinVals = [];
 
         show.forEach(ym => {
-          const incomeVal = Util.eurToDisp(stipendEUR);
-          incomeVals.push(incomeVal);
-
           const expenses = App.state.expenses[ym] || [];
           const segMap = {};
           let monthTotalDisp = 0;
@@ -476,7 +462,6 @@
               segments.push({ binId, valDisp: amtDisp });
             }
           });
-          // largest first, purely visual
           segments.sort((a, b) => b.valDisp - a.valDisp);
 
           monthBinVals.push({ totalDisp: monthTotalDisp, segments });
@@ -486,25 +471,31 @@
         const plotW = W - padL - padR;
         const plotH = H - padT - padB;
 
-        // legend for canvas (top left)
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = textColor;
         ctx.fillText('Income', padL, 18);
-        ctx.fillText('Spent by category', padL + 90, 18);
-        ctx.fillStyle = incomeCol; ctx.fillRect(padL - 28, 12, 12, 8);
-        ctx.strokeStyle = mutedColor;
-        ctx.strokeRect(padL + 62, 12, 12, 8);
+        ctx.fillText('Spent by category', padL + 110, 18);
 
-        // y scale based on income and total spent
-        const maxValRaw = Math.max(1, ...incomeVals, ...spentVals);
+        ctx.beginPath();
+        ctx.strokeStyle = incomeCol;
+        ctx.lineWidth = 2;
+        ctx.moveTo(padL - 40, 18);
+        ctx.lineTo(padL - 20, 18);
+        ctx.stroke();
+
+        ctx.fillStyle = binColors[0];
+        ctx.fillRect(padL + 80, 12, 12, 8);
+        ctx.strokeStyle = mutedColor;
+        ctx.strokeRect(padL + 80, 12, 12, 8);
+
+        const maxValRaw = Math.max(1, incomeVal || 0, ...spentVals);
         const magnitude = Math.pow(10, Math.floor(Math.log10(maxValRaw)));
         const niceStep  = magnitude / 2;
         const yMax      = Math.ceil(maxValRaw / niceStep) * niceStep;
 
         const y = v => padT + plotH * (1 - v / yMax);
 
-        // horizontal gridlines and y labels
         const ticks = 4;
         ctx.save();
         for(let i = 0; i <= ticks; i++){
@@ -528,16 +519,24 @@
         }
         ctx.restore();
 
-        // groups and bars
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = incomeCol;
+        ctx.lineWidth = 2;
+        const incomeY = y(incomeVal);
+        ctx.moveTo(padL, incomeY);
+        ctx.lineTo(W - padR, incomeY);
+        ctx.stroke();
+        ctx.restore();
+
         const n = show.length || 1;
         const groupW = plotW / n;
-        const barW   = Math.min(26, (groupW - 14) / 2);
+        const barW   = Math.min(32, groupW * 0.4);
 
         for(let i = 0; i < n; i++){
           const xCenter   = padL + i * groupW + groupW / 2;
-          const groupLeft = xCenter - (2 * barW + 8) / 2;
+          const spentX    = xCenter - barW / 2;
 
-          // vertical guideline
           ctx.save();
           ctx.beginPath();
           ctx.strokeStyle = borderCol;
@@ -547,19 +546,9 @@
           ctx.stroke();
           ctx.restore();
 
-          const incomeVal = incomeVals[i];
           const spentVal  = spentVals[i];
           const monthData = monthBinVals[i];
 
-          const incomeX = groupLeft;
-          const spentX  = groupLeft + barW + 8;
-
-          // income bar (single color)
-          const ih = plotH * (incomeVal / yMax);
-          ctx.fillStyle = incomeCol;
-          ctx.fillRect(incomeX, y(incomeVal), barW, ih);
-
-          // spent bar stacked by bin
           if(spentVal > 0 && monthData && monthData.segments.length){
             let acc = 0;
             monthData.segments.forEach(seg => {
@@ -574,7 +563,6 @@
               acc = topVal;
             });
 
-            // label total spent above the stack
             ctx.fillStyle = textColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
@@ -584,7 +572,6 @@
             ctx.fillText(txt, tx, ty);
           }
 
-          // month label on x axis
           ctx.fillStyle = mutedColor;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'alphabetic';
@@ -592,7 +579,6 @@
           ctx.fillText(lbl, xCenter, H - 10);
         }
 
-        // HTML legend under the chart showing which color is which bin
         if(chartNote){
           const incomeColHTML =
             `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
@@ -640,10 +626,10 @@
         const scurSel = $('#stipendCur').value;
         const stipendRaw = parseFloat($('#stipend').value || '0');
         const fx = parseFloat($('#fx').value || '1.08');
-        S.settings.stipendEUR = scurSel === 'EUR' ? stipendRaw : (stipendRaw / fx);
+        S.settings.stipendEUR = scurSel === 'EUR' ? stipendRaw : (stipendRaw / (fx || 1));
         S.settings.stipendInputCurrency = scurSel;
         S.settings.currency  = $('#currency').value;
-        S.settings.fx        = fx;
+        S.settings.fx        = fx || 1;
         S.settings.startMonth= $('#startMonth').value || Util.fmtYM(new Date());
         App.save();
         $('#saveNote').textContent = 'Saved ✓'; setTimeout(()=>$('#saveNote').textContent=' ', 1200);
@@ -772,15 +758,20 @@
         Util.ensureMonth(UI.currentYM);
         $('#monthLabel').textContent = Util.labelYM(UI.currentYM);
 
-        const totals = Object.fromEntries(S.bins.map(b=>[b.id,0]));
-        App.state.expenses[UI.currentYM].forEach(e => totals[e.binId] = (totals[e.binId] || 0) + e.amountEUR);
+        const totalsEUR = Object.fromEntries(S.bins.map(b=>[b.id,0]));
+        const totalsDisp = Object.fromEntries(S.bins.map(b=>[b.id,0]));
+        App.state.expenses[UI.currentYM].forEach(e => {
+          totalsEUR[e.binId] = (totalsEUR[e.binId] || 0) + e.amountEUR;
+          totalsDisp[e.binId] = (totalsDisp[e.binId] || 0) + Util.expenseToDisp(e);
+        });
 
         const host = $('#binsSummary'); host.innerHTML = '';
         S.bins.forEach(b => {
-          const spent = totals[b.id] || 0;
-          const budget = b.monthlyEUR || 0;
-          const pct = Math.min(100, Math.max(0, budget > 0 ? (spent / budget) * 100 : 0));
-          const over = (budget - spent) < 0;
+          const spentEUR = totalsEUR[b.id] || 0;
+          const spentDisp = totalsDisp[b.id] || 0;
+          const budgetEUR = b.monthlyEUR || 0;
+          const pct = Math.min(100, Math.max(0, budgetEUR > 0 ? (spentEUR / budgetEUR) * 100 : 0));
+          const over = (budgetEUR - spentEUR) < 0;
 
           const card = document.createElement('div');
           card.className = 'card'; card.style.padding='14px'; card.style.cursor='pointer';
@@ -796,7 +787,7 @@
                 </div>
                 <div class="meta" style="display:flex; gap:8px; margin-top:6px;">
                   <span class="badge" style="border-style:${over ? 'solid' : 'dashed'}; ${over ? 'color:#b00020;' : ''}">
-                    ${Util.money(Util.eurToDisp(spent))} / ${Util.money(Util.eurToDisp(budget))} spent
+                    ${Util.money(spentDisp)} / ${Util.money(Util.eurToDisp(budgetEUR))} spent
                   </span>
                 </div>
               </div>
