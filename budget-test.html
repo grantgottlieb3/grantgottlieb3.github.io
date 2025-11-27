@@ -471,12 +471,6 @@
         const plotW = W - padL - padR;
         const plotH = H - padT - padB;
 
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = textColor;
-        ctx.fillText('Income', padL, 18);
-        ctx.fillText('Spent by category', padL + 110, 18);
-
         ctx.beginPath();
         ctx.strokeStyle = incomeCol;
         ctx.lineWidth = 2;
@@ -597,10 +591,9 @@
             }
           });
 
-          const monthsText = `Showing last ${show.length} month${show.length === 1 ? '' : 's'} with recorded expenses. `;
           const catsText   = catBits.length ? incomeColHTML + catBits.join('') : incomeColHTML;
 
-          chartNote.innerHTML = monthsText + catsText;
+          chartNote.innerHTML = catsText;
         }
       }
     };
