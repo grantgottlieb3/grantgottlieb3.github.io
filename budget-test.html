@@ -254,6 +254,21 @@
           this.state = raw ? JSON.parse(raw) : this.defaultState();
         } catch { this.state = this.defaultState(); }
       },
+      migrate(){
+        const S = this.state || {};
+        const fx = (S.settings && S.settings.fx) || 1;
+        let changed = false;
+        Object.values(S.expenses || {}).forEach(list => {
+          if(!Array.isArray(list)) return;
+          list.forEach(e => {
+            if(e && e.fxAtEntry === undefined){
+              e.fxAtEntry = fx;
+              changed = true;
+            }
+          });
+        });
+        if(changed) this.save();
+      },
       save(){ localStorage.setItem(this.key, JSON.stringify(this.state)); },
       resetAll(){
         if(!confirm('Reset all data?')) return;
@@ -401,8 +416,8 @@
         const cs = getComputedStyle(document.documentElement);
         const textColor  = cs.getPropertyValue('--text')   || '#111';
         const borderCol  = cs.getPropertyValue('--border') || '#e5e5e5';
-        const mutedColor = cs.getPropertyValue('--muted')  || '#666';
-        const incomeCol  = cs.getPropertyValue('--accent-2') || '#cde';
+        const mutedColor = cs.getPropertyValue('--muted')  || '#666667';
+        const incomeCol  = '#000';
 
         const months = this.activeMonths();
         const show   = months.slice(-6);
@@ -467,21 +482,10 @@
           monthBinVals.push({ totalDisp: monthTotalDisp, segments });
         });
 
-        const padL = 54, padR = 12, padT = 56, padB = 32;
+        // Trim top padding now that the in-canvas legend is gone.
+        const padL = 54, padR = 12, padT = 36, padB = 32;
         const plotW = W - padL - padR;
         const plotH = H - padT - padB;
-
-        ctx.beginPath();
-        ctx.strokeStyle = incomeCol;
-        ctx.lineWidth = 2;
-        ctx.moveTo(padL - 40, 18);
-        ctx.lineTo(padL - 20, 18);
-        ctx.stroke();
-
-        ctx.fillStyle = binColors[0];
-        ctx.fillRect(padL + 80, 12, 12, 8);
-        ctx.strokeStyle = mutedColor;
-        ctx.strokeRect(padL + 80, 12, 12, 8);
 
         const maxValRaw = Math.max(1, incomeVal || 0, ...spentVals);
         const magnitude = Math.pow(10, Math.floor(Math.log10(maxValRaw)));
@@ -809,6 +813,7 @@
     };
 
     App.load();
+    App.migrate();
     UI.switchTab('budget');
   </script>
 </body>
