@@ -7,19 +7,31 @@ A clean, Apple‑inspired single‑page site built with just HTML/CSS/JS. Simple
 
 1. **Download** this folder or clone the repo you push it to.
 2. Open `index.html` in a browser to preview.
-3. Replace placeholder images in `/assets` and look for **EDIT ME** comments in `index.html`.
-4. Customize colors in `styles.css` (CSS variables at the top).
-5. Optional: add a PDF of your resume to the repo and link it to the "Download Resume" button.
+3. Replace placeholder images in `assets/images/**` and look for **EDIT ME** comments in the HTML.
+4. Customize colors in `assets/css/styles.css` (CSS variables at the top).
+5. Optional: drop PDFs or videos into `assets/docs` and `assets/video` and link them from the relevant project page.
 
 ## Structure
 
 ```
 .
-├── index.html      # All content lives here (find EDIT ME markers)
-├── styles.css      # Colors/layout/typography
-├── script.js       # Smooth scrolling + handy helpers
-├── assets/         # Images (replace placeholders with real photos/renders)
-└── .nojekyll       # Ensures GitHub Pages serves files as-is
+├── index.html              # Landing page / portfolio
+├── assets/
+│   ├── css/styles.css      # Colors/layout/typography
+│   ├── js/script.js        # Smooth scrolling + footer year helper
+│   ├── images/             # headshots, skills, personal, and project media
+│   ├── video/              # project demo clips
+│   └── docs/               # PDFs and other documents
+├── projects/               # One folder per project page
+│   ├── safe-send/index.html
+│   ├── edwin/index.html
+│   ├── starship/index.html
+│   ├── fea/index.html
+│   ├── spanish/index.html
+│   └── hev/index.html
+├── budget-test.html        # standalone budgeting prototype
+├── emma-budget.html        # variant of the budgeting prototype
+└── api/ai.js               # serverless proxy for the Spanish app
 ```
 
 ## Suggested Sections to Keep Updated
@@ -31,8 +43,8 @@ A clean, Apple‑inspired single‑page site built with just HTML/CSS/JS. Simple
 ## Add a new project
 
 1. Duplicate any `.project` card in the **Projects** section of `index.html`.
-2. Put a 16:9 image in `/assets` (e.g., `my-project.jpg`) and update the `<img src>`.
-3. Keep the blurb to ~3 sentences and add a few tags.
+2. Add a 16:9 thumbnail to `assets/images/projects/<your-project>/` and update the `<img src>` to point to it.
+3. If you need a full project page, duplicate a folder in `projects/`, adjust copy/media paths (use `../assets/...`), and keep the blurb to ~3 sentences with a few tags on the card.
 
 ## Deploy to GitHub Pages
 
