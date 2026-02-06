@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Emma, will you be my Valentine?</title>
+  <title>emma, will you be my valentine?</title>
   <meta name="description" content="A little scroll story for Emma." />
   <style>
     :root{
@@ -45,7 +45,7 @@
     .heart{
       position:absolute;
       width:14px; height:14px;
-      background: var(--accent);
+      background: var(--heart, var(--accent));
       transform: rotate(45deg);
       border-radius: 3px;
       animation: floatUp linear infinite;
@@ -55,16 +55,26 @@
       content:"";
       position:absolute;
       width:14px; height:14px;
-      background: var(--accent);
+      background: var(--heart, var(--accent));
       border-radius: 50%;
     }
     .heart:before{ left:-7px; top:0; }
     .heart:after{ left:0; top:-7px; }
+    .heart.burst{
+      animation: burstHeart 1.35s ease-out forwards;
+      box-shadow: 0 12px 30px rgba(255,77,136,0.4);
+      mix-blend-mode: screen;
+    }
 
     @keyframes floatUp{
       from{ transform: translateY(50vh) rotate(45deg); opacity:0; }
       10%{opacity:0.9}
       to{ transform: translateY(-120vh) rotate(45deg); opacity:0; }
+    }
+    @keyframes burstHeart{
+      0%{ transform: translate(0,0) scale(0.7) rotate(45deg); opacity:1; }
+      70%{ opacity:1; }
+      100%{ transform: translate(var(--dx, 0px), var(--dy, -160px)) scale(1.35) rotate(45deg); opacity:0; }
     }
 
     header{
@@ -215,6 +225,11 @@
       height:100%;
       object-fit:cover;
       display:block;
+    }
+    /* Slightly zoomed-out third photo so more of it shows */
+    .photo-3 img{
+      transform: scale(1);
+      transform-origin:center;
     }
     .photo .label{
       position:absolute;
@@ -387,111 +402,88 @@
     <section class="hero">
       <div class="card">
         <div class="cardInner">
-          <h1 class="title">Emma, I made you a little scroll story.</h1>
+          <h1 class="title">hi em, I have a BIG question to ask you.</h1>
           <p class="subtitle">
-            Keep scrolling. Each part shows up at the perfect time.
-            At the end… there’s one important question.
+            even though we are 4,000+ miles apart, i still wanted to make this special :)
           </p>
 
           <div class="ctaRow">
             <button class="btn btnPrimary" id="startBtn" type="button">Start the story →</button>
-            <button class="btn btnGhost" id="musicBtn" type="button" aria-pressed="false">Play a tiny vibe</button>
           </div>
-
-          <div class="hint">Tip: replace the photo placeholders with your favorites. Search for “DROP PHOTO HERE” in this file.</div>
         </div>
       </div>
 
-      <div class="photo" role="img" aria-label="Photo placeholder 1">
-        <img src="assets/images/emma-1.jpg" alt="Emma and me at the tailgate" />
-
-        <div class="big">
-          DROP PHOTO HERE (1)
-          <span>Example: a favorite selfie or first trip photo</span>
-        </div>
-        <div class="label">Placeholders are built in. Just swap in your images.</div>
+      <div class="photo" role="img" aria-label="Emma and me at the tailgate">
+        <img src="assets/images/emma-1.jpeg" alt="Emma and me at the tailgate" />
+        <div class="label">us at the IU-Purdue game!</div>
       </div>
     </section>
 
     <section class="story">
       <div class="reveal" data-reveal>
-        <h2>First, a tiny confession…</h2>
-        <p>I like you in the little moments. The normal days. The silly laughs. The “look at this” texts.</p>
+        <h2>words can't describe how much i love you!</h2>
+        <p>so i thought maybe a website could...</p>
       </div>
 
       <div class="split">
-        <div class="photo" role="img" aria-label="Photo placeholder 2">
-          <!-- DROP PHOTO HERE (2) -->
-          <div class="big">
-            <img src="assets/images/emma-2.jpg" alt="Emma and me on Halloween" />
-
-          </div>
-          <div class="label">This one is perfect for something fun.</div>
+        <div class="photo" role="img" aria-label="Emma and me on Halloween">
+          <img src="assets/images/emma-2.jpeg" alt="Emma and me on Halloween" />
+          <div class="label">halloween at cactus!</div>
         </div>
 
         <div class="reveal" data-reveal>
-          <h2>And the big moments too.</h2>
-          <p>You make the world feel brighter, warmer, and a lot more like home.</p>
+          <h2>i love the way you laugh</h2>
+          <p>especially when i make it happen! whether it is in person or on facetime, i love the laughs we get to share together. how lucky am i to have a funny best friend?</p>
         </div>
       </div>
 
       <div class="reveal" data-reveal>
         <h2>Three things I adore about you</h2>
         <p>
-          1) Your laugh.<br>
-          2) The way you care.<br>
-          3) How you make “ordinary” feel special.
+          1) your caring heart<br>
+          2) your big, beautiful brain<br>
+          3) your natural beauty and grace :)
         </p>
       </div>
 
-      <div class="photo" role="img" aria-label="Photo placeholder 3">
-        <!-- DROP PHOTO HERE (3) -->
-        <div class="big">
-            <img src="assets/images/emma-3.jpg" alt="Emma and me at the Indians game" />
-
-        </div>
-        <div class="label">Optional: add a caption in the alt text.</div>
+      <div class="photo photo-3" role="img" aria-label="Emma and me at the Indians game">
+        <img src="assets/images/emma-3.jpeg" alt="Emma and me at the Indians game" />
+        <div class="label">nothin' like a gameday in knoxville</div>
       </div>
 
       <div class="reveal" data-reveal>
-        <h2>If I could plan a perfect date…</h2>
-        <p>It would be you, me, good food, and a little adventure. Nothing fancy needed. Just us.</p>
+        <h2>distance has been really hard</h2>
+        <p>but i know it only makes us stronger! i know that when we are reunited NOTHING can stop us</p>
       </div>
 
       <div class="split">
         <div class="reveal" data-reveal>
-          <h2>I’m grateful for you</h2>
-          <p>For your kindness, your patience, and the way you show up. You matter to me, a lot.</p>
+          <h2>i’m grateful for the way you care for me</h2>
+          <p>i don't always deserve it but you ALWAYS make me feel special. i mean just look at the how we look at each other! no wonder i still get butterflies sometimes</p>
         </div>
 
-        <div class="photo" role="img" aria-label="Photo placeholder 4">
-          <!-- DROP PHOTO HERE (4) -->
-          <div class="big">
-            DROP PHOTO HERE (4)
-            <span>Example: a sunset, beach, or artsy photo</span>
-          </div>
-          <div class="label">This slot also works great for a scenic picture.</div>
+        <div class="photo" role="img" aria-label="Another favorite photo of us">
+          <img src="assets/images/emma-4.jpeg" alt="Another favorite photo of us" />
+          <div class="label">one of our MANY amazing formals!</div>
         </div>
       </div>
 
       <div class="reveal" data-reveal>
-        <h2>Okay… one last scroll.</h2>
-        <p>I saved the best part for the end.</p>
+        <h2>okay...</h2>
+        <p>it's time to ask that big question...</p>
       </div>
 
       <div class="final reveal" data-reveal id="finalCard">
-        <h2>Emma, will you be my Valentine?</h2>
+        <h2>emma, will you be my valentine?</h2>
         <p>
-          I choose you. Not just for a day, but in all the days that make up a life.
-          Will you be my Valentine?
+          you + me = valentines forever?
         </p>
 
         <div class="answerRow">
-          <button class="btn btnPrimary" id="yesBtn" type="button">Yes 💖</button>
-          <button class="btn btnGhost" id="maybeBtn" type="button">I need a hint 😄</button>
+          <button class="btn btnPrimary" id="yesBtn" type="button">YES!!!!!</button>
+          <button class="btn btnGhost" id="maybeBtn" type="button">idk grant...</button>
         </div>
 
-        <div class="note">P.S. If you want, change the text anywhere in this file to make it more “you.”</div>
       </div>
     </section>
   </main>
@@ -546,6 +538,7 @@
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     const closeModal = document.getElementById('closeModal');
+    const finalCard = document.getElementById('finalCard');
 
     function showModal(title, body){
       modalTitle.textContent = title;
@@ -557,11 +550,11 @@
 
     // Buttons
     document.getElementById('yesBtn').addEventListener('click', () => {
-      showModal('💖 Yay!', 'Best answer ever. Now come here so I can celebrate properly.');
+      showModal('LETS GO!', 'i knew you would say yes! i feel so lucky');
       burstHearts();
     });
     document.getElementById('maybeBtn').addEventListener('click', () => {
-      showModal('Hint 😄', 'Try tapping “Yes 💖” … it’s scientifically proven to be adorable.');
+      showModal('Hint', 'you really had to play hard to get... try again love');
     });
 
     // Little ambient "vibe" with WebAudio (no external files)
@@ -620,22 +613,41 @@
     for (let i=0;i<18;i++) spawnHeart();
     setInterval(spawnHeart, 900);
 
-    // Burst hearts on "Yes"
+    // Burst hearts on "Yes" — big, colorful explosion + extra shower
     function burstHearts(){
-      for (let i=0;i<18;i++){
+      const rect = finalCard.getBoundingClientRect();
+      const originX = rect.left + rect.width / 2;
+      const originY = rect.top + rect.height / 2;
+      const total = 80;
+
+      for (let i=0;i<total;i++){
         setTimeout(() => {
           const h = document.createElement('div');
-          h.className = 'heart';
-          const left = 35 + Math.random() * 30;
-          const dur = 6 + Math.random() * 4;
-          const size = 12 + Math.random() * 14;
-          h.style.left = left + 'vw';
-          h.style.animationDuration = dur + 's';
+          h.className = 'heart burst';
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 120 + Math.random() * 240;
+          const dx = Math.cos(angle) * distance;
+          const dy = Math.sin(angle) * distance;
+          const size = 12 + Math.random() * 22;
+          const hue = (330 + Math.random() * 80) % 360;
+          const color = `hsl(${hue}, 82%, 67%)`;
+          h.style.left = originX + 'px';
+          h.style.top = originY + 'px';
           h.style.width = size + 'px';
           h.style.height = size + 'px';
+          h.style.setProperty('--dx', dx + 'px');
+          h.style.setProperty('--dy', dy + 'px');
+          h.style.setProperty('--heart', color);
+          h.style.animationDuration = (1.05 + Math.random() * 0.45) + 's';
+          h.style.animationDelay = (Math.random() * 0.12) + 's';
           heartsLayer.appendChild(h);
-          setTimeout(() => h.remove(), dur * 1000);
-        }, i * 40);
+          setTimeout(() => h.remove(), 2000);
+        }, i * 10);
+      }
+
+      // short heart shower to keep the vibe going
+      for (let j=0; j<30; j++){
+        setTimeout(spawnHeart, 120 + j * 55);
       }
     }
   </script>
