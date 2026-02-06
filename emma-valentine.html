@@ -41,6 +41,7 @@
       pointer-events:none;
       opacity:0.32;
       filter: blur(0.2px);
+      z-index: 5;
     }
     .heart{
       position:absolute;
@@ -65,6 +66,39 @@
       from{ transform: translateY(50vh) rotate(45deg); opacity:0; }
       10%{opacity:0.9}
       to{ transform: translateY(-120vh) rotate(45deg); opacity:0; }
+    }
+
+    /* extra sparkly overlay */
+    .sparkles{
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:0.18;
+      z-index: 6;
+      mix-blend-mode: screen;
+      background:
+        radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,0.55), transparent 65%),
+        radial-gradient(1.5px 1.5px at 22% 72%, rgba(255,209,102,0.55), transparent 65%),
+        radial-gradient(2px 2px at 48% 38%, rgba(255,77,136,0.55), transparent 65%),
+        radial-gradient(1.5px 1.5px at 70% 22%, rgba(125,246,255,0.55), transparent 65%),
+        radial-gradient(2px 2px at 84% 64%, rgba(255,255,255,0.55), transparent 65%),
+        radial-gradient(1.5px 1.5px at 92% 12%, rgba(255,209,102,0.50), transparent 65%),
+        radial-gradient(2px 2px at 6% 90%, rgba(255,77,136,0.50), transparent 65%);
+      animation: twinkle 5.5s ease-in-out infinite;
+      filter: blur(0.2px);
+    }
+    @keyframes twinkle{
+      0%,100%{ opacity:0.14; transform: translateY(0); }
+      50%{ opacity:0.24; transform: translateY(-6px); }
+    }
+
+    /* FX canvas for fireworks + heart confetti */
+    canvas#fx{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index: 999;
     }
 
     header{
@@ -123,6 +157,8 @@
       max-width: var(--max);
       margin: 0 auto;
       padding: 34px 18px 90px;
+      position: relative;
+      z-index: 10;
     }
 
     .hero{
@@ -145,14 +181,28 @@
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow:hidden;
+      position: relative;
     }
-    .cardInner{ padding: 26px; }
+    .card:before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(600px 200px at 10% 0%, rgba(255,77,136,0.24), transparent 55%),
+        radial-gradient(600px 200px at 90% 0%, rgba(255,209,102,0.18), transparent 55%),
+        radial-gradient(700px 280px at 50% 120%, rgba(125,246,255,0.12), transparent 60%);
+      pointer-events:none;
+      filter: blur(10px);
+      opacity: 0.9;
+    }
+    .cardInner{ padding: 26px; position: relative; }
 
     .title{
       font-size: clamp(34px, 4.5vw, 54px);
       line-height: 1.06;
       margin:0 0 12px;
       letter-spacing:-0.5px;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.40);
     }
     .subtitle{
       margin: 0 0 18px;
@@ -172,17 +222,30 @@
       padding: 12px 16px;
       font-weight:700;
       cursor:pointer;
-      transition: transform 120ms ease, filter 120ms ease;
+      transition: transform 120ms ease, filter 120ms ease, box-shadow 180ms ease;
       display:inline-flex;
       align-items:center;
       gap:10px;
       user-select:none;
+      position: relative;
+      overflow: hidden;
     }
     .btn:active{ transform: translateY(1px) scale(0.99); }
     .btnPrimary{
       background: linear-gradient(135deg, var(--accent), #9b5cff);
       color:white;
+      box-shadow: 0 14px 28px rgba(255,77,136,0.18);
     }
+    .btnPrimary:before{
+      content:"";
+      position:absolute;
+      inset:-60% -40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.28), transparent 55%);
+      transform: rotate(20deg);
+      opacity: 0.0;
+      transition: opacity 180ms ease;
+    }
+    .btnPrimary:hover:before{ opacity: 1; }
     .btnGhost{
       background: rgba(255,255,255,0.10);
       border: 1px solid rgba(255,255,255,0.16);
@@ -210,6 +273,14 @@
       overflow:hidden;
       box-shadow: 0 18px 40px rgba(0,0,0,0.30);
     }
+    .photo:after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: radial-gradient(800px 420px at 20% 20%, rgba(255,77,136,0.16), transparent 55%);
+      pointer-events:none;
+      opacity: 0.9;
+    }
     .photo img{
       width:100%;
       height:100%;
@@ -232,6 +303,7 @@
       font-size: 13px;
       line-height:1.35;
       backdrop-filter: blur(10px);
+      z-index: 2;
     }
     .photo .big{
       position:absolute;
@@ -245,6 +317,7 @@
       color: rgba(247,247,251,0.78);
       font-weight:700;
       letter-spacing:0.2px;
+      z-index: 2;
     }
     .photo .big span{
       display:block;
@@ -269,7 +342,21 @@
       transform: translateY(16px);
       opacity: 0;
       transition: opacity 650ms ease, transform 650ms ease, background 450ms ease;
+      position: relative;
+      overflow: hidden;
     }
+    .reveal:before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(260px 120px at 12% 10%, rgba(255,77,136,0.15), transparent 65%),
+        radial-gradient(240px 120px at 88% 12%, rgba(255,209,102,0.10), transparent 65%);
+      pointer-events:none;
+      filter: blur(10px);
+      opacity: 0.9;
+    }
+    .reveal > *{ position: relative; }
     .reveal.show{
       opacity: 1;
       transform: translateY(0);
@@ -305,6 +392,19 @@
       position:relative;
       overflow:hidden;
     }
+    .final:before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(420px 220px at 12% 22%, rgba(255,77,136,0.22), transparent 60%),
+        radial-gradient(420px 220px at 88% 28%, rgba(255,209,102,0.15), transparent 60%),
+        radial-gradient(540px 260px at 50% 120%, rgba(125,246,255,0.10), transparent 65%);
+      pointer-events:none;
+      filter: blur(12px);
+      opacity: 0.95;
+    }
+    .final > *{ position: relative; }
     .final h2{
       margin:0 0 10px;
       font-size: 28px;
@@ -367,12 +467,16 @@
       padding: 10px 18px 40px;
       color: rgba(247,247,251,0.55);
       font-size: 12px;
+      position: relative;
+      z-index: 10;
     }
   </style>
 </head>
 
 <body>
   <div class="hearts" aria-hidden="true" id="hearts"></div>
+  <div class="sparkles" aria-hidden="true"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
 
   <header>
     <div class="nav">
@@ -541,6 +645,7 @@
     document.getElementById('yesBtn').addEventListener('click', () => {
       showModal('LETS GO!', 'i knew you would say yes! i feel so lucky');
       burstHearts();
+      loveFireworksAndHearts();
     });
     document.getElementById('maybeBtn').addEventListener('click', () => {
       showModal('Hint', 'you really had to play hard to get... try again love');
@@ -549,38 +654,40 @@
     // Little ambient "vibe" with WebAudio (no external files)
     let audioCtx, osc, gain;
     const musicBtn = document.getElementById('musicBtn');
-    musicBtn.addEventListener('click', async () => {
-      if (!audioCtx){
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        osc = audioCtx.createOscillator();
-        gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 220;
-        gain.gain.value = 0.0;
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start();
-      }
-      const pressed = musicBtn.getAttribute('aria-pressed') === 'true';
-      if (pressed){
-        musicBtn.setAttribute('aria-pressed', 'false');
-        musicBtn.textContent = 'Play a tiny vibe';
-        gain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.04);
-      } else {
-        await audioCtx.resume();
-        musicBtn.setAttribute('aria-pressed', 'true');
-        musicBtn.textContent = 'Stop the vibe';
-        gain.gain.setTargetAtTime(0.035, audioCtx.currentTime, 0.06);
-        // gentle detune drift
-        let t = 0;
-        const drift = () => {
-          if (musicBtn.getAttribute('aria-pressed') !== 'true') return;
-          t += 0.02;
-          osc.frequency.setValueAtTime(220 + Math.sin(t) * 6, audioCtx.currentTime);
-          requestAnimationFrame(drift);
-        };
-        drift();
-      }
-    });
+    if (musicBtn){
+      musicBtn.addEventListener('click', async () => {
+        if (!audioCtx){
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          osc = audioCtx.createOscillator();
+          gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = 220;
+          gain.gain.value = 0.0;
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start();
+        }
+        const pressed = musicBtn.getAttribute('aria-pressed') === 'true';
+        if (pressed){
+          musicBtn.setAttribute('aria-pressed', 'false');
+          musicBtn.textContent = 'Play a tiny vibe';
+          gain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.04);
+        } else {
+          await audioCtx.resume();
+          musicBtn.setAttribute('aria-pressed', 'true');
+          musicBtn.textContent = 'Stop the vibe';
+          gain.gain.setTargetAtTime(0.035, audioCtx.currentTime, 0.06);
+          // gentle detune drift
+          let t = 0;
+          const drift = () => {
+            if (musicBtn.getAttribute('aria-pressed') !== 'true') return;
+            t += 0.02;
+            osc.frequency.setValueAtTime(220 + Math.sin(t) * 6, audioCtx.currentTime);
+            requestAnimationFrame(drift);
+          };
+          drift();
+        }
+      });
+    }
 
     // Floating hearts background (deterministic-ish)
     const heartsLayer = document.getElementById('hearts');
@@ -620,6 +727,189 @@
         }, i * 40);
       }
     }
+
+    // Fireworks + heart confetti on "Yes"
+    const fx = document.getElementById('fx');
+    const ctx = fx.getContext('2d', { alpha: true });
+
+    let W = 0, H = 0, DPR = 1;
+    function resizeFx(){
+      DPR = Math.min(2, window.devicePixelRatio || 1);
+      W = fx.clientWidth;
+      H = fx.clientHeight;
+      fx.width = Math.floor(W * DPR);
+      fx.height = Math.floor(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener('resize', resizeFx);
+    resizeFx();
+
+    const particles = [];
+    const bursts = [];
+
+    function rand(min, max){ return min + Math.random() * (max - min); }
+
+    function addFirework(x, y){
+      const count = Math.floor(rand(40, 70));
+      for (let i=0; i<count; i++){
+        const a = rand(0, Math.PI * 2);
+        const sp = rand(3.2, 7.8);
+        particles.push({
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          g: 0.08,
+          drag: 0.985,
+          life: rand(42, 80),
+          size: rand(1.3, 2.6),
+          hue: rand(0, 360),
+          type: 'spark'
+        });
+      }
+    }
+
+    function addHeartConfetti(x, y){
+      const count = Math.floor(rand(22, 34));
+      for (let i=0; i<count; i++){
+        const a = rand(-Math.PI * 0.95, -Math.PI * 0.05);
+        const sp = rand(3.2, 7.0);
+        particles.push({
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          g: 0.12,
+          drag: 0.988,
+          life: rand(70, 120),
+          size: rand(10, 18),
+          rot: rand(0, Math.PI * 2),
+          vr: rand(-0.08, 0.08),
+          hue: rand(320, 355),
+          type: 'heart'
+        });
+      }
+    }
+
+    function addLaunch(x){
+      bursts.push({
+        x,
+        y: H + rand(30, 120),
+        vy: rand(-11.5, -15.5),
+        vx: rand(-1.2, 1.2),
+        life: rand(28, 44),
+        targetY: rand(H * 0.18, H * 0.45)
+      });
+    }
+
+    function drawHeart(x, y, size, rot, alpha, hue){
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.globalAlpha = alpha;
+
+      ctx.fillStyle = `hsla(${hue}, 90%, 70%, ${alpha})`;
+      const s = size / 2;
+
+      ctx.beginPath();
+      const topCurveHeight = s * 0.55;
+      ctx.moveTo(0, topCurveHeight);
+      ctx.bezierCurveTo(0, 0, -s, 0, -s, topCurveHeight);
+      ctx.bezierCurveTo(-s, s * 1.15, 0, s * 1.35, 0, s * 1.85);
+      ctx.bezierCurveTo(0, s * 1.35, s, s * 1.15, s, topCurveHeight);
+      ctx.bezierCurveTo(s, 0, 0, 0, 0, topCurveHeight);
+      ctx.closePath();
+      ctx.shadowColor = `hsla(${hue}, 90%, 70%, ${alpha})`;
+      ctx.shadowBlur = 14;
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    let animating = false;
+    function tick(){
+      ctx.clearRect(0, 0, W, H);
+
+      for (let i = bursts.length - 1; i >= 0; i--){
+        const b = bursts[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.vy += 0.22;
+        b.life -= 1;
+
+        ctx.save();
+        ctx.globalAlpha = 0.65;
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(b.x - b.vx * 3, b.y - b.vy * 3);
+        ctx.stroke();
+        ctx.restore();
+
+        if (b.y <= b.targetY || b.life <= 0){
+          addFirework(b.x, b.y);
+          if (Math.random() < 0.7) addHeartConfetti(b.x, b.y);
+          bursts.splice(i, 1);
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--){
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= p.drag;
+        p.vy *= p.drag;
+        p.vy += p.g;
+        p.life -= 1;
+
+        const alpha = Math.max(0, Math.min(1, p.life / 80));
+
+        if (p.type === 'spark'){
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = `hsla(${p.hue}, 95%, 65%, ${alpha})`;
+          ctx.shadowColor = `hsla(${p.hue}, 95%, 65%, ${alpha})`;
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          p.rot += p.vr;
+          drawHeart(p.x, p.y, p.size, p.rot, alpha, p.hue);
+        }
+
+        if (p.life <= 0 || p.y > H + 80 || p.x < -80 || p.x > W + 80){
+          particles.splice(i, 1);
+        }
+      }
+
+      if (bursts.length || particles.length){
+        requestAnimationFrame(tick);
+      } else {
+        animating = false;
+        ctx.clearRect(0, 0, W, H);
+      }
+    }
+
+    function loveFireworksAndHearts(){
+      resizeFx();
+
+      const burstCount = 6;
+      for (let i=0; i<burstCount; i++){
+        setTimeout(() => addLaunch(rand(W * 0.18, W * 0.82)), i * 170);
+      }
+
+      setTimeout(() => {
+        addHeartConfetti(W * 0.5, H * 0.62);
+        addHeartConfetti(W * 0.5, H * 0.62);
+      }, 240);
+
+      if (!animating){
+        animating = true;
+        requestAnimationFrame(tick);
+      }
+    }
   </script>
 </body>
 </html>
+
