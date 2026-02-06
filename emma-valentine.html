@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Emma, will you be my Valentine?</title>
+  <meta name="description" content="A little scroll story for Emma." />
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#120a18;
+      --card: rgba(255,255,255,0.08);
+      --card2: rgba(255,255,255,0.12);
+      --text:#f7f7fb;
+      --muted: rgba(247,247,251,0.78);
+      --accent:#ff4d88;
+      --accent2:#ffd166;
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 20px 60px rgba(0,0,0,0.45);
+      --radius: 26px;
+      --max: 980px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(255,77,136,0.25), transparent 55%),
+        radial-gradient(900px 650px at 80% 20%, rgba(255,209,102,0.20), transparent 50%),
+        radial-gradient(1000px 700px at 50% 90%, rgba(125,246,255,0.12), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      overflow-x:hidden;
+    }
+
+    /* subtle floating hearts */
+    .hearts{
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:0.32;
+      filter: blur(0.2px);
+    }
+    .heart{
+      position:absolute;
+      width:14px; height:14px;
+      background: var(--accent);
+      transform: rotate(45deg);
+      border-radius: 3px;
+      animation: floatUp linear infinite;
+      box-shadow: 0 10px 25px rgba(255,77,136,0.25);
+    }
+    .heart:before,.heart:after{
+      content:"";
+      position:absolute;
+      width:14px; height:14px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+    .heart:before{ left:-7px; top:0; }
+    .heart:after{ left:0; top:-7px; }
+
+    @keyframes floatUp{
+      from{ transform: translateY(50vh) rotate(45deg); opacity:0; }
+      10%{opacity:0.9}
+      to{ transform: translateY(-120vh) rotate(45deg); opacity:0; }
+    }
+
+    header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(10,14,28,0.78), rgba(10,14,28,0.35));
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .nav{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    .pill{
+      padding:8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.16);
+      color: var(--muted);
+      font-size: 13px;
+      white-space:nowrap;
+    }
+    .progressWrap{
+      display:flex; align-items:center; gap:10px;
+      min-width: 210px;
+      justify-content:flex-end;
+    }
+    .bar{
+      height: 8px;
+      width: 160px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.14);
+      overflow:hidden;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), #9b5cff);
+      border-radius:999px;
+      transition: width 120ms linear;
+    }
+
+    main{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero{
+      padding: 32px 0 12px;
+      display:grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 18px;
+      align-items:stretch;
+    }
+
+    @media (max-width: 860px){
+      .hero{ grid-template-columns: 1fr; }
+      .progressWrap{ min-width:auto; }
+      .bar{ width: 120px; }
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardInner{ padding: 26px; }
+
+    .title{
+      font-size: clamp(34px, 4.5vw, 54px);
+      line-height: 1.06;
+      margin:0 0 12px;
+      letter-spacing:-0.5px;
+    }
+    .subtitle{
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height:1.5;
+    }
+    .ctaRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .btn{
+      border:none;
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform 120ms ease, filter 120ms ease;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.99); }
+    .btnPrimary{
+      background: linear-gradient(135deg, var(--accent), #9b5cff);
+      color:white;
+    }
+    .btnGhost{
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: var(--text);
+    }
+    .hint{
+      margin-top: 14px;
+      color: rgba(247,247,251,0.70);
+      font-size: 13px;
+    }
+
+    /* photo placeholder */
+    .photo{
+      display:grid;
+      place-items:center;
+      aspect-ratio: 4 / 5;
+      min-height: 310px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border-top:1px solid rgba(255,255,255,0.12);
+      border-left:1px solid rgba(255,255,255,0.12);
+      border-right:1px solid rgba(255,255,255,0.12);
+      border-bottom:1px dashed rgba(255,255,255,0.28);
+      border-radius: var(--radius);
+      position:relative;
+      overflow:hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.30);
+    }
+    .photo img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .photo .label{
+      position:absolute;
+      inset:auto 14px 14px 14px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(10,14,28,0.60);
+      border:1px solid rgba(255,255,255,0.16);
+      color: rgba(247,247,251,0.86);
+      font-size: 13px;
+      line-height:1.35;
+      backdrop-filter: blur(10px);
+    }
+    .photo .big{
+      position:absolute;
+      inset: 14px;
+      border-radius: 18px;
+      border:1px dashed rgba(255,255,255,0.25);
+      display:grid;
+      place-items:center;
+      padding: 18px;
+      text-align:center;
+      color: rgba(247,247,251,0.78);
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    .photo .big span{
+      display:block;
+      font-weight:600;
+      opacity:0.75;
+      margin-top:10px;
+      font-size: 13px;
+    }
+
+    section.story{
+      margin-top: 26px;
+      display:grid;
+      gap: 16px;
+    }
+
+    .reveal{
+      padding: 22px;
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.07);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.30);
+      transform: translateY(16px);
+      opacity: 0;
+      transition: opacity 650ms ease, transform 650ms ease, background 450ms ease;
+    }
+    .reveal.show{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal h2{
+      margin:0 0 8px;
+      font-size: 20px;
+      letter-spacing:-0.2px;
+    }
+    .reveal p{
+      margin:0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items:stretch;
+    }
+    @media (max-width: 860px){
+      .split{ grid-template-columns: 1fr; }
+    }
+
+    .final{
+      margin-top: 18px;
+      padding: 26px;
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255,77,136,0.18), rgba(255,255,255,0.07));
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .final h2{
+      margin:0 0 10px;
+      font-size: 28px;
+      letter-spacing:-0.4px;
+    }
+    .final p{
+      margin:0 0 14px;
+      color: rgba(247,247,251,0.84);
+      line-height:1.6;
+      font-size: 16px;
+    }
+    .answerRow{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .note{
+      margin-top: 12px;
+      color: rgba(247,247,251,0.72);
+      font-size: 13px;
+    }
+
+    dialog{
+      width:min(720px, calc(100vw - 36px));
+      border:none;
+      border-radius: 22px;
+      padding: 0;
+      color: var(--text);
+      background: rgba(10,14,28,0.88);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.60);
+      border:1px solid rgba(255,255,255,0.14);
+      backdrop-filter: blur(16px);
+    }
+    dialog::backdrop{
+      background: rgba(0,0,0,0.55);
+    }
+    .modalInner{
+      padding: 22px;
+    }
+    .modalTitle{
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+    .modalBody{
+      margin: 0 0 16px;
+      color: rgba(247,247,251,0.82);
+      line-height:1.6;
+    }
+    .modalActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    footer{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 10px 18px 40px;
+      color: rgba(247,247,251,0.55);
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hearts" aria-hidden="true" id="hearts"></div>
+
+  <header>
+    <div class="nav">
+      <div class="brand">
+        <span aria-hidden="true">💌</span>
+        <span>For Emma</span>
+      </div>
+
+      <div class="progressWrap">
+        <span class="pill" id="progressText">Scroll: 0%</span>
+        <div class="bar" aria-hidden="true"><div id="progressBar"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="card">
+        <div class="cardInner">
+          <h1 class="title">Emma, I made you a little scroll story.</h1>
+          <p class="subtitle">
+            Keep scrolling. Each part shows up at the perfect time.
+            At the end… there’s one important question.
+          </p>
+
+          <div class="ctaRow">
+            <button class="btn btnPrimary" id="startBtn" type="button">Start the story →</button>
+            <button class="btn btnGhost" id="musicBtn" type="button" aria-pressed="false">Play a tiny vibe</button>
+          </div>
+
+          <div class="hint">Tip: replace the photo placeholders with your favorites. Search for “DROP PHOTO HERE” in this file.</div>
+        </div>
+      </div>
+
+      <div class="photo" role="img" aria-label="Photo placeholder 1">
+        <img src="assets/images/emma-1.jpg" alt="Emma and me at the tailgate" />
+
+        <div class="big">
+          DROP PHOTO HERE (1)
+          <span>Example: a favorite selfie or first trip photo</span>
+        </div>
+        <div class="label">Placeholders are built in. Just swap in your images.</div>
+      </div>
+    </section>
+
+    <section class="story">
+      <div class="reveal" data-reveal>
+        <h2>First, a tiny confession…</h2>
+        <p>I like you in the little moments. The normal days. The silly laughs. The “look at this” texts.</p>
+      </div>
+
+      <div class="split">
+        <div class="photo" role="img" aria-label="Photo placeholder 2">
+          <!-- DROP PHOTO HERE (2) -->
+          <div class="big">
+            <img src="assets/images/emma-2.jpg" alt="Emma and me on Halloween" />
+
+          </div>
+          <div class="label">This one is perfect for something fun.</div>
+        </div>
+
+        <div class="reveal" data-reveal>
+          <h2>And the big moments too.</h2>
+          <p>You make the world feel brighter, warmer, and a lot more like home.</p>
+        </div>
+      </div>
+
+      <div class="reveal" data-reveal>
+        <h2>Three things I adore about you</h2>
+        <p>
+          1) Your laugh.<br>
+          2) The way you care.<br>
+          3) How you make “ordinary” feel special.
+        </p>
+      </div>
+
+      <div class="photo" role="img" aria-label="Photo placeholder 3">
+        <!-- DROP PHOTO HERE (3) -->
+        <div class="big">
+            <img src="assets/images/emma-3.jpg" alt="Emma and me at the Indians game" />
+
+        </div>
+        <div class="label">Optional: add a caption in the alt text.</div>
+      </div>
+
+      <div class="reveal" data-reveal>
+        <h2>If I could plan a perfect date…</h2>
+        <p>It would be you, me, good food, and a little adventure. Nothing fancy needed. Just us.</p>
+      </div>
+
+      <div class="split">
+        <div class="reveal" data-reveal>
+          <h2>I’m grateful for you</h2>
+          <p>For your kindness, your patience, and the way you show up. You matter to me, a lot.</p>
+        </div>
+
+        <div class="photo" role="img" aria-label="Photo placeholder 4">
+          <!-- DROP PHOTO HERE (4) -->
+          <div class="big">
+            DROP PHOTO HERE (4)
+            <span>Example: a sunset, beach, or artsy photo</span>
+          </div>
+          <div class="label">This slot also works great for a scenic picture.</div>
+        </div>
+      </div>
+
+      <div class="reveal" data-reveal>
+        <h2>Okay… one last scroll.</h2>
+        <p>I saved the best part for the end.</p>
+      </div>
+
+      <div class="final reveal" data-reveal id="finalCard">
+        <h2>Emma, will you be my Valentine?</h2>
+        <p>
+          I choose you. Not just for a day, but in all the days that make up a life.
+          Will you be my Valentine?
+        </p>
+
+        <div class="answerRow">
+          <button class="btn btnPrimary" id="yesBtn" type="button">Yes 💖</button>
+          <button class="btn btnGhost" id="maybeBtn" type="button">I need a hint 😄</button>
+        </div>
+
+        <div class="note">P.S. If you want, change the text anywhere in this file to make it more “you.”</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Made with love. Replace images by searching for “DROP PHOTO HERE” in the HTML.
+  </footer>
+
+  <dialog id="modal">
+    <div class="modalInner">
+      <h3 class="modalTitle" id="modalTitle">A tiny note</h3>
+      <p class="modalBody" id="modalBody"></p>
+      <div class="modalActions">
+        <button class="btn btnGhost" id="closeModal" type="button">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    // Smooth jump to story
+    document.getElementById('startBtn').addEventListener('click', () => {
+      window.scrollTo({ top: window.innerHeight * 0.6, behavior: 'smooth' });
+    });
+
+    // Scroll progress
+    const bar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    function updateProgress(){
+      const doc = document.documentElement;
+      const max = (doc.scrollHeight - doc.clientHeight) || 1;
+      const pct = Math.max(0, Math.min(100, (doc.scrollTop / max) * 100));
+      bar.style.width = pct.toFixed(1) + '%';
+      progressText.textContent = 'Scroll: ' + Math.round(pct) + '%';
+    }
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+
+    // Reveal on scroll
+    const revealEls = Array.from(document.querySelectorAll('[data-reveal]'));
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries){
+        if (e.isIntersecting){
+          e.target.classList.add('show');
+          io.unobserve(e.target);
+        }
+      }
+    }, { threshold: 0.18 });
+    revealEls.forEach(el => io.observe(el));
+
+    // Modal helpers
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const closeModal = document.getElementById('closeModal');
+
+    function showModal(title, body){
+      modalTitle.textContent = title;
+      modalBody.textContent = body;
+      if (typeof modal.showModal === 'function') modal.showModal();
+      else alert(title + "\\n\\n" + body);
+    }
+    closeModal.addEventListener('click', () => modal.close());
+
+    // Buttons
+    document.getElementById('yesBtn').addEventListener('click', () => {
+      showModal('💖 Yay!', 'Best answer ever. Now come here so I can celebrate properly.');
+      burstHearts();
+    });
+    document.getElementById('maybeBtn').addEventListener('click', () => {
+      showModal('Hint 😄', 'Try tapping “Yes 💖” … it’s scientifically proven to be adorable.');
+    });
+
+    // Little ambient "vibe" with WebAudio (no external files)
+    let audioCtx, osc, gain;
+    const musicBtn = document.getElementById('musicBtn');
+    musicBtn.addEventListener('click', async () => {
+      if (!audioCtx){
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 220;
+        gain.gain.value = 0.0;
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start();
+      }
+      const pressed = musicBtn.getAttribute('aria-pressed') === 'true';
+      if (pressed){
+        musicBtn.setAttribute('aria-pressed', 'false');
+        musicBtn.textContent = 'Play a tiny vibe';
+        gain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.04);
+      } else {
+        await audioCtx.resume();
+        musicBtn.setAttribute('aria-pressed', 'true');
+        musicBtn.textContent = 'Stop the vibe';
+        gain.gain.setTargetAtTime(0.035, audioCtx.currentTime, 0.06);
+        // gentle detune drift
+        let t = 0;
+        const drift = () => {
+          if (musicBtn.getAttribute('aria-pressed') !== 'true') return;
+          t += 0.02;
+          osc.frequency.setValueAtTime(220 + Math.sin(t) * 6, audioCtx.currentTime);
+          requestAnimationFrame(drift);
+        };
+        drift();
+      }
+    });
+
+    // Floating hearts background (deterministic-ish)
+    const heartsLayer = document.getElementById('hearts');
+    function spawnHeart(){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      const left = Math.random() * 100;
+      const dur = 10 + Math.random() * 10;
+      const delay = Math.random() * 2;
+      const size = 10 + Math.random() * 12;
+      h.style.left = left + 'vw';
+      h.style.animationDuration = dur + 's';
+      h.style.animationDelay = delay + 's';
+      h.style.width = size + 'px';
+      h.style.height = size + 'px';
+      heartsLayer.appendChild(h);
+      setTimeout(() => h.remove(), (dur + delay) * 1000);
+    }
+    for (let i=0;i<18;i++) spawnHeart();
+    setInterval(spawnHeart, 900);
+
+    // Burst hearts on "Yes"
+    function burstHearts(){
+      for (let i=0;i<18;i++){
+        setTimeout(() => {
+          const h = document.createElement('div');
+          h.className = 'heart';
+          const left = 35 + Math.random() * 30;
+          const dur = 6 + Math.random() * 4;
+          const size = 12 + Math.random() * 14;
+          h.style.left = left + 'vw';
+          h.style.animationDuration = dur + 's';
+          h.style.width = size + 'px';
+          h.style.height = size + 'px';
+          heartsLayer.appendChild(h);
+          setTimeout(() => h.remove(), dur * 1000);
+        }, i * 40);
+      }
+    }
+  </script>
+</body>
+</html>
