@@ -45,7 +45,7 @@
     .heart{
       position:absolute;
       width:14px; height:14px;
-      background: var(--heart, var(--accent));
+      background: var(--accent);
       transform: rotate(45deg);
       border-radius: 3px;
       animation: floatUp linear infinite;
@@ -55,26 +55,16 @@
       content:"";
       position:absolute;
       width:14px; height:14px;
-      background: var(--heart, var(--accent));
+      background: var(--accent);
       border-radius: 50%;
     }
     .heart:before{ left:-7px; top:0; }
     .heart:after{ left:0; top:-7px; }
-    .heart.burst{
-      animation: burstHeart 1.35s ease-out forwards;
-      box-shadow: 0 12px 30px rgba(255,77,136,0.4);
-      mix-blend-mode: screen;
-    }
 
     @keyframes floatUp{
       from{ transform: translateY(50vh) rotate(45deg); opacity:0; }
       10%{opacity:0.9}
       to{ transform: translateY(-120vh) rotate(45deg); opacity:0; }
-    }
-    @keyframes burstHeart{
-      0%{ transform: translate(0,0) scale(0.7) rotate(45deg); opacity:1; }
-      70%{ opacity:1; }
-      100%{ transform: translate(var(--dx, 0px), var(--dy, -160px)) scale(1.35) rotate(45deg); opacity:0; }
     }
 
     header{
@@ -408,7 +398,7 @@
           </p>
 
           <div class="ctaRow">
-            <button class="btn btnPrimary" id="startBtn" type="button">Start the story →</button>
+            <button class="btn btnPrimary" id="startBtn" type="button">start here →</button>
           </div>
         </div>
       </div>
@@ -438,7 +428,7 @@
       </div>
 
       <div class="reveal" data-reveal>
-        <h2>Three things I adore about you</h2>
+        <h2>three things i adore about you</h2>
         <p>
           1) your caring heart<br>
           2) your big, beautiful brain<br>
@@ -452,14 +442,14 @@
       </div>
 
       <div class="reveal" data-reveal>
-        <h2>distance has been really hard</h2>
-        <p>but i know it only makes us stronger! i know that when we are reunited NOTHING can stop us</p>
+        <h2>distance has been really hard :/</h2>
+        <p>but i know it only makes us stronger! i know that when we are reunited, NOTHING can stop us</p>
       </div>
 
       <div class="split">
         <div class="reveal" data-reveal>
           <h2>i’m grateful for the way you care for me</h2>
-          <p>i don't always deserve it but you ALWAYS make me feel special. i mean just look at the how we look at each other! no wonder i still get butterflies sometimes</p>
+          <p>maybe this is a little selfish but i had to include it. i don't always deserve it but you ALWAYS make me feel special. i mean just look at the how we look at each other! no wonder i still get butterflies sometimes</p>
         </div>
 
         <div class="photo" role="img" aria-label="Another favorite photo of us">
@@ -489,7 +479,7 @@
   </main>
 
   <footer>
-    Made with love. Replace images by searching for “DROP PHOTO HERE” in the HTML.
+    made with love.
   </footer>
 
   <dialog id="modal">
@@ -538,7 +528,6 @@
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     const closeModal = document.getElementById('closeModal');
-    const finalCard = document.getElementById('finalCard');
 
     function showModal(title, body){
       modalTitle.textContent = title;
@@ -613,41 +602,22 @@
     for (let i=0;i<18;i++) spawnHeart();
     setInterval(spawnHeart, 900);
 
-    // Burst hearts on "Yes" — big, colorful explosion + extra shower
+    // Burst hearts on "Yes"
     function burstHearts(){
-      const rect = finalCard.getBoundingClientRect();
-      const originX = rect.left + rect.width / 2;
-      const originY = rect.top + rect.height / 2;
-      const total = 80;
-
-      for (let i=0;i<total;i++){
+      for (let i=0;i<18;i++){
         setTimeout(() => {
           const h = document.createElement('div');
-          h.className = 'heart burst';
-          const angle = Math.random() * Math.PI * 2;
-          const distance = 120 + Math.random() * 240;
-          const dx = Math.cos(angle) * distance;
-          const dy = Math.sin(angle) * distance;
-          const size = 12 + Math.random() * 22;
-          const hue = (330 + Math.random() * 80) % 360;
-          const color = `hsl(${hue}, 82%, 67%)`;
-          h.style.left = originX + 'px';
-          h.style.top = originY + 'px';
+          h.className = 'heart';
+          const left = 35 + Math.random() * 30;
+          const dur = 6 + Math.random() * 4;
+          const size = 12 + Math.random() * 14;
+          h.style.left = left + 'vw';
+          h.style.animationDuration = dur + 's';
           h.style.width = size + 'px';
           h.style.height = size + 'px';
-          h.style.setProperty('--dx', dx + 'px');
-          h.style.setProperty('--dy', dy + 'px');
-          h.style.setProperty('--heart', color);
-          h.style.animationDuration = (1.05 + Math.random() * 0.45) + 's';
-          h.style.animationDelay = (Math.random() * 0.12) + 's';
           heartsLayer.appendChild(h);
-          setTimeout(() => h.remove(), 2000);
-        }, i * 10);
-      }
-
-      // short heart shower to keep the vibe going
-      for (let j=0; j<30; j++){
-        setTimeout(spawnHeart, 120 + j * 55);
+          setTimeout(() => h.remove(), dur * 1000);
+        }, i * 40);
       }
     }
   </script>
