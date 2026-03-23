@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Conscious Spending Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #1a1a1f;
+    --surface2: #232329;
+    --border: #2e2e38;
+    --accent: #c8f04a;
+    --accent2: #7c6af7;
+    --accent3: #f47a4a;
+    --text: #f0f0f0;
+    --muted: #7a7a8a;
+    --green: #4af09a;
+    --red: #f04a4a;
+    --gold: #f0c84a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .app-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.3px;
+    line-height: 1;
+  }
+  .app-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .year-badge {
+    background: var(--accent);
+    color: #0f0f11;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.18s;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #0f0f11;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; padding: 16px 16px 0; }
+  .screen.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── INCOME SETUP ── */
+  .income-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .income-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border-radius: 10px;
+  }
+  .income-label { font-size: 13px; color: var(--muted); }
+  .income-value { font-size: 15px; font-weight: 600; color: var(--accent); }
+  .income-total {
+    background: linear-gradient(135deg, rgba(200,240,74,0.12), rgba(200,240,74,0.04));
+    border: 1px solid rgba(200,240,74,0.25);
+  }
+  .income-total .income-label { color: var(--text); font-weight: 500; }
+  .income-total .income-value { font-size: 18px; }
+
+  /* ── INPUT FIELDS ── */
+  .field-group { margin-bottom: 10px; }
+  .field-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .field-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .field-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .field-input::placeholder { color: var(--muted); }
+
+  /* ── ALLOCATION BARS ── */
+  .alloc-section { margin-bottom: 16px; }
+  .alloc-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .alloc-label { font-weight: 500; }
+  .alloc-pct { color: var(--accent); font-weight: 600; }
+  .bar-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 3px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .bar-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── CATEGORY LINES ── */
+  .cat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-item:last-child { border-bottom: none; }
+  .cat-name {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cat-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cat-amount { font-size: 14px; font-weight: 600; }
+
+  /* ── MONTH PICKER ── */
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .month-btn {
+    padding: 8px 4px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .month-btn.current {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .month-btn.active {
+    background: var(--accent);
+    color: #0f0f11;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ── PLANNED VS ACTUAL TABLE ── */
+  .pva-header {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 8px;
+    padding: 0 4px 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+  .pva-header span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .pva-header span:not(:first-child) { text-align: right; }
+
+  .pva-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 8px;
+    align-items: center;
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pva-row:last-child { border-bottom: none; }
+  .pva-name { font-size: 13px; }
+  .pva-planned { text-align: right; font-size: 13px; color: var(--muted); }
+  .pva-actual-wrap { position: relative; }
+  .pva-actual {
+    width: 100%;
+    text-align: right;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .pva-actual:focus { border-color: var(--accent); }
+
+  /* ── TRANSACTIONS ── */
+  .txn-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .txn-row { display: flex; gap: 8px; }
+  .txn-select {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+  }
+  .add-btn {
+    background: var(--accent);
+    color: #0f0f11;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .add-btn:hover { opacity: 0.85; }
+
+  .txn-list { display: flex; flex-direction: column; gap: 6px; }
+  .txn-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border-radius: 10px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .txn-info { display: flex; flex-direction: column; gap: 2px; }
+  .txn-desc { font-size: 13px; font-weight: 500; }
+  .txn-cat { font-size: 11px; color: var(--muted); }
+  .txn-right { display: flex; align-items: center; gap: 10px; }
+  .txn-amount { font-size: 14px; font-weight: 600; color: var(--red); }
+  .txn-del {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 16px; padding: 2px 4px;
+    transition: color 0.15s;
+  }
+  .txn-del:hover { color: var(--red); }
+
+  /* ── SUMMARY ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .summary-card {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .summary-card.highlight {
+    background: linear-gradient(135deg, rgba(200,240,74,0.12), rgba(200,240,74,0.04));
+    border-color: rgba(200,240,74,0.3);
+    grid-column: span 2;
+  }
+  .sc-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .sc-val { font-size: 18px; font-weight: 700; }
+  .sc-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .month-summary-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr 1fr 1fr;
+    gap: 4px;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .month-summary-row:last-child { border-bottom: none; }
+  .ms-month { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .ms-val { font-size: 12px; text-align: right; font-weight: 500; }
+  .ms-header { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; text-align: right; }
+  .ms-header:first-child { text-align: left; }
+
+  /* ── NAV BAR ── */
+  .nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0 16px;
+    z-index: 200;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 16px;
+    border-radius: 10px;
+    transition: all 0.15s;
+  }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--muted); }
+  .nav-item.active .nav-icon { filter: none; }
+  .nav-item.active .nav-label { color: var(--accent); }
+  .nav-item.active { background: rgba(200,240,74,0.08); }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 4px 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── NET WORTH TRACKER ── */
+  .nw-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .nw-row:last-child { border-bottom: none; }
+  .nw-account { font-size: 13px; }
+  .nw-fields { display: flex; gap: 8px; }
+  .nw-input {
+    width: 90px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    text-align: right;
+    outline: none;
+  }
+  .nw-input:focus { border-color: var(--accent); }
+  .nw-col-label { font-size: 10px; color: var(--muted); text-align: center; }
+
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+  .neutral { color: var(--gold); }
+
+  .chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .chip-green { background: rgba(74,240,154,0.15); color: var(--green); }
+  .chip-red { background: rgba(240,74,74,0.15); color: var(--red); }
+  .chip-gold { background: rgba(240,200,74,0.15); color: var(--gold); }
+
+  .empty-state {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+  .save-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+  .save-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .save-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 999;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── BONUS INCOME ── */
+  .bonus-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+  }
+  .bonus-label { font-size: 13px; }
+  .bonus-inputs { display: flex; gap: 8px; }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f4f0;
+      --surface: #ffffff;
+      --surface2: #f0f0ea;
+      --border: #e0e0d8;
+      --text: #1a1a1a;
+      --muted: #888880;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-title">Spending Plan</div>
+      <div class="app-subtitle">Conscious Budget</div>
+    </div>
+    <span class="year-badge" id="yearBadge">2026</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('setup')">Setup</button>
+    <button class="tab" onclick="switchTab('monthly')">Monthly</button>
+    <button class="tab" onclick="switchTab('summary')">Summary</button>
+    <button class="tab" onclick="switchTab('networth')">Net Worth</button>
+  </div>
+</div>
+
+<!-- ── SETUP SCREEN ── -->
+<div id="screen-setup" class="screen active">
+
+  <div class="card">
+    <div class="card-title">💰 Income</div>
+    <div class="field-group">
+      <div class="field-label">Monthly Salary</div>
+      <input type="number" class="field-input" id="salary" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Annual Bonus</div>
+      <input type="number" class="field-input" id="bonus" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="income-display" style="margin-top:8px">
+      <div class="income-row">
+        <span class="income-label">Net Monthly (est.)</span>
+        <span class="income-value" id="netMonthly">$0</span>
+      </div>
+      <div class="income-row income-total">
+        <span class="income-label">Annual Gross</span>
+        <span class="income-value" id="annualGross">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏠 Fixed Costs</div>
+    <div class="field-group">
+      <div class="field-label">Rent / Mortgage</div>
+      <input type="number" class="field-input" id="fc-rent" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Gas / Electric</div>
+      <input type="number" class="field-input" id="fc-gas" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Water / Sewer</div>
+      <input type="number" class="field-input" id="fc-water" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Internet</div>
+      <input type="number" class="field-input" id="fc-internet" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Subscriptions</div>
+      <input type="number" class="field-input" id="fc-subs" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="income-row income-total" style="margin-top:10px">
+      <span class="income-label">Fixed Total</span>
+      <span class="income-value" id="fixedTotal">$0</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 Investing</div>
+    <div class="field-group">
+      <div class="field-label">Pre-Tax 401(k)</div>
+      <input type="number" class="field-input" id="inv-401k" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Roth IRA</div>
+      <input type="number" class="field-input" id="inv-roth" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">HSA</div>
+      <input type="number" class="field-input" id="inv-hsa" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Non-Retirement / HYSA</div>
+      <input type="number" class="field-input" id="inv-other" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="income-row income-total" style="margin-top:10px">
+      <span class="income-label">Investing Total</span>
+      <span class="income-value" id="investingTotal">$0</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🛍️ Variable Cost Targets</div>
+    <div class="field-group">
+      <div class="field-label">Personal Spending</div>
+      <input type="number" class="field-input" id="vc-personal" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Misc. Spending</div>
+      <input type="number" class="field-input" id="vc-misc" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Dining Out</div>
+      <input type="number" class="field-input" id="vc-dining" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Transportation</div>
+      <input type="number" class="field-input" id="vc-transport" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="field-group">
+      <div class="field-label">Groceries</div>
+      <input type="number" class="field-input" id="vc-groceries" placeholder="$0" oninput="updateCSP()">
+    </div>
+    <div class="income-row income-total" style="margin-top:10px">
+      <span class="income-label">Variable Total</span>
+      <span class="income-value" id="variableTotal">$0</span>
+    </div>
+  </div>
+
+  <!-- Allocation Overview -->
+  <div class="card">
+    <div class="card-title">⚖️ Budget Allocation</div>
+    <div id="allocViz"></div>
+  </div>
+
+</div>
+
+<!-- ── MONTHLY SCREEN ── -->
+<div id="screen-monthly" class="screen">
+
+  <div class="month-grid">
+    <button class="month-btn" data-month="0" onclick="selectMonth(0)">Jan</button>
+    <button class="month-btn" data-month="1" onclick="selectMonth(1)">Feb</button>
+    <button class="month-btn" data-month="2" onclick="selectMonth(2)">Mar</button>
+    <button class="month-btn" data-month="3" onclick="selectMonth(3)">Apr</button>
+    <button class="month-btn" data-month="4" onclick="selectMonth(4)">May</button>
+    <button class="month-btn" data-month="5" onclick="selectMonth(5)">Jun</button>
+    <button class="month-btn" data-month="6" onclick="selectMonth(6)">Jul</button>
+    <button class="month-btn" data-month="7" onclick="selectMonth(7)">Aug</button>
+    <button class="month-btn" data-month="8" onclick="selectMonth(8)">Sep</button>
+    <button class="month-btn" data-month="9" onclick="selectMonth(9)">Oct</button>
+    <button class="month-btn" data-month="10" onclick="selectMonth(10)">Nov</button>
+    <button class="month-btn" data-month="11" onclick="selectMonth(11)">Dec</button>
+  </div>
+
+  <div id="monthContent"></div>
+
+</div>
+
+<!-- ── SUMMARY SCREEN ── -->
+<div id="screen-summary" class="screen">
+
+  <div class="summary-grid">
+    <div class="summary-card highlight">
+      <div class="sc-label">2026 Annual Income</div>
+      <div class="sc-val" id="sum-annual">$0</div>
+      <div class="sc-sub">Salary + Bonus</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Total Fixed</div>
+      <div class="sc-val" id="sum-fixed">$0</div>
+      <div class="sc-sub" id="sum-fixed-pct">0% of income</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Total Variable</div>
+      <div class="sc-val" id="sum-variable">$0</div>
+      <div class="sc-sub" id="sum-variable-pct">0% of income</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Total Invested</div>
+      <div class="sc-val positive" id="sum-invested">$0</div>
+      <div class="sc-sub" id="sum-invested-pct">0% of income</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Unallocated</div>
+      <div class="sc-val" id="sum-remaining">$0</div>
+      <div class="sc-sub">monthly</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 Monthly Breakdown</div>
+    <div class="month-summary-row">
+      <span class="ms-month ms-header">Month</span>
+      <span class="ms-val ms-header">Fixed</span>
+      <span class="ms-val ms-header">Variable</span>
+      <span class="ms-val ms-header">Bonus</span>
+      <span class="ms-val ms-header">Saved</span>
+    </div>
+    <div id="monthlyBreakdown"></div>
+  </div>
+
+</div>
+
+<!-- ── NET WORTH SCREEN ── -->
+<div id="screen-networth" class="screen">
+
+  <div class="card">
+    <div class="card-title">🏦 Account Balances</div>
+    <div style="display:grid; grid-template-columns: 1fr 90px 90px; gap:4px; padding:0 4px 8px; margin-bottom:6px; border-bottom:1px solid var(--border);">
+      <span class="nw-col-label" style="text-align:left; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px">Account</span>
+      <span class="nw-col-label">Start</span>
+      <span class="nw-col-label">End</span>
+    </div>
+    <div id="nwAccounts"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 4px 0; border-top:1px solid var(--border); margin-top:6px;">
+      <span style="font-size:13px; font-weight:600;">Net Worth Change</span>
+      <span style="font-size:16px; font-weight:700;" id="nwDelta" class="positive">$0</span>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="sc-label">Start of Year</div>
+      <div class="sc-val" id="nwStart">$0</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">End of Year</div>
+      <div class="sc-val" id="nwEnd">$0</div>
+    </div>
+    <div class="summary-card highlight">
+      <div class="sc-label">Growth</div>
+      <div class="sc-val" id="nwGrowth">—</div>
+      <div class="sc-sub">Year over year</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <div class="nav-item active" onclick="switchTab('setup')" id="nav-setup">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Setup</span>
+  </div>
+  <div class="nav-item" onclick="switchTab('monthly')" id="nav-monthly">
+    <span class="nav-icon">📆</span>
+    <span class="nav-label">Monthly</span>
+  </div>
+  <div class="nav-item" onclick="switchTab('summary')" id="nav-summary">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Summary</span>
+  </div>
+  <div class="nav-item" onclick="switchTab('networth')" id="nav-networth">
+    <span class="nav-icon">💎</span>
+    <span class="nav-label">Net Worth</span>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const VAR_CATS = ['Personal Spending','Misc. Spending','Dining Out','Transportation','Groceries'];
+const VAR_COLORS = ['#c8f04a','#7c6af7','#f47a4a','#4af09a','#f0c84a'];
+const FIX_KEYS = ['fc-rent','fc-gas','fc-water','fc-internet','fc-subs'];
+const FIX_NAMES = ['Rent','Gas/Electric','Water/Sewer','Internet','Subscriptions'];
+const VC_KEYS = ['vc-personal','vc-misc','vc-dining','vc-transport','vc-groceries'];
+const NW_ACCOUNTS = ['Checking Account','Savings Account','Brokerage Account','Health Savings Account','Roth IRA','401K'];
+
+// State
+let state = {
+  salary: 0, bonus: 0,
+  fixed: {rent:0, gas:0, water:0, internet:0, subs:0},
+  investing: {'401k':0, roth:0, hsa:0, other:0},
+  variable: {personal:0, misc:0, dining:0, transport:0, groceries:0},
+  months: Array(12).fill(null).map(() => ({
+    fixedActual: {rent:0, gas:0, water:0, internet:0, subs:0},
+    variableActual: {personal:0, misc:0, dining:0, transport:0, groceries:0},
+    bonusPlanned: 0, bonusActual: 0,
+    transactions: []
+  })),
+  networth: { start: {}, end: {} }
+};
+
+let activeTab = 'setup';
+let activeMonth = new Date().getMonth();
+
+// ── LOCAL STORAGE ──
+function save() {
+  localStorage.setItem('csp_data', JSON.stringify(state));
+  showToast('Saved ✓');
+}
+function load() {
+  const d = localStorage.getItem('csp_data');
+  if (d) {
+    try { state = JSON.parse(d); } catch(e) {}
+  }
+  applyStateToDOM();
+}
+
+function applyStateToDOM() {
+  const g = v => document.getElementById(v);
+  const s = state;
+  if(g('salary')) g('salary').value = s.salary || '';
+  if(g('bonus')) g('bonus').value = s.bonus || '';
+  FIX_KEYS.forEach((k,i) => {
+    const keys = ['rent','gas','water','internet','subs'];
+    if(g(k)) g(k).value = s.fixed[keys[i]] || '';
+  });
+  ['401k','roth','hsa','other'].forEach(k => {
+    if(g('inv-'+k)) g('inv-'+k).value = s.investing[k] || '';
+  });
+  VC_KEYS.forEach((k,i) => {
+    const vkeys = ['personal','misc','dining','transport','groceries'];
+    if(g(k)) g(k).value = s.variable[vkeys[i]] || '';
+  });
+  updateCSP();
+}
+
+function getVal(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function fmt(n) { return '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmtSigned(n) { return (n < 0 ? '-' : '+') + fmt(n); }
+
+function updateCSP() {
+  // Read values
+  state.salary = getVal('salary');
+  state.bonus = getVal('bonus');
+  state.fixed.rent = getVal('fc-rent');
+  state.fixed.gas = getVal('fc-gas');
+  state.fixed.water = getVal('fc-water');
+  state.fixed.internet = getVal('fc-internet');
+  state.fixed.subs = getVal('fc-subs');
+  state.investing['401k'] = getVal('inv-401k');
+  state.investing.roth = getVal('inv-roth');
+  state.investing.hsa = getVal('inv-hsa');
+  state.investing.other = getVal('inv-other');
+  state.variable.personal = getVal('vc-personal');
+  state.variable.misc = getVal('vc-misc');
+  state.variable.dining = getVal('vc-dining');
+  state.variable.transport = getVal('vc-transport');
+  state.variable.groceries = getVal('vc-groceries');
+
+  const salary = state.salary;
+  const bonus = state.bonus;
+  const netMonthly = salary * 0.72; // rough estimate
+  const annualGross = salary * 12 + bonus;
+
+  const fixedTotal = Object.values(state.fixed).reduce((a,b)=>a+b,0);
+  const investingTotal = Object.values(state.investing).reduce((a,b)=>a+b,0);
+  const variableTotal = Object.values(state.variable).reduce((a,b)=>a+b,0);
+
+  document.getElementById('netMonthly').textContent = fmt(netMonthly);
+  document.getElementById('annualGross').textContent = fmt(annualGross);
+  document.getElementById('fixedTotal').textContent = fmt(fixedTotal);
+  document.getElementById('investingTotal').textContent = fmt(investingTotal);
+  document.getElementById('variableTotal').textContent = fmt(variableTotal);
+
+  renderAlloc(salary, fixedTotal, investingTotal, variableTotal);
+  renderSummary();
+}
+
+function renderAlloc(salary, fixed, investing, variable) {
+  const total = salary;
+  if (total === 0) {
+    document.getElementById('allocViz').innerHTML = '<div class="empty-state"><div class="empty-icon">💡</div>Enter your monthly salary above to see allocation breakdown.</div>';
+    return;
+  }
+  const remaining = Math.max(0, total - fixed - investing - variable);
+  const items = [
+    { label: 'Fixed Costs', val: fixed, color: '#7c6af7' },
+    { label: 'Investing', val: investing, color: '#4af09a' },
+    { label: 'Variable', val: variable, color: '#f47a4a' },
+    { label: 'Unallocated', val: remaining, color: '#f0c84a' },
+  ];
+  let html = '';
+  items.forEach(item => {
+    const pct = Math.min(100, (item.val / total * 100)).toFixed(0);
+    html += `<div class="alloc-section">
+      <div class="alloc-header">
+        <span class="alloc-label" style="color:${item.color}">${item.label}</span>
+        <span class="alloc-pct" style="color:${item.color}">${pct}% · ${fmt(item.val)}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${item.color}"></div></div>
+    </div>`;
+  });
+  document.getElementById('allocViz').innerHTML = html;
+}
+
+// ── MONTH SCREEN ──
+function selectMonth(m) {
+  activeMonth = m;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.month-btn[data-month="${m}"]`).classList.add('active');
+  renderMonthContent(m);
+}
+
+function renderMonthContent(m) {
+  const mo = state.months[m];
+  const fixedKeys = ['rent','gas','water','internet','subs'];
+  const varKeys = ['personal','misc','dining','transport','groceries'];
+  const fixedNames = FIX_NAMES;
+  const varNames = VAR_CATS;
+
+  let html = '';
+
+  // Fixed costs
+  html += `<div class="card">
+    <div class="card-title">🏠 Fixed Costs — ${MONTHS[m]}</div>
+    <div class="pva-header"><span>Category</span><span>Planned</span><span>Actual</span></div>`;
+  fixedKeys.forEach((k,i) => {
+    const planned = state.fixed[k] || 0;
+    const actual = mo.fixedActual[k] || 0;
+    html += `<div class="pva-row">
+      <span class="pva-name">${fixedNames[i]}</span>
+      <span class="pva-planned">${fmt(planned)}</span>
+      <div class="pva-actual-wrap">
+        <input type="number" class="pva-actual" value="${actual||''}" placeholder="${fmt(planned)}"
+          onchange="updateActual('fixed','${k}',${m},this.value)">
+      </div>
+    </div>`;
+  });
+  const fixPlanned = Object.values(state.fixed).reduce((a,b)=>a+b,0);
+  const fixActual = fixedKeys.reduce((a,k) => a + (mo.fixedActual[k]||0), 0);
+  html += `<div class="pva-row" style="font-weight:600">
+    <span class="pva-name">Total</span>
+    <span class="pva-planned">${fmt(fixPlanned)}</span>
+    <span class="pva-planned ${fixActual > fixPlanned ? 'negative' : 'positive'}">${fmt(fixActual)}</span>
+  </div>`;
+  html += `</div>`;
+
+  // Variable costs
+  html += `<div class="card">
+    <div class="card-title">🛍️ Variable Costs — ${MONTHS[m]}</div>
+    <div class="pva-header"><span>Category</span><span>Planned</span><span>Actual</span></div>`;
+  varKeys.forEach((k,i) => {
+    const planned = state.variable[k] || 0;
+    const actual = mo.variableActual[k] || 0;
+    html += `<div class="pva-row">
+      <span class="pva-name">${varNames[i]}</span>
+      <span class="pva-planned">${fmt(planned)}</span>
+      <div class="pva-actual-wrap">
+        <input type="number" class="pva-actual" value="${actual||''}" placeholder="${fmt(planned)}"
+          onchange="updateActual('variable','${k}',${m},this.value)">
+      </div>
+    </div>`;
+  });
+  const varPlanned = Object.values(state.variable).reduce((a,b)=>a+b,0);
+  const varActual = varKeys.reduce((a,k) => a + (mo.variableActual[k]||0), 0);
+  html += `<div class="pva-row" style="font-weight:600">
+    <span class="pva-name">Total</span>
+    <span class="pva-planned">${fmt(varPlanned)}</span>
+    <span class="pva-planned ${varActual > varPlanned ? 'negative' : 'positive'}">${fmt(varActual)}</span>
+  </div>`;
+  html += `</div>`;
+
+  // Bonus income
+  html += `<div class="card">
+    <div class="card-title">🎁 Bonus Income — ${MONTHS[m]}</div>
+    <div class="pva-header"><span>Type</span><span>Planned</span><span>Actual</span></div>
+    <div class="pva-row">
+      <span class="pva-name">Bonus</span>
+      <div class="pva-actual-wrap">
+        <input type="number" class="pva-actual" value="${mo.bonusPlanned||''}" placeholder="$0"
+          onchange="updateBonusPlanned(${m},this.value)">
+      </div>
+      <div class="pva-actual-wrap">
+        <input type="number" class="pva-actual" value="${mo.bonusActual||''}" placeholder="$0"
+          onchange="updateBonusActual(${m},this.value)">
+      </div>
+    </div>
+  </div>`;
+
+  // Transactions
+  html += `<div class="card">
+    <div class="card-title">📝 Variable Log</div>
+    <div class="txn-form">
+      <input type="text" class="field-input" id="txn-desc-${m}" placeholder="Description (e.g. Chipotle)">
+      <div class="txn-row">
+        <input type="number" class="field-input" id="txn-amt-${m}" placeholder="Amount">
+        <select class="txn-select" id="txn-cat-${m}">
+          ${varNames.map(n => `<option value="${n}">${n}</option>`).join('')}
+        </select>
+      </div>
+      <button class="add-btn" onclick="addTransaction(${m})">+ Add</button>
+    </div>`;
+
+  if (mo.transactions.length === 0) {
+    html += `<div class="empty-state"><div class="empty-icon">🧾</div>No transactions logged yet.</div>`;
+  } else {
+    html += `<div class="txn-list">`;
+    mo.transactions.forEach((t, i) => {
+      html += `<div class="txn-item">
+        <div class="txn-info">
+          <span class="txn-desc">${t.desc}</span>
+          <span class="txn-cat">${t.cat}</span>
+        </div>
+        <div class="txn-right">
+          <span class="txn-amount">${fmt(t.amt)}</span>
+          <button class="txn-del" onclick="deleteTransaction(${m},${i})">×</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    const total = mo.transactions.reduce((a,t)=>a+t.amt,0);
+    html += `<div style="text-align:right; padding-top:10px; font-size:13px; color:var(--muted)">Total: <strong style="color:var(--text)">${fmt(total)}</strong></div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('monthContent').innerHTML = html;
+}
+
+function updateActual(type, key, m, val) {
+  const v = parseFloat(val) || 0;
+  if (type === 'fixed') state.months[m].fixedActual[key] = v;
+  else state.months[m].variableActual[key] = v;
+  localStorage.setItem('csp_data', JSON.stringify(state));
+}
+function updateBonusPlanned(m, val) { state.months[m].bonusPlanned = parseFloat(val)||0; localStorage.setItem('csp_data', JSON.stringify(state)); }
+function updateBonusActual(m, val) { state.months[m].bonusActual = parseFloat(val)||0; localStorage.setItem('csp_data', JSON.stringify(state)); }
+
+function addTransaction(m) {
+  const desc = document.getElementById(`txn-desc-${m}`).value.trim();
+  const amt = parseFloat(document.getElementById(`txn-amt-${m}`).value) || 0;
+  const cat = document.getElementById(`txn-cat-${m}`).value;
+  if (!desc || amt === 0) { showToast('Enter description & amount'); return; }
+  state.months[m].transactions.unshift({ desc, amt, cat });
+  document.getElementById(`txn-desc-${m}`).value = '';
+  document.getElementById(`txn-amt-${m}`).value = '';
+  localStorage.setItem('csp_data', JSON.stringify(state));
+  renderMonthContent(m);
+}
+function deleteTransaction(m, i) {
+  state.months[m].transactions.splice(i, 1);
+  localStorage.setItem('csp_data', JSON.stringify(state));
+  renderMonthContent(m);
+}
+
+// ── SUMMARY ──
+function renderSummary() {
+  const salary = state.salary;
+  const bonus = state.bonus;
+  const annual = salary * 12 + bonus;
+  const fixedAnnual = Object.values(state.fixed).reduce((a,b)=>a+b,0) * 12;
+  const variableAnnual = Object.values(state.variable).reduce((a,b)=>a+b,0) * 12;
+  const investingAnnual = Object.values(state.investing).reduce((a,b)=>a+b,0) * 12;
+  const remaining = salary - Object.values(state.fixed).reduce((a,b)=>a+b,0) - Object.values(state.variable).reduce((a,b)=>a+b,0) - Object.values(state.investing).reduce((a,b)=>a+b,0);
+
+  const pct = (n, d) => d ? (n/d*100).toFixed(0)+'%' : '0%';
+
+  document.getElementById('sum-annual').textContent = fmt(annual);
+  document.getElementById('sum-fixed').textContent = fmt(fixedAnnual);
+  document.getElementById('sum-fixed-pct').textContent = pct(fixedAnnual, annual) + ' of income';
+  document.getElementById('sum-variable').textContent = fmt(variableAnnual);
+  document.getElementById('sum-variable-pct').textContent = pct(variableAnnual, annual) + ' of income';
+  document.getElementById('sum-invested').textContent = fmt(investingAnnual);
+  document.getElementById('sum-invested-pct').textContent = pct(investingAnnual, annual) + ' of income';
+  document.getElementById('sum-remaining').textContent = fmt(remaining);
+
+  // Monthly breakdown
+  let html = '';
+  MONTHS.forEach((name, m) => {
+    const mo = state.months[m];
+    const fixA = Object.values(mo.fixedActual).reduce((a,b)=>a+b,0);
+    const varA = Object.values(mo.variableActual).reduce((a,b)=>a+b,0);
+    const bonusA = mo.bonusActual || 0;
+    const saved = salary - fixA - varA + bonusA;
+    const hasData = fixA > 0 || varA > 0;
+    html += `<div class="month-summary-row">
+      <span class="ms-month">${MONTHS_SHORT[m]}</span>
+      <span class="ms-val ${hasData ? (fixA > Object.values(state.fixed).reduce((a,b)=>a+b,0) ? 'negative' : '') : 'neutral'}">${hasData ? fmt(fixA) : '—'}</span>
+      <span class="ms-val ${hasData ? (varA > Object.values(state.variable).reduce((a,b)=>a+b,0) ? 'negative' : '') : 'neutral'}">${hasData ? fmt(varA) : '—'}</span>
+      <span class="ms-val ${bonusA > 0 ? 'positive' : 'neutral'}">${bonusA > 0 ? fmt(bonusA) : '—'}</span>
+      <span class="ms-val ${hasData ? (saved > 0 ? 'positive' : 'negative') : 'neutral'}">${hasData ? fmt(saved) : '—'}</span>
+    </div>`;
+  });
+  document.getElementById('monthlyBreakdown').innerHTML = html;
+}
+
+// ── NET WORTH ──
+function renderNetWorth() {
+  const accounts = NW_ACCOUNTS;
+  let html = '';
+  accounts.forEach(acc => {
+    const key = acc.replace(/\s/g,'_');
+    const startVal = state.networth.start[key] || '';
+    const endVal = state.networth.end[key] || '';
+    html += `<div class="nw-row">
+      <span class="nw-account">${acc}</span>
+      <div class="nw-fields">
+        <input type="number" class="nw-input" value="${startVal}" placeholder="$0"
+          onchange="updateNW('start','${key}',this.value)">
+        <input type="number" class="nw-input" value="${endVal}" placeholder="$0"
+          onchange="updateNW('end','${key}',this.value)">
+      </div>
+    </div>`;
+  });
+  document.getElementById('nwAccounts').innerHTML = html;
+  updateNWTotals();
+}
+
+function updateNW(period, key, val) {
+  state.networth[period][key] = parseFloat(val) || 0;
+  localStorage.setItem('csp_data', JSON.stringify(state));
+  updateNWTotals();
+}
+
+function updateNWTotals() {
+  const start = Object.values(state.networth.start).reduce((a,b)=>a+b,0);
+  const end = Object.values(state.networth.end).reduce((a,b)=>a+b,0);
+  const delta = end - start;
+  const pct = start ? ((delta / start) * 100).toFixed(1) + '%' : '—';
+
+  document.getElementById('nwStart').textContent = fmt(start);
+  document.getElementById('nwEnd').textContent = fmt(end);
+  document.getElementById('nwDelta').textContent = fmtSigned(delta);
+  document.getElementById('nwDelta').className = delta >= 0 ? 'positive' : 'negative';
+  document.getElementById('nwGrowth').textContent = (delta >= 0 ? '+' : '') + pct;
+  document.getElementById('nwGrowth').className = 'sc-val ' + (delta >= 0 ? 'positive' : 'negative');
+}
+
+// ── TAB SWITCHING ──
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById(`screen-${tab}`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => { if (t.textContent.toLowerCase().includes(tab.slice(0,3))) t.classList.add('active'); });
+  document.getElementById(`nav-${tab}`).classList.add('active');
+
+  if (tab === 'monthly') {
+    const now = new Date().getMonth();
+    document.querySelectorAll('.month-btn').forEach(b => {
+      if (parseInt(b.dataset.month) === now) b.classList.add('current');
+    });
+    selectMonth(activeMonth);
+  }
+  if (tab === 'summary') renderSummary();
+  if (tab === 'networth') renderNetWorth();
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// Set current year
+const yr = new Date().getFullYear();
+document.getElementById('yearBadge').textContent = yr;
+
+// Boot
+load();
+// Highlight current month button
+document.querySelector(`.month-btn[data-month="${new Date().getMonth()}"]`).classList.add('current');
+</script>
+</body>
+</html>
