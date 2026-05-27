@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grant's Watchlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  const EMAILJS_PUBLIC_KEY  = "wHSYzbijxmVNo6Zxk";
+  const EMAILJS_SERVICE_ID  = "service_h988033";
+  const EMAILJS_TEMPLATE_ID = "template_ail3l0j";
+</script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0e0e0f;
+  --surface: #19191b;
+  --surface2: #222225;
+  --border: rgba(255,255,255,0.07);
+  --text: #f0ede8;
+  --muted: #7a7875;
+  --accent: #c9a84c;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 10px;
+}
+
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-weight: 300; min-height: 100vh; padding-bottom: 3rem; }
+
+header { padding: 2.5rem 1.25rem 1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 50; }
+.header-inner { max-width: 680px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.site-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; letter-spacing: 0.01em; line-height: 1; }
+.site-title span { color: var(--accent); font-style: italic; }
+
+nav { max-width: 680px; margin: 0 auto; display: flex; gap: 0; padding: 0 1.25rem; border-bottom: 1px solid var(--border); }
+nav button { background: none; border: none; color: var(--muted); font-family: var(--font-body); font-size: 0.75rem; font-weight: 400; letter-spacing: 0.09em; text-transform: uppercase; padding: 0.9rem 0.85rem; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.2s, border-color 0.2s; white-space: nowrap; }
+nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+nav button:hover:not(.active) { color: var(--text); }
+
+main { max-width: 680px; margin: 0 auto; padding: 1.5rem 1.25rem 0; }
+
+/* ── Shared select style ── */
+.pill-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.38rem 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7875'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  padding-right: 1.8rem;
+}
+.pill-select:focus { outline: none; border-color: rgba(255,255,255,0.18); color: var(--text); }
+
+/* ── List controls ── */
+.controls { display: flex; gap: 0.6rem; margin-bottom: 1.25rem; align-items: center; }
+
+/* ── Movie cards ── */
+.movie-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.movie-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; display: flex; align-items: center; gap: 1rem; transition: border-color 0.15s; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.movie-card:hover { border-color: rgba(255,255,255,0.15); }
+
+.score-badge { flex-shrink: 0; width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.score-badge.unscored { background: var(--surface2) !important; color: var(--muted); font-family: var(--font-body); font-size: 1.2rem; font-weight: 300; }
+
+.movie-info { flex: 1; min-width: 0; }
+.movie-title { font-family: var(--font-display); font-size: 1rem; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.movie-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.rec-tag { background: rgba(201,168,76,0.12); color: var(--accent); border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.7rem; letter-spacing: 0.03em; }
+
+.status-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.watched  { background: #4caf87; }
+.status-dot.queued   { background: #5b8dd9; }
+.status-dot.skipped  { background: var(--muted); }
+
+/* ── Modal ── */
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px 18px 0 0; width: 100%; max-width: 680px; padding: 1.5rem 1.5rem 2.5rem; max-height: 85vh; overflow-y: auto; position: relative; }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 1.25rem; }
+.modal-title { font-family: var(--font-display); font-size: 1.4rem; font-weight: 400; margin-bottom: 0.25rem; line-height: 1.3; }
+.modal-year { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.25rem; }
+.modal-score-large { display: inline-block; padding: 0.4rem 1rem; border-radius: 8px; font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.4); margin-bottom: 1rem; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.1rem; }
+.modal-field label { display: block; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem; }
+.modal-field p { font-size: 0.9rem; color: var(--text); }
+.modal-notes { background: var(--surface2); border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.875rem; color: var(--text); line-height: 1.6; font-style: italic; }
+.modal-close { position: absolute; top: 1rem; right: 1.25rem; background: var(--surface2); border: none; color: var(--muted); width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* ── Leaderboard (movies) ── */
+.lb-controls { display: flex; gap: 0.6rem; margin-bottom: 1.25rem; align-items: center; flex-wrap: wrap; }
+.leaderboard { display: flex; flex-direction: column; gap: 0.5rem; }
+.lb-row { display: flex; align-items: center; gap: 0.9rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; cursor: pointer; transition: border-color 0.15s; }
+.lb-row:hover { border-color: rgba(255,255,255,0.15); }
+.lb-rank { font-family: var(--font-display); font-size: 1.1rem; color: var(--muted); width: 24px; text-align: center; flex-shrink: 0; }
+.lb-rank.top { color: var(--accent); }
+.lb-title { flex: 1; font-family: var(--font-display); font-size: 0.95rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-score-pill { padding: 0.25rem 0.65rem; border-radius: 6px; font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); flex-shrink: 0; }
+
+/* ── Stats strip ── */
+.stats-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 0.75rem; text-align: center; }
+.stat-num { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--accent); line-height: 1; }
+.stat-label { font-size: 0.65rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-top: 0.3rem; }
+
+/* ── Recommender leaderboard ── */
+.rec-lb { display: flex; flex-direction: column; gap: 0.6rem; }
+.rec-lb-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; }
+.rec-lb-header { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.6rem; }
+.rec-avatar { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.rec-name-wrap { flex: 1; min-width: 0; }
+.rec-person-name { font-family: var(--font-display); font-size: 1rem; font-weight: 400; }
+.rec-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+.rec-score-badge { flex-shrink: 0; padding: 0.3rem 0.7rem; border-radius: 8px; font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.rec-bar-wrap { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 0.6rem; }
+.rec-bar { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.rec-movies { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.rec-movie-chip { background: var(--surface2); border-radius: 4px; padding: 0.18rem 0.5rem; font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+.rec-movie-chip.scored { color: var(--text); }
+.rec-rank-badge { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+.rec-rank-badge.top { color: var(--accent); }
+
+/* ── Recommend form ── */
+.rec-form { display: flex; flex-direction: column; gap: 1rem; }
+.rec-form label { display: block; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem; }
+.rec-form input, .rec-form textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 0.9rem; padding: 0.7rem 0.9rem; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+.rec-form input:focus, .rec-form textarea:focus { border-color: var(--accent); }
+.rec-form textarea { resize: vertical; min-height: 90px; }
+.rec-form input::placeholder, .rec-form textarea::placeholder { color: var(--muted); }
+.submit-btn { background: var(--accent); border: none; border-radius: 8px; color: #0e0e0f; font-family: var(--font-body); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.85rem; cursor: pointer; transition: opacity 0.15s; width: 100%; }
+.submit-btn:hover { opacity: 0.85; }
+.submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.form-msg { text-align: center; font-size: 0.85rem; padding: 0.5rem; border-radius: 8px; display: none; }
+.form-msg.success { display: block; color: #4caf87; background: rgba(76,175,135,0.1); }
+.form-msg.error   { display: block; color: #e24b4a; background: rgba(226,75,74,0.1); }
+
+.section-header { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+.empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="site-title">Grant's <span>Watchlist</span></div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('list')">List</button>
+  <button onclick="showTab('leaderboard')">Top Rated</button>
+  <button onclick="showTab('recommenders')">Recommenders</button>
+  <button onclick="showTab('recommend')">Recommend</button>
+</nav>
+
+<main>
+
+  <!-- LIST TAB -->
+  <div id="tab-list">
+    <div class="controls">
+      <select class="pill-select" onchange="setFilter(this.value)" id="status-select">
+        <option value="all">All movies</option>
+        <option value="watched">Watched</option>
+        <option value="queued">In queue</option>
+        <option value="skipped">Skipped</option>
+      </select>
+      <select class="pill-select" onchange="setSort(this.value)" style="margin-left:auto">
+        <option value="added">Recently added</option>
+        <option value="score">Score ↓</option>
+        <option value="title">Title A–Z</option>
+      </select>
+    </div>
+    <div class="movie-list" id="movie-list"></div>
+  </div>
+
+  <!-- TOP RATED TAB -->
+  <div id="tab-leaderboard" style="display:none">
+    <div class="stats-strip" id="stats-strip"></div>
+    <div class="lb-controls">
+      <p class="section-header" style="margin:0">Ranked by score</p>
+      <select class="pill-select" onchange="setGenreFilter(this.value)" id="genre-select" style="margin-left:auto">
+        <option value="all">All genres</option>
+      </select>
+    </div>
+    <div class="leaderboard" id="leaderboard-list"></div>
+  </div>
+
+  <!-- RECOMMENDERS TAB -->
+  <div id="tab-recommenders" style="display:none">
+    <p style="color:var(--muted);font-size:0.82rem;line-height:1.6;margin-bottom:1.25rem">Ranked by the average score of movies they recommended. Only scored, watched movies count.</p>
+    <div class="rec-lb" id="rec-lb-list"></div>
+  </div>
+
+  <!-- RECOMMEND TAB -->
+  <div id="tab-recommend" style="display:none">
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1.25rem;line-height:1.6;">Seen something I'd love? Drop a recommendation below and I'll get a notification.</p>
+    <div class="rec-form">
+      <div>
+        <label>Your name</label>
+        <input type="text" id="rec-name" placeholder="e.g. Alex">
+      </div>
+      <div>
+        <label>Movie title</label>
+        <input type="text" id="rec-movie" placeholder="e.g. The Substance">
+      </div>
+      <div>
+        <label>Why I'll love it (optional)</label>
+        <textarea id="rec-notes" placeholder="A quick pitch..."></textarea>
+      </div>
+      <button class="submit-btn" onclick="submitRec()" id="rec-btn">Send Recommendation</button>
+      <div class="form-msg" id="form-msg"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MOVIE MODAL -->
+<div class="modal-backdrop" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal-inner">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  MOVIE DATA — edit this to add / update movies
+//
+//  Fields:
+//    title      : string
+//    year       : number
+//    status     : "watched" | "queued" | "skipped"
+//    score      : number 1–10 with decimals, or null if unscored
+//    recommended: string (who recommended it, or "" for self-picked)
+//    genre      : string
+//    notes      : string
+// ============================================================
+const MOVIES = [
+  { title: "Blue Streak", year: 1999, status: "queued", score: null, recommended: "Patrick W.", genre: "Comedy", notes: "" },
+  { title: "The Prestige", year: 2006, status: "queued", score: null, recommended: "Alex S.", genre: "Thriller", notes: "" },
+  { title: "Heat", year: 1995, status: "queued", score: null, recommended: "Alex S.", genre: "Thriller", notes: "" },
+  { title: "Casino", year: 1995, status: "queued", score: null, recommended: "Eric K.", genre: "Thriller", notes: "" },
+  { title: "Goodfellas", year: 1990, status: "queued", score: null, recommended: "Justin B.", genre: "Thriller", notes: "" },
+  { title: "Project Hail Mary", year: 2026, status: "queued", score: null, recommended: "Bobby D.", genre: "Sci-Fi", notes: "" },
+  { title: "Fight Club", year: 1999, status: "queued", score: null, recommended: "Arty A.", genre: "Action", notes: "" },
+  { title: "Taxi Driver", year: 1976, status: "queued", score: null, recommended: "Arty A.", genre: "Thriller", notes: "" },
+  { title: "City of God", year: 2002, status: "queued", score: null, recommended: "Beef.", genre: "Drama", notes: "" },
+  { title: "Memento", year: 2000, status: "queued", score: null, recommended: "Arty A.", genre: "Thriller", notes: "" },
+  { title: "Isle of Dogs", year: 2018, status: "queued", score: null, recommended: "Beef.", genre: "Fantasy", notes: "" },
+  { title: "Inglourious Bastards", year: 2009, status: "queued", score: null, recommended: "Arty A.", genre: "Action", notes: "" },
+  { title: "The Lord of the Rings: The Fellowship of the Ring", year: 2001, status: "queued", score: null, recommended: "Sam D.", genre: "Fantasy", notes: "" },
+  { title: "The Lord of the Rings: The Two Towers", year: 2002, status: "queued", score: null, recommended: "Sam D.", genre: "Fantasy", notes: "" },
+  { title: "The Lord of the Rings: The Return of the King", year: 2003, status: "queued", score: null, recommended: "Sam D.", genre: "Fantasy", notes: "" },
+  { title: "Requiem for a Dream", year: 2000, status: "queued", score: null, recommended: "Arty A.", genre: "Horror", notes: "" },
+  { title: "Rear Window", year: 1954, status: "queued", score: null, recommended: "Beef.", genre: "Mystery", notes: "" },
+  { title: "The Butterfly Effect", year: 2004, status: "queued", score: null, recommended: "Arty A.", genre: "Sci-Fi", notes: "" },
+  { title: "Coherence", year: 2013, status: "queued", score: null, recommended: "Beef.", genre: "Sci-Fi", notes: "" },
+  { title: "Zodiac", year: 2007, status: "queued", score: null, recommended: "Arty A.", genre: "Thriller", notes: "" },
+  { title: "Drive", year: 2011, status: "queued", score: null, recommended: "Arty A.", genre: "Action", notes: "" },
+  { title: "Johnny Got His Gun", year: 1971, status: "queued", score: null, recommended: "Beef.", genre: "Drama", notes: "" },
+  { title: "No Country for Old Men", year: 2007, status: "queued", score: null, recommended: "Arty A.", genre: "Thriller", notes: "" },
+  { title: "Midsommar", year: 2019, status: "watched", score: 6.1, recommended: "Sam D.", genre: "Horror", notes: "Good cinematography but I didn't enjoy feeling uncomfortable for 2.5 hours straight. Felt like it lacked direction for the majority of the movie." },
+  { title: "The Lighthouse", year: 2019, status: "queued", score: null, recommended: "Sam D.", genre: "Horror", notes: "" },
+  { title: "Uncut Gems", year: 2019, status: "queued", score: null, recommended: "Sam D.", genre: "Thriller", notes: "" },
+  { title: "Ex Machina", year: 2014, status: "queued", score: null, recommended: "Sam D.", genre: "Sci-Fi", notes: "" },
+  { title: "Everything Everywhere All at Once", year: 2012, status: "queued", score: null, recommended: "Sam D.", genre: "Sci-Fi", notes: "" },
+  { title: "The Perks of Being a Wallflower", year: 20123, status: "queued", score: null, recommended: "Nick R.", genre: "Rom-Com", notes: "" },
+  { title: "Sausage Party", year: 2016, status: "queued", score: null, recommended: "Jake S.", genre: "Comedy", notes: "" },
+  { title: "Surf's Up", year: 2007, status: "watched", score: 8.6, recommended: "Justin B.", genre: "Family", notes: "Fun, peak, sick, no major notes." },
+  { title: "The Godfather", year: 1972, status: "queued", score: null, recommended: "Michael B.", genre: "Thriller", notes: "" },
+  { title: "Beverly Hills Ninja", year: 1997, status: "queued", score: null, recommended: "Evan A.", genre: "Comedy", notes: "" },
+  { title: "The Iron Claw", year: 2023, status: "queued", score: null, recommended: "Sam A.", genre: "Sport", notes: "" },
+  { title: "Rain Man", year: 1988, status: "queued", score: null, recommended: "Henry W.", genre: "Comedy", notes: "" },
+  { title: "Kingdom of Heaven", year: 2005, status: "queued", score: null, recommended: "Mattia B.", genre: "Action", notes: "" },
+  { title: "Scent of a Woman", year: 1992, status: "queued", score: null, recommended: "Robbie W.", genre: "Drama", notes: "" },
+  { title: "Pretty Woman", year: 1990, status: "queued", score: null, recommended: "Mattia B.", genre: "Rom-Com", notes: "" },
+
+
+];
+// ============================================================
+
+// Avatar colors for recommenders (cycles through)
+const AVATAR_COLORS = ['#5b8dd9','#4caf87','#c9a84c','#d4537e','#8b6fcf','#e24b4a','#1d9e75','#d85a30'];
+
+function scoreColor(score) {
+  if (score === null) return null;
+  const t = (score - 1) / 9;
+  if (t < 0.5) {
+    const u = t * 2;
+    return `rgb(${Math.round(226+(201-226)*u)},${Math.round(75+(168-75)*u)},${Math.round(74+(76-74)*u)})`;
+  } else {
+    const u = (t - 0.5) * 2;
+    return `rgb(${Math.round(201+(76-201)*u)},${Math.round(168+(175-168)*u)},${Math.round(76+(135-76)*u)})`;
+  }
+}
+
+function statusLabel(s) {
+  return { watched: "Watched", queued: "In queue", skipped: "Skipped" }[s] || s;
+}
+
+let currentFilter = 'all';
+let currentSort = 'added';
+let currentGenre = 'all';
+
+function setFilter(val) { currentFilter = val; renderList(); }
+function setSort(val)   { currentSort = val;   renderList(); }
+
+function filtered() {
+  let list = currentFilter === 'all' ? [...MOVIES] : MOVIES.filter(m => m.status === currentFilter);
+  if (currentSort === 'score') list.sort((a,b) => (b.score??-1)-(a.score??-1));
+  else if (currentSort === 'title') list.sort((a,b) => a.title.localeCompare(b.title));
+  return list;
+}
+
+function renderList() {
+  const el = document.getElementById('movie-list');
+  const movies = filtered();
+  if (!movies.length) { el.innerHTML = '<div class="empty">Nothing here yet.</div>'; return; }
+  el.innerHTML = movies.map(m => {
+    const idx = MOVIES.indexOf(m);
+    const color = scoreColor(m.score);
+    const scoreHtml = m.score !== null
+      ? `<div class="score-badge" style="background:${color}">${m.score}</div>`
+      : `<div class="score-badge unscored">·</div>`;
+    const recHtml = m.recommended ? `<span class="rec-tag">rec: ${m.recommended}</span>` : '';
+    return `<div class="movie-card" onclick="openModal(${idx})">
+      ${scoreHtml}
+      <div class="movie-info">
+        <div class="movie-title">${m.title}</div>
+        <div class="movie-meta"><span>${m.year}</span>${m.genre?`<span>${m.genre}</span>`:''} ${recHtml}</div>
+      </div>
+      <div class="status-dot ${m.status}" title="${statusLabel(m.status)}"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Top Rated ──
+function setGenreFilter(val) { currentGenre = val; renderLeaderboard(false); }
+
+function populateGenreSelect() {
+  const genres = [...new Set(MOVIES.filter(m=>m.score!==null&&m.genre).map(m=>m.genre))].sort();
+  const sel = document.getElementById('genre-select');
+  sel.innerHTML = '<option value="all">All genres</option>' +
+    genres.map(g=>`<option value="${g}">${g}</option>`).join('');
+  sel.value = currentGenre;
+}
+
+function renderLeaderboard(resetGenre) {
+  if (resetGenre) { currentGenre = 'all'; }
+  populateGenreSelect();
+
+  let scored = MOVIES.filter(m => m.score !== null);
+  if (currentGenre !== 'all') scored = scored.filter(m => m.genre === currentGenre);
+  scored.sort((a,b) => b.score - a.score);
+
+  const allWatched = MOVIES.filter(m => m.status === 'watched').length;
+  const allScored  = MOVIES.filter(m => m.score !== null);
+  const avg = allScored.length ? (allScored.reduce((s,m)=>s+m.score,0)/allScored.length).toFixed(1) : '–';
+  const queued = MOVIES.filter(m => m.status === 'queued').length;
+
+  document.getElementById('stats-strip').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${allWatched}</div><div class="stat-label">Watched</div></div>
+    <div class="stat-card"><div class="stat-num">${avg}</div><div class="stat-label">Avg score</div></div>
+    <div class="stat-card"><div class="stat-num">${queued}</div><div class="stat-label">In queue</div></div>`;
+
+  if (!scored.length) {
+    document.getElementById('leaderboard-list').innerHTML = '<div class="empty">No scored movies in this genre.</div>';
+    return;
+  }
+  document.getElementById('leaderboard-list').innerHTML = scored.map((m,i) => {
+    const color = scoreColor(m.score);
+    return `<div class="lb-row" onclick="openModal(${MOVIES.indexOf(m)})">
+      <div class="lb-rank ${i<3?'top':''}">${i+1}</div>
+      <div class="lb-title">${m.title} <span style="color:var(--muted);font-size:0.8rem;font-family:var(--font-body)">${m.year}</span></div>
+      <div class="lb-score-pill" style="background:${color}">${m.score}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Recommenders leaderboard ──
+function renderRecommenders() {
+  // Build per-person stats from movies they recommended that have been scored
+  const people = {};
+  MOVIES.forEach(m => {
+    if (!m.recommended) return;
+    const name = m.recommended;
+    if (!people[name]) people[name] = { name, scored: [], pending: [] };
+    if (m.score !== null && m.status === 'watched') {
+      people[name].scored.push(m);
+    } else {
+      people[name].pending.push(m);
+    }
+  });
+
+  // Sort: people with scored movies first by avg, then pending-only people
+  const list = Object.values(people);
+  list.sort((a, b) => {
+    const avgA = a.scored.length ? a.scored.reduce((s,m)=>s+m.score,0)/a.scored.length : -1;
+    const avgB = b.scored.length ? b.scored.reduce((s,m)=>s+m.score,0)/b.scored.length : -1;
+    return avgB - avgA;
+  });
+
+  const maxAvg = Math.max(...list.filter(p=>p.scored.length).map(p=>p.scored.reduce((s,m)=>s+m.score,0)/p.scored.length), 0);
+
+  if (!list.length) {
+    document.getElementById('rec-lb-list').innerHTML = '<div class="empty">No recommendations logged yet.</div>';
+    return;
+  }
+
+  document.getElementById('rec-lb-list').innerHTML = list.map((p, i) => {
+    const avg = p.scored.length
+      ? (p.scored.reduce((s,m)=>s+m.score,0)/p.scored.length)
+      : null;
+    const avgDisplay = avg !== null ? avg.toFixed(1) : '–';
+    const color = avg !== null ? scoreColor(avg) : 'var(--surface2)';
+    const barWidth = avg !== null ? (avg / maxAvg * 100).toFixed(1) : 0;
+    const initials = p.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    const rankLabel = avg !== null
+      ? (i === 0 ? '🏆 #1 recommender' : `#${i+1} recommender`)
+      : 'No scored picks yet';
+    const isTop = i === 0 && avg !== null;
+    const totalPicks = p.scored.length + p.pending.length;
+
+    const chips = [
+      ...p.scored.map(m => {
+        const c = scoreColor(m.score);
+        return `<span class="rec-movie-chip scored" style="border-left:2px solid ${c}">${m.title} <strong style="color:${c}">${m.score}</strong></span>`;
+      }),
+      ...p.pending.map(m => `<span class="rec-movie-chip">${m.title} <span style="opacity:0.5">·</span></span>`)
+    ].join('');
+
+    return `<div class="rec-lb-card">
+      <div class="rec-rank-badge ${isTop?'top':''}">${rankLabel}</div>
+      <div class="rec-lb-header">
+        <div class="rec-avatar" style="background:${avatarColor}">${initials}</div>
+        <div class="rec-name-wrap">
+          <div class="rec-person-name">${p.name}</div>
+          <div class="rec-sub">${totalPicks} pick${totalPicks!==1?'s':''} · ${p.scored.length} scored</div>
+        </div>
+        <div class="rec-score-badge" style="background:${color}">${avgDisplay}</div>
+      </div>
+      ${avg !== null ? `<div class="rec-bar-wrap"><div class="rec-bar" style="width:${barWidth}%;background:${color}"></div></div>` : ''}
+      <div class="rec-movies">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Modal ──
+function openModal(idx) {
+  const m = MOVIES[idx];
+  const color = scoreColor(m.score);
+  const scoreEl = m.score !== null
+    ? `<div class="modal-score-large" style="background:${color}">${m.score} / 10</div>`
+    : `<div style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem">Not yet scored</div>`;
+  const notesEl = m.notes ? `<div class="modal-notes">${m.notes}</div>` : '';
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-title">${m.title}</div>
+    <div class="modal-year">${m.year}${m.genre?' · '+m.genre:''}</div>
+    ${scoreEl}
+    <div class="modal-grid">
+      <div class="modal-field"><label>Status</label><p>${statusLabel(m.status)}</p></div>
+      <div class="modal-field"><label>Recommended by</label><p>${m.recommended||'Self-picked'}</p></div>
+    </div>
+    ${notesEl}`;
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); document.body.style.overflow = ''; }
+function closeModalOutside(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+// ── Tabs ──
+const TABS = ['list','leaderboard','recommenders','recommend'];
+function showTab(tab) {
+  TABS.forEach(t => document.getElementById('tab-'+t).style.display = t===tab ? '' : 'none');
+  document.querySelectorAll('nav button').forEach((b,i) => b.classList.toggle('active', TABS[i]===tab));
+  if (tab === 'leaderboard')   renderLeaderboard(true);
+  if (tab === 'recommenders')  renderRecommenders();
+}
+
+// ── Email ──
+async function submitRec() {
+  const name  = document.getElementById('rec-name').value.trim();
+  const movie = document.getElementById('rec-movie').value.trim();
+  const notes = document.getElementById('rec-notes').value.trim();
+  const msg   = document.getElementById('form-msg');
+  const btn   = document.getElementById('rec-btn');
+  msg.className = 'form-msg';
+  if (!name || !movie) { msg.textContent = 'Please fill in your name and the movie title.'; msg.classList.add('error'); return; }
+  if (EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY") { msg.textContent = 'Email not configured yet — see the setup instructions in the HTML file.'; msg.classList.add('error'); return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { recommender_name: name, movie_title: movie, notes: notes||'(no notes)', to_email: 'grantgottlieb27@gmail.com' });
+    msg.textContent = '✓ Sent! Grant will check it out.'; msg.classList.add('success');
+    document.getElementById('rec-name').value = '';
+    document.getElementById('rec-movie').value = '';
+    document.getElementById('rec-notes').value = '';
+  } catch(e) { msg.textContent = 'Something went wrong. Try again or text Grant directly.'; msg.classList.add('error'); }
+  btn.disabled = false; btn.textContent = 'Send Recommendation';
+}
+
+renderList();
+</script>
+</body>
+</html>
