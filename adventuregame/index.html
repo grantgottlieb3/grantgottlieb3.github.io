@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#21153d">
+    <meta name="description" content="Grant &amp; Emma: Side by Side — a cooperative pixel-art adventure for two players.">
+    <title>Grant &amp; Emma: Side by Side</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./game.js" defer></script>
+  </head>
+  <body>
+    <main class="game-shell" aria-label="Grant and Emma: Side by Side">
+      <section class="cabinet" aria-label="Two-player adventure game">
+        <div class="cabinet-top" aria-hidden="true">
+          <span class="pixel-heart">♥</span>
+          <span>GRANT &amp; EMMA</span>
+          <span class="pixel-heart">♥</span>
+        </div>
+
+        <div class="screen-frame">
+          <div class="screen-wrap">
+            <canvas
+              id="game"
+              width="960"
+              height="540"
+              tabindex="0"
+              aria-label="Grant and Emma cooperative adventure game. Grant uses A and D to run and W to jump. Emma uses the left and right arrow keys to run and the up arrow to jump."
+            >
+              Your browser does not support the HTML canvas element.
+            </canvas>
+            <div class="scanlines" aria-hidden="true"></div>
+            <div class="screen-glare" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="control-deck" aria-label="Game controls">
+          <div class="control-card grant-controls">
+            <div class="player-dot grant-dot" aria-hidden="true"></div>
+            <div>
+              <strong>GRANT</strong>
+              <span><kbd>A</kbd><kbd>D</kbd> RUN &nbsp; <kbd>W</kbd> JUMP / SELECT</span>
+            </div>
+          </div>
+          <div class="deck-heart" aria-hidden="true">♥</div>
+          <div class="control-card emma-controls">
+            <div class="player-dot emma-dot" aria-hidden="true"></div>
+            <div>
+              <strong>EMMA</strong>
+              <span><kbd>←</kbd><kbd>→</kbd> RUN &nbsp; <kbd>↑</kbd> JUMP / SELECT</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="keyboard-note">Two players · One hardware keyboard · Best played side by side</p>
+      <p class="small-screen-note">This keyboard adventure is designed for a laptop or desktop-sized screen.</p>
+      <p id="game-status" class="sr-only" aria-live="polite">Loading game…</p>
+    </main>
+
+    <noscript>
+      <p class="no-script">JavaScript is required to play Grant &amp; Emma: Side by Side.</p>
+    </noscript>
+  </body>
+</html>
