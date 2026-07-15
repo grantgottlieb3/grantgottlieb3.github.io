@@ -39,6 +39,8 @@
     "ArrowLeft",
     "ArrowDown",
     "ArrowRight",
+    "Enter",
+    "NumpadEnter",
   ]);
 
   const input = {
@@ -447,14 +449,17 @@
       this.onGround = false;
       this.coyote = 0;
       this.jumpBuffer = 0;
+      this.jumpImpulse = 440;
       this.animation = Math.random();
       this.locked = false;
       this.arrived = false;
       this.invulnerable = 0.5;
+      this.dropThroughTimer = 0;
+      this.groundPlatform = null;
       this.controls =
         character === "grant"
-          ? { left: "KeyA", right: "KeyD", jump: "KeyW" }
-          : { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp" };
+          ? { left: "KeyA", right: "KeyD", jump: "KeyW", down: "KeyS" }
+          : { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", down: "ArrowDown" };
     }
 
     get rect() {
@@ -469,6 +474,7 @@
     update(dt, solids, bounds = { minX: 0, maxX: Infinity }) {
       this.animation += dt;
       this.invulnerable = Math.max(0, this.invulnerable - dt);
+      this.dropThroughTimer = Math.max(0, this.dropThroughTimer - dt);
       if (this.locked) {
         this.vx = approach(this.vx, 0, 1100 * dt);
         return;
@@ -481,13 +487,21 @@
       const acceleration = axis === 0 ? 1250 : 1550;
       this.vx = approach(this.vx, targetSpeed, acceleration * dt);
       if (axis !== 0) this.direction = axis;
+      if (input.wasPressed(this.controls.down) && this.onGround && this.groundPlatform?.oneWay) {
+        this.dropThroughTimer = 0.2;
+        this.y += 4;
+        this.vy = 70;
+        this.onGround = false;
+        this.groundPlatform = null;
+        this.coyote = 0;
+      }
       if (input.wasPressed(this.controls.jump)) this.jumpBuffer = 0.13;
       else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
       if (this.onGround) this.coyote = 0.11;
       else this.coyote = Math.max(0, this.coyote - dt);
 
       if (this.jumpBuffer > 0 && this.coyote > 0) {
-        this.vy = -440;
+        this.vy = -this.jumpImpulse;
         this.onGround = false;
         this.coyote = 0;
         this.jumpBuffer = 0;
@@ -500,6 +514,7 @@
       this.x = clamp(this.x, bounds.minX + this.width / 2, bounds.maxX - this.width / 2);
       let playerRect = this.rect;
       for (const solid of solids) {
+        if (solid.oneWay) continue;
         if (!rectsOverlap(playerRect, solid)) continue;
         if (this.vx > 0) this.x = solid.x - this.width / 2;
         else if (this.vx < 0) this.x = solid.x + solid.w + this.width / 2;
@@ -511,14 +526,27 @@
       const previousTop = previousY - this.height;
       this.y += this.vy * dt;
       this.onGround = false;
+      this.groundPlatform = null;
       playerRect = this.rect;
       for (const solid of solids) {
         const horizontalOverlap = playerRect.x < solid.x + solid.w && playerRect.x + playerRect.w > solid.x;
         if (!horizontalOverlap) continue;
+        if (solid.oneWay) {
+          if (this.dropThroughTimer > 0 || this.vy < 0) continue;
+          if (previousY <= solid.y + 2 && this.y >= solid.y) {
+            this.y = solid.y;
+            this.vy = 0;
+            this.onGround = true;
+            this.groundPlatform = solid;
+            playerRect = this.rect;
+          }
+          continue;
+        }
         if (this.vy >= 0 && previousY <= solid.y + 2 && this.y >= solid.y) {
           this.y = solid.y;
           this.vy = 0;
           this.onGround = true;
+          this.groundPlatform = solid;
           playerRect = this.rect;
         } else if (this.vy < 0 && previousTop >= solid.y + solid.h - 2 && this.y - this.height <= solid.y + solid.h) {
           this.y = solid.y + solid.h + this.height;
@@ -550,8 +578,8 @@
       playable: true,
       accent: COLORS.gold,
       story: "The Boilermakers won the Bucket, and West Lafayette is celebrating! Make it safely from Twisted Hammer back to Grant's dorm before the night leaves you behind.",
-      objective: "Stay on screen, collect at least 12 stars, and use the buddy gates to reach the dorm together.",
-      tip: "One player holds the near plate. The other crosses and steps on the far plate to latch each gate open.",
+      objective: "Stay ahead of the night, collect at least 14 stars, and use the buddy gates to reach the dorm together.",
+      tip: "Climb through thin ledges for hidden stars, then drop back to the street. Some routes require doubling back before the screen catches you.",
     },
     {
       id: "1-2",
@@ -561,8 +589,8 @@
       playable: true,
       accent: COLORS.coral,
       story: "The house is packed and every room is a new country. Collect the drinks, watch out for over-friendly partygoers, and make it to the exit together.",
-      objective: "Collect 6 beers and 6 seltzers. Grant protects Emma from boys; Emma protects Grant from girls.",
-      tip: "Body-block or jump on the right enemy. At the cooler, both players must push right at the same time.",
+      objective: "Grant must collect 6 beers; Emma must collect 6 seltzers. Protect each other and keep ahead of the party.",
+      tip: "Climb for drinks, body-block the right enemy, and push the cooler together before the room scrolls away.",
     },
     {
       id: "1-3",
@@ -576,12 +604,12 @@
       id: "2-1",
       chapter: "CHAPTER 2 · UNIVERSITY OF TENNESSEE",
       title: "TENNESSEE FOOTBALL GAME",
-      subtitle: "Front Row or Bust",
+      subtitle: "Linked Through Neyland",
       playable: true,
       accent: COLORS.orange,
       story: "Emma scored front-row tickets in Neyland! There is only one catch: ninety thousand excited fans are between you and your seats.",
-      objective: "Time each jump through the moving crowd. If either player is bumped, the whole team loses.",
-      tip: "Meet on both colored ticket pads to open each checkpoint. Grant uses A/D/W; Emma uses arrows.",
+      objective: "Cross the packed concourse while linked, climb over the crowd, and reach the front row together.",
+      tip: "Stretch the ticket link while one player stays planted for higher jumps. If someone slips, they climb while their partner stretches the link from solid ground.",
     },
     {
       id: "2-2",
@@ -591,8 +619,8 @@
       playable: true,
       accent: COLORS.blue,
       story: "Emma is nervous for her MCAT, so Grant picks up his guitar. A gentle song and a flock of sheep might be just what she needs to rest.",
-      objective: "Grant plays notes with WASD while Emma counts sheep with the matching arrow keys.",
-      tip: "Press when the notes reach the line and when sheep reach the fence. Both need 70% accuracy and 75% together.",
+      objective: "Grant follows directional arrows while Emma counts sheep as they reach the glowing count line.",
+      tip: "Grant plays at the note line. Emma presses the sheep's arrow when it reaches the glowing count line. Both need 70% accuracy.",
     },
     {
       id: "2-3",
@@ -674,7 +702,7 @@
   }
 
   function menuSelectPressed() {
-    return input.wasPressed("KeyW") || input.wasPressed("ArrowUp");
+    return input.wasPressed("Enter") || input.wasPressed("NumpadEnter");
   }
 
   function drawDitheredSky(top, bottom) {
@@ -735,7 +763,7 @@
     if (transitionLock > 0) return;
     if (menuSelectPressed()) {
       audio.select();
-      goTo("levelSelect", "Level select. Use either player's left and right controls, then press up to choose.");
+      goTo("levelSelect", "Level select. Move left or right and press Enter to choose.");
     }
   }
 
@@ -754,17 +782,12 @@
 
     text("GRANT & EMMA", WIDTH / 2, 104, 55, COLORS.cream, "center");
     text("SIDE BY SIDE", WIDTH / 2, 158, 44, COLORS.gold, "center");
-    text("A TWO-PLAYER LOVE STORY", WIDTH / 2, 193, 16, "#e9cce3", "center");
 
     const pulse = Math.floor(screenTime * 2) % 2 === 0;
     fillRoundRect(322, 238 + (pulse ? 0 : 2), 316, 92, 12, COLORS.deepInk);
     fillRoundRect(322, 230 + (pulse ? 0 : 2), 316, 92, 12, pulse ? COLORS.gold : "#f4b942");
     strokeRoundRect(322, 230 + (pulse ? 0 : 2), 316, 92, 12, COLORS.cream, 4);
     text("▶  PLAY  ◀", WIDTH / 2, 291 + (pulse ? 0 : 2), 38, COLORS.ink, "center", false);
-    drawKey("W", 392, 345, 34, input.isDown("KeyW"));
-    text("OR", 480, 371, 14, COLORS.cream, "center");
-    drawKey("↑", 534, 345, 34, input.isDown("ArrowUp"));
-    text("PRESS UP TO BEGIN", WIDTH / 2, 404, 14, COLORS.cream, "center");
     text("BEST EXPERIENCED TOGETHER", WIDTH / 2, 512, 13, "#a996bc", "center");
   }
 
@@ -786,7 +809,7 @@
       goTo(
         "briefing",
         selectedLevel.playable
-          ? `${selectedLevel.title}. Press either up control to start.`
+          ? `${selectedLevel.title}. Press Enter to start.`
           : `${selectedLevel.title} is under construction.`,
       );
     }
@@ -908,15 +931,6 @@
       ctx.restore();
     }
 
-    drawKey("A", 266, 454, 36, input.isDown("KeyA"));
-    drawKey("←", 307, 454, 36, input.isDown("ArrowLeft"));
-    text("BROWSE", 389, 479, 14, "#684f65", "center", false);
-    drawKey("D", 482, 454, 36, input.isDown("KeyD"));
-    drawKey("→", 523, 454, 36, input.isDown("ArrowRight"));
-    drawKey("W", 649, 454, 36, input.isDown("KeyW"));
-    drawKey("↑", 690, 454, 36, input.isDown("ArrowUp"));
-    text("SELECT", 779, 479, 14, "#684f65", "center", false);
-
     for (let index = 0; index < levels.length; index += 1) {
       ctx.fillStyle = index === selectedIndex ? selectedLevel.accent : "#a98e93";
       const size = index === selectedIndex ? 9 : 6;
@@ -970,7 +984,7 @@
         "center",
       );
       fillRoundRect(322, 314, 348, 62, 8, "#8d7d8d");
-      text("PRESS UP TO GO BACK", 496, 354, 20, COLORS.cream, "center", false);
+      text("BACK TO LEVEL SELECT", 496, 354, 20, COLORS.cream, "center", false);
     } else {
       text(selectedLevel.title, 294, 120, 30, COLORS.ink, "left", false);
       text(selectedLevel.subtitle.toUpperCase(), 296, 150, 14, "#816078", "left", false);
@@ -986,9 +1000,8 @@
       wrapText(selectedLevel.tip, 302, 408, 484, 18, 13, "#59445a", "left");
 
       fillRoundRect(312, 439, 328, 38, 6, selectedLevel.accent);
-      text("W / ↑  START MEMORY", 476, 464, 17, COLORS.ink, "center", false);
+      text("START MEMORY", 476, 464, 17, COLORS.ink, "center", false);
     }
-    text("A / ←  BACK", 24, 472, 13, "#72586d", "left", false);
     ctx.restore();
   }
 
@@ -1018,7 +1031,7 @@
     const factories = {
       "1-1": createBucketLevel,
       "1-2": createPartyLevel,
-      "2-1": createCrowdLevel,
+      "2-1": createChainedLevel,
       "2-2": createSerenadeLevel,
     };
     activeLevel = factories[level.id]();
@@ -1084,7 +1097,6 @@
       strokeRoundRect(x, 376 + (selected ? 0 : 3), 182, 52, 6, selected ? COLORS.cream : "#766884", 2);
       text(option, x + 91, 409 + (selected ? 0 : 3), 16, selected ? COLORS.ink : COLORS.cream, "center", false);
     });
-    text("A / D  OR  ← / →  CHOOSE     ·     W / ↑  SELECT", WIDTH / 2, 448, 12, COLORS.lavender, "center", false);
   }
 
   function drawFocusOverlay() {
@@ -1164,6 +1176,7 @@
   function createBucketLevel() {
     const worldWidth = 5900;
     const floorY = 466;
+    const requiredStars = 14;
     const particles = new ParticleBurst();
     const players = [
       new PlatformPlayer("grant", 150, floorY),
@@ -1176,26 +1189,34 @@
       { x: 2560, y: floorY, w: 790, h: 120 },
       { x: 3450, y: floorY, w: 920, h: 120 },
       { x: 4480, y: floorY, w: 1420, h: 120 },
-      { x: 500, y: 382, w: 180, h: 12 },
-      { x: 1090, y: 370, w: 195, h: 12 },
-      { x: 1395, y: 407, w: 132, h: 12 },
-      { x: 2170, y: 370, w: 170, h: 12 },
-      { x: 2750, y: 386, w: 180, h: 12 },
-      { x: 3130, y: 332, w: 185, h: 12 },
-      { x: 3590, y: 390, w: 145, h: 12 },
-      { x: 4140, y: 346, w: 176, h: 12 },
-      { x: 4690, y: 376, w: 180, h: 12 },
-      { x: 5050, y: 332, w: 176, h: 12 },
+      { x: 500, y: 390, w: 180, h: 12, oneWay: true },
+      { x: 1120, y: 398, w: 180, h: 12, oneWay: true },
+      { x: 1225, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 1095, y: 262, w: 190, h: 12, oneWay: true },
+      { x: 1395, y: 407, w: 132, h: 12, oneWay: true },
+      { x: 1735, y: 398, w: 150, h: 12, oneWay: true },
+      { x: 2190, y: 394, w: 170, h: 12, oneWay: true },
+      { x: 2780, y: 398, w: 180, h: 12, oneWay: true },
+      { x: 2885, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 2755, y: 262, w: 190, h: 12, oneWay: true },
+      { x: 3220, y: 398, w: 130, h: 12, oneWay: true },
+      { x: 3520, y: 398, w: 145, h: 12, oneWay: true },
+      { x: 4140, y: 394, w: 176, h: 12, oneWay: true },
+      { x: 4560, y: 398, w: 150, h: 12, oneWay: true },
+      { x: 4880, y: 398, w: 180, h: 12, oneWay: true },
+      { x: 4985, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 4855, y: 262, w: 190, h: 12, oneWay: true },
+      { x: 5260, y: 394, w: 176, h: 12, oneWay: true },
     ];
     const gates = [
       { x: 2045, nearX: 1850, farX: 2140, latched: false, open: false, nearActive: false, farActive: false },
       { x: 3850, nearX: 3655, farX: 3945, latched: false, open: false, nearActive: false, farActive: false },
     ];
     const starPositions = [
-      [365, 411], [585, 330], [815, 411], [1070, 411], [1187, 411],
-      [1458, 357], [1760, 411], [1900, 411], [2190, 411], [2370, 411],
-      [2650, 411], [2840, 411], [3218, 411], [3500, 411], [3670, 411],
-      [4105, 411], [4755, 411], [5138, 279], [5485, 411],
+      [365, 411], [815, 411], [1050, 411], [1760, 411], [1900, 411],
+      [2370, 411], [3500, 411], [5485, 411],
+      [1350, 286], [1135, 218], [3005, 286], [2805, 218],
+      [5105, 286], [4905, 218], [4150, 344], [5350, 344],
     ];
     const stars = starPositions.map(([x, y], index) => ({ x, y, collected: false, phase: index * 0.67 }));
     const backgroundBuildings = [];
@@ -1242,7 +1263,7 @@
         audio.tone(110, 0.045, "square", 0.025);
       }
       if (countdown > 0) countdown -= dt;
-      else cameraX = Math.min(worldWidth - WIDTH, cameraX + 68 * dt);
+      else cameraX = Math.min(worldWidth - WIDTH, cameraX + 86 * dt);
 
       gates.forEach((gate) => {
         gate.nearActive = players.some((player) => playerOnPlate(player, gate.nearX));
@@ -1276,9 +1297,9 @@
           starCount += 1;
           particles.burst(star.x, star.y, COLORS.gold, 12, 105);
           audio.collect();
-          if (starCount === 12 && !thresholdAnnounced) {
+          if (starCount === requiredStars && !thresholdAnnounced) {
             thresholdAnnounced = true;
-            setToast("12 stars! Now get both players safely to the dorm.", 3.3);
+            setToast(`${requiredStars} stars! Now get both players safely to the dorm.`, 3.3);
           }
         }
       }
@@ -1286,13 +1307,13 @@
       for (const player of players) {
         if (player.y > HEIGHT + 100) {
           finishLevel(false, `${player.character === "grant" ? "Grant" : "Emma"} missed a jump. When one falls, both go back together.`, [
-            { label: "STARS", value: `${starCount}/12`, color: COLORS.gold },
+            { label: "STARS", value: `${starCount}/${requiredStars}`, color: COLORS.gold },
           ]);
           return;
         }
         if (countdown <= 0 && player.x + player.width / 2 < cameraX + 5) {
           finishLevel(false, `${player.character === "grant" ? "Grant" : "Emma"} fell behind the moving night.`, [
-            { label: "STARS", value: `${starCount}/12`, color: COLORS.gold },
+            { label: "STARS", value: `${starCount}/${requiredStars}`, color: COLORS.gold },
           ]);
           return;
         }
@@ -1307,14 +1328,14 @@
       }
 
       if (players.every((player) => player.arrived)) {
-        if (starCount >= 12) {
+        if (starCount >= requiredStars) {
           finishLevel(true, "Home safe, with enough stars to remember the whole walk.", [
             { label: "STARS", value: `${starCount}/${stars.length}`, color: COLORS.gold },
             { label: "GATES", value: `${gates.filter((gate) => gate.latched).length}/2`, color: COLORS.blue },
           ]);
         } else {
-          finishLevel(false, `You reached the dorm, but only found ${starCount} of the 12 stars you need.`, [
-            { label: "STARS", value: `${starCount}/12`, color: COLORS.coral },
+          finishLevel(false, `You reached the dorm, but only found ${starCount} of the ${requiredStars} stars you need.`, [
+            { label: "STARS", value: `${starCount}/${requiredStars}`, color: COLORS.coral },
           ]);
         }
       }
@@ -1474,7 +1495,7 @@
       drawHeart(20 + (WIDTH - 40) * progress, HEIGHT - 17, 12, COLORS.coral);
 
       drawGameHud("THE LONG WALK HOME", COLORS.gold, [
-        { label: "STARS", value: `${starCount}/12`, color: starCount >= 12 ? COLORS.green : COLORS.gold, width: 150 },
+        { label: "STARS", value: `${starCount}/${requiredStars}`, color: starCount >= requiredStars ? COLORS.green : COLORS.gold, width: 150 },
         { label: "BUDDY GATES", value: `${gates.filter((gate) => gate.latched).length}/2`, color: COLORS.blue, width: 170 },
       ]);
       drawToast(toast, toastTimer, COLORS.gold);
@@ -1534,21 +1555,29 @@
     ];
     const platforms = [
       { x: 0, y: floorY, w: worldWidth, h: 100 },
-      { x: 820, y: 394, w: 180, h: 12 },
-      { x: 1180, y: 354, w: 170, h: 12 },
-      { x: 1690, y: 402, w: 175, h: 12 },
-      { x: 3020, y: 388, w: 195, h: 12 },
-      { x: 3580, y: 345, w: 175, h: 12 },
-      { x: 4190, y: 394, w: 190, h: 12 },
-      { x: 4720, y: 358, w: 170, h: 12 },
+      { x: 760, y: 398, w: 185, h: 12, oneWay: true },
+      { x: 875, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 755, y: 262, w: 185, h: 12, oneWay: true },
+      { x: 1500, y: 398, w: 185, h: 12, oneWay: true },
+      { x: 1615, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 1495, y: 262, w: 185, h: 12, oneWay: true },
+      { x: 2960, y: 398, w: 190, h: 12, oneWay: true },
+      { x: 3080, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 2960, y: 262, w: 190, h: 12, oneWay: true },
+      { x: 3970, y: 398, w: 190, h: 12, oneWay: true },
+      { x: 4090, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 3970, y: 262, w: 190, h: 12, oneWay: true },
+      { x: 4560, y: 398, w: 190, h: 12, oneWay: true },
+      { x: 4680, y: 330, w: 180, h: 12, oneWay: true },
+      { x: 4560, y: 262, w: 190, h: 12, oneWay: true },
     ];
     const crate = { x: 2180, y: floorY - 70, w: 112, h: 70, targetX: 2475, placed: false };
     const gate = { x: 2705, open: false };
     const drinkData = [
-      ["beer", 430, 424], ["seltzer", 610, 424], ["beer", 900, 424], ["seltzer", 1080, 424],
-      ["beer", 1265, 424], ["seltzer", 1485, 424], ["beer", 1790, 353], ["seltzer", 1990, 424],
-      ["beer", 2890, 424], ["seltzer", 3115, 424], ["beer", 3380, 424], ["seltzer", 3670, 424],
-      ["beer", 4010, 424], ["seltzer", 4280, 345], ["beer", 4620, 424], ["seltzer", 4805, 309],
+      ["beer", 430, 424], ["beer", 800, 213], ["beer", 1540, 213], ["beer", 2050, 424],
+      ["beer", 3000, 213], ["beer", 3380, 424], ["beer", 4010, 213], ["beer", 4600, 213],
+      ["seltzer", 610, 424], ["seltzer", 1000, 282], ["seltzer", 1265, 424], ["seltzer", 1740, 282],
+      ["seltzer", 2890, 424], ["seltzer", 3220, 282], ["seltzer", 4230, 282], ["seltzer", 4810, 282],
     ];
     const drinks = drinkData.map(([type, x, y], index) => ({ type, x, y, collected: false, phase: index * 0.55 }));
     const enemyData = [
@@ -1565,14 +1594,16 @@
       timer: 0,
       defeated: false,
       direction: index % 2 ? -1 : 1,
-      speed: 92 + (index % 4) * 7,
+      speed: 128 + (index % 4) * 8,
       phase: index * 0.6,
     }));
     let cameraX = 0;
+    let countdown = 3;
     let beers = 0;
     let seltzers = 0;
-    let toast = "Collect 6 of each — and protect your partner!";
+    let toast = "Grant grabs beers. Emma grabs seltzers. Get between your partner and danger!";
     let toastTimer = 3.4;
+    let wrongDrinkTimer = 0;
     let pushGlow = 0;
     let defended = 0;
 
@@ -1591,9 +1622,19 @@
 
     function update(dt) {
       toastTimer = Math.max(0, toastTimer - dt);
+      wrongDrinkTimer = Math.max(0, wrongDrinkTimer - dt);
       pushGlow = Math.max(0, pushGlow - dt);
       particles.update(dt);
-      players.forEach((player) => player.update(dt, getSolids(), { minX: 0, maxX: worldWidth }));
+      if (countdown > 0) {
+        countdown -= dt;
+      } else {
+        const averageX = (players[0].x + players[1].x) / 2;
+        const followTarget = clamp(averageX - WIDTH * 0.42, 0, worldWidth - WIDTH);
+        const followed = lerp(cameraX, followTarget, 1 - Math.pow(0.002, dt));
+        cameraX = Math.min(worldWidth - WIDTH, Math.max(cameraX + 76 * dt, followed));
+      }
+      const bounds = { minX: 0, maxX: Math.min(worldWidth, cameraX + WIDTH - 15) };
+      players.forEach((player) => player.update(dt, getSolids(), bounds));
 
       const leftPlayer = players[0].x > players[1].x ? players[1] : players[0];
       const rightPlayer = leftPlayer === players[0] ? players[1] : players[0];
@@ -1610,7 +1651,7 @@
           return input.isDown(rightKey) && player.onGround && player.x < crate.x && rightEdge >= crate.x - 9;
         });
         if (bothPushing) {
-          const move = Math.min(92 * dt, crate.targetX - crate.x);
+          const move = Math.min(105 * dt, crate.targetX - crate.x);
           crate.x += move;
           players.forEach((player) => {
             player.x += move;
@@ -1631,8 +1672,18 @@
 
       for (const drink of drinks) {
         if (drink.collected) continue;
-        const player = players.find((candidate) => distanceSquared(candidate.x, candidate.y - 28, drink.x, drink.y) < 43 * 43);
-        if (!player) continue;
+        const eligiblePlayer = drink.type === "beer" ? players[0] : players[1];
+        const otherPlayer = drink.type === "beer" ? players[1] : players[0];
+        const eligibleTouching = distanceSquared(eligiblePlayer.x, eligiblePlayer.y - 28, drink.x, drink.y) < 43 * 43;
+        if (!eligibleTouching) {
+          const wrongPlayerTouching = distanceSquared(otherPlayer.x, otherPlayer.y - 28, drink.x, drink.y) < 43 * 43;
+          if (wrongPlayerTouching && wrongDrinkTimer <= 0) {
+            setToast(drink.type === "beer" ? "Only Grant can collect beers!" : "Only Emma can collect seltzers!", 1.5);
+            wrongDrinkTimer = 1.2;
+            audio.tone(155, 0.07, "square", 0.045);
+          }
+          continue;
+        }
         drink.collected = true;
         if (drink.type === "beer") beers += 1;
         else seltzers += 1;
@@ -1641,12 +1692,11 @@
         if (beers === 6 && seltzers === 6) setToast("Drink limit reached! Both players head for the exit.", 3.2);
       }
 
-      const leadX = Math.max(players[0].x, players[1].x);
       for (const enemy of enemies) {
         if (enemy.defeated) continue;
-        if (enemy.state === "idle" && leadX > enemy.spawnX - 620) {
+        if (countdown <= 0 && enemy.state === "idle" && enemy.spawnX - cameraX <= WIDTH - 70) {
           enemy.state = "warning";
-          enemy.timer = 0.82;
+          enemy.timer = 0.62;
           audio.tone(170, 0.09, "square", 0.055);
         }
         if (enemy.state === "warning") {
@@ -1662,7 +1712,12 @@
         enemy.direction = direction;
         enemy.x += direction * enemy.speed * dt;
         const enemyRect = { x: enemy.x - 19, y: enemy.y - 60, w: 38, h: 60 };
-        if (rectsOverlap(defender.rect, enemyRect)) {
+        const defenderHit = rectsOverlap(defender.rect, enemyRect);
+        const targetHit = rectsOverlap(target.rect, enemyRect);
+        const defenderIsBetween = direction > 0
+          ? defender.x < target.x - 18
+          : defender.x > target.x + 18;
+        if (defenderHit && defenderIsBetween) {
           enemy.defeated = true;
           defended += 1;
           defender.vy = Math.min(defender.vy, -180);
@@ -1671,7 +1726,7 @@
           setToast(`${defender.character === "grant" ? "Grant" : "Emma"} made the perfect save!`, 1.7);
           continue;
         }
-        if (rectsOverlap(target.rect, enemyRect)) {
+        if (targetHit) {
           finishLevel(
             false,
             `${enemy.type === "boy" ? "A boy reached Emma" : "A girl reached Grant"}. Only their partner can make the save!`,
@@ -1684,8 +1739,26 @@
         }
       }
 
-      const averageX = (players[0].x + players[1].x) / 2;
-      cameraX = lerp(cameraX, clamp(averageX - WIDTH / 2, 0, worldWidth - WIDTH), 1 - Math.pow(0.001, dt));
+      for (const player of players) {
+        if (countdown <= 0 && player.x + player.width / 2 < cameraX + 5) {
+          finishLevel(false, `${player.character === "grant" ? "Grant" : "Emma"} was left behind by the moving party.`, [
+            { label: "GRANT'S BEERS", value: `${beers}/6`, color: COLORS.gold },
+            { label: "EMMA'S SELTZERS", value: `${seltzers}/6`, color: COLORS.blue },
+          ]);
+          return;
+        }
+      }
+
+      const beerPotential = beers + drinks.filter((drink) => !drink.collected && drink.type === "beer" && drink.x >= cameraX - 30).length;
+      const seltzerPotential = seltzers + drinks.filter((drink) => !drink.collected && drink.type === "seltzer" && drink.x >= cameraX - 30).length;
+      if (beerPotential < 6 || seltzerPotential < 6) {
+        const missedRole = beerPotential < 6 ? "Grant left too many beers behind." : "Emma left too many seltzers behind.";
+        finishLevel(false, `${missedRole} The party keeps moving!`, [
+          { label: "GRANT'S BEERS", value: `${beers}/6`, color: COLORS.gold },
+          { label: "EMMA'S SELTZERS", value: `${seltzers}/6`, color: COLORS.blue },
+        ]);
+        return;
+      }
       if ((beers < 6 || seltzers < 6) && Math.max(players[0].x, players[1].x) > 4990 && toastTimer < 0.5) {
         setToast(`Exit locked: still need ${Math.max(0, 6 - beers)} beer and ${Math.max(0, 6 - seltzers)} seltzer.`, 2.4);
       }
@@ -1857,351 +1930,443 @@
         const y = drink.y + Math.sin(screenTime * 4 + drink.phase) * 4;
         if (drink.type === "beer") drawBeer(x, y);
         else drawSeltzer(x, y);
+        fillRoundRect(x - 10, y - 51, 20, 16, 3, drink.type === "beer" ? COLORS.gold : COLORS.pink);
+        text(drink.type === "beer" ? "G" : "E", x, y - 39, 10, COLORS.ink, "center", false);
       });
       enemies.forEach(drawPartyPerson);
       particles.draw(cameraX);
       players.forEach((player) => player.draw(cameraX));
+      const progress = clamp(cameraX / (worldWidth - WIDTH), 0, 1);
+      ctx.fillStyle = "rgba(18,13,31,.72)";
+      ctx.fillRect(18, HEIGHT - 22, WIDTH - 36, 10);
+      ctx.fillStyle = COLORS.coral;
+      ctx.fillRect(20, HEIGHT - 20, (WIDTH - 40) * progress, 6);
+      drawHeart(20 + (WIDTH - 40) * progress, HEIGHT - 17, 12, COLORS.gold);
       drawGameHud("PI KAPPS PASSPORT NIGHT", COLORS.coral, [
-        { label: "BEERS", value: `${Math.min(beers, 6)}/6`, color: COLORS.gold, width: 130 },
-        { label: "SELTZERS", value: `${Math.min(seltzers, 6)}/6`, color: COLORS.blue, width: 150 },
+        { label: "GRANT · BEERS", value: `${Math.min(beers, 6)}/6`, color: COLORS.gold, width: 160 },
+        { label: "EMMA · SELTZERS", value: `${Math.min(seltzers, 6)}/6`, color: COLORS.blue, width: 175 },
         { label: "SAVES", value: defended, color: COLORS.green, width: 115 },
       ]);
       drawToast(toast, toastTimer, COLORS.coral);
+      if (countdown > 0 && !dimmed) {
+        ctx.fillStyle = "rgba(17,11,29,.48)";
+        ctx.fillRect(0, 66, WIDTH, HEIGHT - 66);
+        text(Math.max(1, Math.ceil(countdown)), WIDTH / 2, 310, 92, COLORS.coral, "center");
+        text("THE PARTY STARTS MOVING IN…", WIDTH / 2, 361, 16, COLORS.cream, "center");
+      }
     }
 
     return { update, draw };
   }
 
-  function createCrowdLevel() {
+  function createChainedLevel() {
+    const worldWidth = 4550;
+    const floorY = 470;
+    const boostLink = 145;
+    const softLink = 165;
+    const hardLink = 300;
     const particles = new ParticleBurst();
-    const seatZones = { grant: 360, emma: 600 };
     const players = [
-      {
-        character: "grant",
-        x: 405,
-        y: 490,
-        fromY: 490,
-        toY: 490,
-        hopTime: -1,
-        hopDuration: 0.54,
-        hopHeight: 0,
-        direction: 1,
-        animation: 0,
-        invulnerable: 0.8,
-        seated: false,
-        controls: { left: "KeyA", right: "KeyD", jump: "KeyW" },
-      },
-      {
-        character: "emma",
-        x: 555,
-        y: 490,
-        fromY: 490,
-        toY: 490,
-        hopTime: -1,
-        hopDuration: 0.54,
-        hopHeight: 0,
-        direction: -1,
-        animation: 0.3,
-        invulnerable: 0.8,
-        seated: false,
-        controls: { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp" },
-      },
+      new PlatformPlayer("grant", 150, floorY),
+      new PlatformPlayer("emma", 225, floorY),
     ];
-    const rowData = [
-      { y: 435, speed: 112, direction: 1, spacing: 166, offset: -90, color: "#6c4d79" },
-      { y: 325, speed: 148, direction: -1, spacing: 154, offset: 25, color: "#3e7180" },
-      { y: 215, speed: 126, direction: 1, spacing: 174, offset: -35, color: "#8c5260" },
-      { y: 105, speed: 164, direction: -1, spacing: 150, offset: 70, color: "#5d5c8c" },
+    players.forEach((player) => {
+      player.hanging = false;
+      player.rescueTimer = 0;
+      player.rescueCharge = 0;
+      player.lastSafe = { x: player.x, y: floorY };
+    });
+    const floors = [
+      { x: 0, y: floorY, w: 780, h: 100 },
+      { x: 920, y: floorY, w: 630, h: 100 },
+      { x: 2630, y: floorY, w: 1070, h: 100 },
+      { x: 3900, y: floorY, w: 650, h: 100 },
     ];
-    const rows = rowData.map((row, rowIndex) => ({
-      ...row,
-      people: Array.from({ length: 8 }, (_, index) => ({
-        x: row.offset + index * row.spacing,
-        width: 40 + ((index + rowIndex) % 3) * 5,
-        shirt: [row.color, COLORS.orange, "#857047", "#4e6688"][(index + rowIndex) % 4],
-        phase: index * 0.7 + rowIndex,
-      })),
-    }));
-    const gates = [
-      {
-        y: 380,
-        barrierY: 350,
-        grantX: 350,
-        emmaX: 610,
-        open: false,
-        color: COLORS.gold,
-        label: "TICKET CHECK 1",
-      },
-      {
-        y: 270,
-        barrierY: 240,
-        grantX: 615,
-        emmaX: 345,
-        open: false,
-        color: COLORS.blue,
-        label: "TICKET CHECK 2",
-      },
+    const ledges = [
+      { x: 1570, y: 420, w: 180, h: 12, oneWay: true },
+      { x: 1800, y: 340, w: 225, h: 12, oneWay: true },
+      { x: 2110, y: 235, w: 150, h: 12, oneWay: true },
+      { x: 2295, y: 310, w: 165, h: 12, oneWay: true },
+      { x: 2485, y: 390, w: 160, h: 12, oneWay: true },
+      { x: 3770, y: 410, w: 90, h: 12, oneWay: true },
     ];
-    let toast = "Jump through each crowd lane when you see a gap!";
-    let toastTimer = 3.2;
-    let crowdBeat = 0;
+    const pyramid = { x: 3350, y: 370, w: 140, h: 100 };
+    const surges = [
+      { baseX: 1180, range: 85, speed: 1.45, phase: 0, color: "#7e4d72" },
+      { baseX: 2820, range: 105, speed: 1.7, phase: 1.4, color: "#3f7080" },
+      { baseX: 3090, range: 90, speed: 1.35, phase: 3.1, color: "#8c5260" },
+    ];
+    const pits = [[780, 920], [1550, 2630], [3700, 3900]];
+    let cameraX = 0;
+    let elapsed = 0;
+    let toast = "Your tickets are linked — stretch apart to power up a jump!";
+    let toastTimer = 4;
+    let anchorBoosts = 0;
+    let linkSaves = 0;
+    let finishTimer = 0;
 
-    function setToast(message, duration = 2.3) {
+    function setToast(message, duration = 2.5) {
       toast = message;
       toastTimer = duration;
     }
 
-    function isAt(player, y, x) {
-      return player.hopTime < 0 && Math.abs(player.y - y) < 3 && Math.abs(player.x - x) < 46;
+    function getSolids() {
+      return [...floors, ...ledges, pyramid];
     }
 
-    function openGatesIfReady() {
-      gates.forEach((gate, index) => {
-        if (gate.open) return;
-        if (isAt(players[0], gate.y, gate.grantX) && isAt(players[1], gate.y, gate.emmaX)) {
-          gate.open = true;
-          particles.burst(gate.grantX, gate.y, COLORS.blue, 13, 105);
-          particles.burst(gate.emmaX, gate.y, COLORS.pink, 13, 105);
-          audio.collect();
-          setToast(`Checkpoint ${index + 1} open! Jump forward together.`, 2.8);
+    function hasSupport(player, solids) {
+      return solids.some((solid) =>
+        Math.abs(player.y - solid.y) <= 5
+        && player.x + player.width / 2 > solid.x + 2
+        && player.x - player.width / 2 < solid.x + solid.w - 2,
+      );
+    }
+
+    function linkDistance() {
+      return Math.hypot(players[1].x - players[0].x, players[1].y - players[0].y);
+    }
+
+    function applyLinkConstraint(dt) {
+      const grant = players[0];
+      const emma = players[1];
+      const dx = emma.x - grant.x;
+      const dy = emma.y - grant.y;
+      const distance = Math.max(0.001, Math.hypot(dx, dy));
+      const nx = dx / distance;
+      const ny = dy / distance;
+
+      if (grant.hanging || emma.hanging) {
+        const hanging = grant.hanging ? grant : emma;
+        const rescuer = hanging === grant ? emma : grant;
+        const delta = rescuer.x - hanging.x;
+        if (Math.abs(delta) > hardLink) {
+          rescuer.vx = approach(rescuer.vx, -Math.sign(delta) * 165, 950 * dt);
         }
-      });
-    }
+        return;
+      }
 
-    function canHop(player) {
-      if (Math.abs(player.y - 380) < 3 && !gates[0].open) {
-        setToast("Both players must stand on their colored ticket pads!", 2.1);
-        audio.bump();
-        return false;
+      if (distance > softLink) {
+        const pull = Math.min(250, (distance - softLink) * 3.2);
+        grant.vx += nx * pull * dt;
+        emma.vx -= nx * pull * dt;
+        if (!grant.onGround) grant.vy += ny * pull * dt * 0.35;
+        if (!emma.onGround) emma.vy -= ny * pull * dt * 0.35;
       }
-      if (Math.abs(player.y - 270) < 3 && !gates[1].open) {
-        setToast("Meet on the second pair of ticket pads!", 2.1);
-        audio.bump();
-        return false;
-      }
-      return player.y > 50;
-    }
 
-    function updatePlayer(player, dt) {
-      player.animation += dt;
-      player.invulnerable = Math.max(0, player.invulnerable - dt);
-      if (player.seated) return;
-      const left = input.isDown(player.controls.left);
-      const right = input.isDown(player.controls.right);
-      const axis = (right ? 1 : 0) - (left ? 1 : 0);
-      if (axis !== 0) {
-        player.x += axis * 195 * dt;
-        player.direction = axis;
-      }
-      player.x = clamp(player.x, 72, WIDTH - 72);
-
-      if (player.hopTime < 0 && input.wasPressed(player.controls.jump) && canHop(player)) {
-        player.fromY = player.y;
-        player.toY = Math.max(50, player.y - 110);
-        player.hopTime = 0;
-        audio.jump();
-      }
-      if (player.hopTime >= 0) {
-        player.hopTime += dt;
-        const t = clamp(player.hopTime / player.hopDuration, 0, 1);
-        player.y = lerp(player.fromY, player.toY, easeInOut(t));
-        player.hopHeight = Math.sin(t * Math.PI) * 22;
-        if (t >= 1) {
-          player.y = player.toY;
-          player.hopTime = -1;
-          player.hopHeight = 0;
+      if (distance > hardLink) {
+        const excess = distance - hardLink;
+        let grantWeight = 0.5;
+        let emmaWeight = 0.5;
+        if (grant.onGround && !emma.onGround) {
+          grantWeight = 0.12;
+          emmaWeight = 0.88;
+        } else if (emma.onGround && !grant.onGround) {
+          grantWeight = 0.88;
+          emmaWeight = 0.12;
+        }
+        const correctionImpulse = Math.min(1900, excess * 48) * dt;
+        grant.vx += nx * correctionImpulse * grantWeight;
+        emma.vx -= nx * correctionImpulse * emmaWeight;
+        if (!grant.onGround) grant.vy += ny * correctionImpulse * grantWeight;
+        if (!emma.onGround) emma.vy -= ny * correctionImpulse * emmaWeight;
+        const separating = (emma.vx - grant.vx) * nx;
+        if (separating > 0) {
+          grant.vx += nx * separating * 0.5;
+          emma.vx -= nx * separating * 0.5;
         }
       }
+    }
 
-      const seatX = seatZones[player.character];
-      if (player.y <= 50 && Math.abs(player.x - seatX) < 63) {
-        player.seated = true;
-        player.x = seatX;
-        player.y = 50;
-        particles.burst(player.x, player.y + 4, player.character === "grant" ? COLORS.blue : COLORS.pink, 16, 95);
+    function beginRescue(player) {
+      const partner = player === players[0] ? players[1] : players[0];
+      if (partner.hanging) {
+        finishLevel(false, "The crowd caught both of you. The link only works when one partner has solid ground.", [
+          { label: "ANCHOR JUMPS", value: anchorBoosts, color: COLORS.gold },
+          { label: "LINK SAVES", value: linkSaves, color: COLORS.blue },
+        ]);
+        return;
+      }
+      player.hanging = true;
+      player.locked = true;
+      player.rescueTimer = 4;
+      player.rescueCharge = 0;
+      player.y = 526;
+      player.vx = 0;
+      player.vy = 0;
+      setToast("The link caught them — stretch away while they climb!", 3.4);
+      audio.tone(145, 0.18, "sawtooth", 0.08);
+    }
+
+    function updateRescue(player, dt) {
+      if (!player.hanging) return;
+      const partner = player === players[0] ? players[1] : players[0];
+      player.rescueTimer -= dt;
+      const stretched = linkDistance() > softLink + 8;
+      const climbing = input.isDown(player.controls.jump);
+      if (partner.onGround && stretched && climbing) player.rescueCharge += dt;
+      else player.rescueCharge = Math.max(0, player.rescueCharge - dt * 0.45);
+
+      if (player.rescueCharge >= 0.7) {
+        player.hanging = false;
+        player.locked = false;
+        player.x = player.lastSafe.x;
+        player.y = player.lastSafe.y - 4;
+        player.vx = 0;
+        player.vy = -230;
+        player.invulnerable = 1.1;
+        player.rescueCharge = 0;
+        linkSaves += 1;
+        particles.burst(player.x, player.y - 35, player.character === "grant" ? COLORS.blue : COLORS.pink, 18, 120);
         audio.collect();
-        setToast(`${player.character === "grant" ? "Grant" : "Emma"} found the front-row seat!`, 2.2);
-      }
-    }
-
-    function update(dt) {
-      toastTimer = Math.max(0, toastTimer - dt);
-      particles.update(dt);
-      crowdBeat -= dt;
-      if (crowdBeat <= 0) {
-        crowdBeat += 0.68;
-        audio.tone(115, 0.045, "square", 0.025);
-      }
-      rows.forEach((row) => {
-        row.people.forEach((person) => {
-          person.x += row.speed * row.direction * dt;
-          if (row.direction > 0 && person.x > WIDTH + 85) person.x = -85;
-          if (row.direction < 0 && person.x < -85) person.x = WIDTH + 85;
-        });
-      });
-      players.forEach((player) => updatePlayer(player, dt));
-      openGatesIfReady();
-
-      for (const player of players) {
-        if (player.invulnerable > 0 || player.seated) continue;
-        for (const row of rows) {
-          if (Math.abs(player.y - row.y) > 25) continue;
-          const hit = row.people.some((person) => Math.abs(player.x - person.x) < person.width / 2 + 15);
-          if (hit) {
-            finishLevel(false, `${player.character === "grant" ? "Grant" : "Emma"} was swept up by the Neyland crowd. One bump sends the team back.`, [
-              { label: "CHECKPOINTS", value: `${gates.filter((gate) => gate.open).length}/2`, color: COLORS.orange },
-              { label: "SEATS", value: `${players.filter((item) => item.seated).length}/2`, color: COLORS.blue },
-            ]);
-            return;
-          }
-        }
-      }
-
-      if (players.every((player) => player.seated)) {
-        finishLevel(true, "Front row! You made it through the crowd with both tickets — and each other — intact.", [
-          { label: "CHECKPOINTS", value: "2/2", color: COLORS.green },
-          { label: "SEATS", value: "2/2", color: COLORS.orange },
+        setToast("Link save! Keep climbing together.", 2.3);
+      } else if (player.rescueTimer <= 0) {
+        finishLevel(false, "The crowd pulled one of you away before the rescue was complete.", [
+          { label: "ANCHOR JUMPS", value: anchorBoosts, color: COLORS.gold },
+          { label: "LINK SAVES", value: linkSaves, color: COLORS.blue },
         ]);
       }
     }
 
-    function drawFan(person, row, rowIndex) {
-      const bob = Math.sin(screenTime * 7 + person.phase) * 2;
-      const x = Math.round(person.x);
-      const y = Math.round(row.y + bob);
-      ctx.fillStyle = "rgba(18,12,28,.25)";
-      ctx.fillRect(x - person.width / 2, y + 13, person.width, 8);
-      ctx.fillStyle = COLORS.deepInk;
-      ctx.fillRect(x - person.width / 2, y - 15, person.width, 27);
-      ctx.fillStyle = person.shirt;
-      ctx.fillRect(x - person.width / 2 + 4, y - 11, person.width - 8, 21);
-      ctx.fillStyle = ["#efbd91", "#b9795d", "#8c573f", "#dca77e"][(Math.floor(person.phase) + rowIndex) % 4];
-      ctx.fillRect(x - 10, y - 28, 20, 17);
-      ctx.fillStyle = ["#4a302d", "#d29a54", "#312633"][(Math.floor(person.phase * 2) + rowIndex) % 3];
-      ctx.fillRect(x - 11, y - 31, 22, 7);
+    function updateSurges() {
+      for (const surge of surges) {
+        const x = surge.baseX + Math.sin(elapsed * surge.speed + surge.phase) * surge.range;
+        const surgeRect = { x: x - 42, y: floorY - 62, w: 84, h: 62 };
+        for (const player of players) {
+          if (player.hanging || player.invulnerable > 0 || !rectsOverlap(player.rect, surgeRect)) continue;
+          const direction = Math.sign(player.x - x) || (player.character === "grant" ? -1 : 1);
+          player.vx = direction * 275;
+          player.vy = -235;
+          player.onGround = false;
+          player.invulnerable = 0.75;
+          particles.burst(player.x, player.y - 30, COLORS.orange, 12, 105);
+          audio.bump();
+          setToast("Crowd surge! The link can keep the team together.", 1.8);
+        }
+      }
+    }
+
+    function update(dt) {
+      elapsed += dt;
+      toastTimer = Math.max(0, toastTimer - dt);
+      particles.update(dt);
+
+      const distanceBefore = linkDistance();
+      const bothJumping = input.wasPressed(players[0].controls.jump) && input.wasPressed(players[1].controls.jump);
+      const boosted = players.map((player, index) => {
+        const partner = players[index === 0 ? 1 : 0];
+        const canJump = player.onGround || player.coyote > 0;
+        return !bothJumping && !player.hanging && canJump && partner.onGround && !partner.hanging && distanceBefore > boostLink;
+      });
+      players.forEach((player, index) => {
+        player.jumpImpulse = boosted[index] ? 550 : 440;
+      });
+
+      const solids = getSolids();
+      players.forEach((player) => player.update(dt, solids, { minX: 0, maxX: worldWidth }));
+      players.forEach((player, index) => {
+        if (boosted[index] && input.wasPressed(player.controls.jump)) {
+          anchorBoosts += 1;
+          particles.burst(player.x, player.y - 10, COLORS.gold, 14, 110);
+          audio.tone(520, 0.1, "square", 0.08);
+          setToast("Anchor boost! The stretched link powered that jump.", 1.7);
+        }
+        player.jumpImpulse = 440;
+      });
+
+      applyLinkConstraint(dt);
+      updateSurges();
+
+      for (const player of players) {
+        if (!player.hanging && player.onGround && !hasSupport(player, solids)) {
+          player.onGround = false;
+          player.groundPlatform = null;
+        }
+        if (!player.hanging && player.onGround) player.lastSafe = { x: player.x, y: player.y };
+        if (!player.hanging && player.y > 535) beginRescue(player);
+      }
+      players.forEach((player) => updateRescue(player, dt));
+      if (screen !== "playing") return;
+
+      const midpoint = (players[0].x + players[1].x) / 2;
+      const targetCamera = clamp(midpoint - WIDTH * 0.46, 0, worldWidth - WIDTH);
+      cameraX = lerp(cameraX, targetCamera, 1 - Math.pow(0.0015, dt));
+
+      const bothAtFront = players.every((player) => !player.hanging && player.onGround && player.x >= 4250);
+      finishTimer = bothAtFront ? finishTimer + dt : 0;
+      if (finishTimer >= 0.75) {
+        finishLevel(true, "Still linked, still together — and finally in the front row at Neyland!", [
+          { label: "TIME", value: `${Math.round(elapsed)}s`, color: COLORS.orange },
+          { label: "ANCHOR JUMPS", value: anchorBoosts, color: COLORS.gold },
+          { label: "LINK SAVES", value: linkSaves, color: COLORS.blue },
+        ]);
+      }
+    }
+
+    function drawCrowdPit(start, end) {
+      const screenStart = start - cameraX;
+      const screenEnd = end - cameraX;
+      if (screenEnd < 0 || screenStart > WIDTH) return;
+      ctx.fillStyle = "#21182c";
+      ctx.fillRect(screenStart, floorY, end - start, HEIGHT - floorY);
+      let index = 0;
+      for (let worldX = start + 18; worldX < end; worldX += 34) {
+        const x = worldX - cameraX;
+        const y = 487 + (index % 2) * 22 + Math.sin(elapsed * 5 + index) * 3;
+        ctx.fillStyle = ["#f47c20", "#6f4c7d", "#3f7180", "#a85d58"][index % 4];
+        ctx.fillRect(x - 13, y - 4, 26, 28);
+        ctx.fillStyle = ["#efbd91", "#b9795d", "#8c573f"][index % 3];
+        ctx.fillRect(x - 8, y - 16, 16, 13);
+        ctx.fillStyle = COLORS.cream;
+        ctx.fillRect(x - 18, y - 10 - Math.abs(Math.sin(elapsed * 4 + index)) * 10, 5, 21);
+        index += 1;
+      }
+    }
+
+    function drawStadiumBackground() {
+      drawDitheredSky("#2c315b", "#e27c65");
+      ctx.fillStyle = "#42324d";
+      ctx.fillRect(0, 190, WIDTH, 280);
+      ctx.fillStyle = "#5c4560";
+      for (let row = 0; row < 5; row += 1) {
+        ctx.fillRect(0, 210 + row * 42, WIDTH, 24);
+        for (let x = mod(-cameraX * (0.12 + row * 0.02), 42) - 42; x < WIDTH; x += 42) {
+          ctx.fillStyle = (Math.floor(x / 42) + row) % 3 === 0 ? COLORS.orange : "#c6a27a";
+          ctx.fillRect(x, 214 + row * 42, 15, 15);
+          ctx.fillStyle = "#5c4560";
+        }
+      }
+      ctx.fillStyle = "#e7ddd0";
+      ctx.fillRect(85, 100, 12, 112);
+      ctx.fillRect(855, 100, 12, 112);
       ctx.fillStyle = COLORS.cream;
-      ctx.fillRect(x - 5, y - 21, 3, 3);
-      ctx.fillRect(x + 4, y - 21, 3, 3);
-      if (Math.floor(screenTime * 3 + person.phase) % 2 === 0) {
+      for (let x = 38; x < 155; x += 24) ctx.fillRect(x, 92, 13, 9);
+      for (let x = 806; x < 925; x += 24) ctx.fillRect(x, 92, 13, 9);
+    }
+
+    function drawCourse() {
+      floors.forEach((floor) => {
+        const x = floor.x - cameraX;
+        ctx.fillStyle = "#2d2638";
+        ctx.fillRect(x, floor.y, floor.w, floor.h);
         ctx.fillStyle = COLORS.orange;
-        ctx.fillRect(x - person.width / 2 - 5, y - 18, 6, 20);
-        ctx.fillRect(x + person.width / 2 - 1, y - 18, 6, 20);
-      }
-    }
-
-    function drawPad(x, y, color, active, character) {
-      ctx.globalAlpha = active ? 1 : 0.76;
-      ctx.fillStyle = "rgba(20,13,33,.35)";
-      ctx.beginPath();
-      ctx.ellipse(x, y + 23, 48, 19, 0, 0, TAU);
-      ctx.fill();
-      ctx.fillStyle = active ? color : "#625970";
-      ctx.beginPath();
-      ctx.ellipse(x, y + 18, 43, 15, 0, 0, TAU);
-      ctx.fill();
-      text(character === "grant" ? "G" : "E", x, y + 23, 14, active ? COLORS.ink : COLORS.cream, "center", false);
-      ctx.globalAlpha = 1;
-    }
-
-    function drawStadium() {
-      ctx.fillStyle = "#d8c7aa";
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
-      ctx.fillStyle = "#396c54";
-      ctx.fillRect(0, 66, WIDTH, 50);
-      ctx.fillStyle = "rgba(255,255,255,.5)";
-      ctx.fillRect(0, 73, WIDTH, 4);
-      ctx.fillRect(0, 104, WIDTH, 4);
-      ctx.fillStyle = COLORS.orange;
-      ctx.fillRect(0, 116, WIDTH, 18);
-
-      const safeRows = [490, 380, 270, 160, 50];
-      for (let index = 0; index < 4; index += 1) {
-        const y = rowData[index].y;
-        ctx.fillStyle = index % 2 === 0 ? "#b8aa96" : "#c4b59e";
-        ctx.fillRect(0, y - 35, WIDTH, 70);
-        ctx.fillStyle = "rgba(85,65,69,.18)";
-        ctx.fillRect(0, y - 3, WIDTH, 6);
-        ctx.fillStyle = rowData[index].direction > 0 ? "rgba(255,255,255,.46)" : "rgba(79,59,120,.2)";
-        for (let x = 15; x < WIDTH; x += 84) {
-          const px = rowData[index].direction > 0 ? x : WIDTH - x;
-          ctx.beginPath();
-          ctx.moveTo(px - 11, y);
-          ctx.lineTo(px + 9, y - 9);
-          ctx.lineTo(px + 9, y + 9);
-          ctx.closePath();
-          ctx.fill();
-        }
-      }
-      safeRows.forEach((y) => {
-        ctx.fillStyle = "rgba(255,241,207,.55)";
-        ctx.fillRect(0, y + 33, WIDTH, 3);
+        ctx.fillRect(x, floor.y, floor.w, 9);
+        ctx.fillStyle = "#5b4854";
+        for (let stripe = x + 18; stripe < x + floor.w; stripe += 72) ctx.fillRect(stripe, floor.y + 38, 42, 5);
       });
-    }
-
-    function drawGates() {
-      gates.forEach((gate) => {
-        const grantActive = isAt(players[0], gate.y, gate.grantX);
-        const emmaActive = isAt(players[1], gate.y, gate.emmaX);
-        drawPad(gate.grantX, gate.y, COLORS.blue, grantActive || gate.open, "grant");
-        drawPad(gate.emmaX, gate.y, COLORS.pink, emmaActive || gate.open, "emma");
-        if (!gate.open) {
-          ctx.fillStyle = "rgba(31,22,46,.86)";
-          ctx.fillRect(46, gate.barrierY - 7, WIDTH - 92, 14);
-          ctx.fillStyle = gate.color;
-          for (let x = 56; x < WIDTH - 55; x += 32) ctx.fillRect(x, gate.barrierY - 4, 18, 8);
-          fillRoundRect(WIDTH / 2 - 82, gate.barrierY - 18, 164, 28, 4, COLORS.deepInk);
-          text(gate.label, WIDTH / 2, gate.barrierY + 2, 11, gate.color, "center", false);
+      pits.forEach(([start, end]) => drawCrowdPit(start, end));
+      ledges.forEach((ledge) => {
+        const x = ledge.x - cameraX;
+        if (x + ledge.w < 0 || x > WIDTH) return;
+        ctx.fillStyle = COLORS.deepInk;
+        ctx.fillRect(x + 5, ledge.y + 6, ledge.w, 12);
+        ctx.fillStyle = "#a9a9ad";
+        ctx.fillRect(x, ledge.y, ledge.w, 12);
+        ctx.fillStyle = COLORS.orange;
+        ctx.fillRect(x, ledge.y, ledge.w, 4);
+        for (let support = x + 18; support < x + ledge.w; support += 48) {
+          ctx.fillStyle = "#55515d";
+          ctx.fillRect(support, ledge.y + 12, 6, 23);
         }
       });
     }
 
-    function drawSeats() {
-      Object.entries(seatZones).forEach(([character, x]) => {
-        const occupied = players.find((player) => player.character === character)?.seated;
-        fillRoundRect(x - 68, 67, 136, 43, 7, occupied ? COLORS.green : "rgba(26,18,40,.8)");
-        strokeRoundRect(x - 68, 67, 136, 43, 7, character === "grant" ? COLORS.blue : COLORS.pink, 3);
-        text(character === "grant" ? "GRANT'S SEAT" : "EMMA'S SEAT", x, 94, 11, occupied ? COLORS.ink : COLORS.cream, "center", false);
+    function drawPyramid() {
+      const x = pyramid.x - cameraX;
+      if (x < -180 || x > WIDTH + 80) return;
+      const shirts = [COLORS.orange, "#5d6f98", "#8c5260"];
+      const people = [
+        [20, 72], [62, 72], [104, 72], [40, 34], [84, 34], [62, -4],
+      ];
+      people.forEach(([px, py], index) => {
+        ctx.fillStyle = COLORS.deepInk;
+        ctx.fillRect(x + px - 17, pyramid.y + py - 27, 34, 29);
+        ctx.fillStyle = shirts[index % shirts.length];
+        ctx.fillRect(x + px - 14, pyramid.y + py - 24, 28, 24);
+        ctx.fillStyle = ["#efbd91", "#b9795d", "#8c573f"][index % 3];
+        ctx.fillRect(x + px - 9, pyramid.y + py - 41, 18, 17);
       });
-      text("FIELD  ↑", 874, 96, 13, COLORS.white, "center", false);
+      ctx.strokeStyle = COLORS.gold;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, pyramid.y, pyramid.w, pyramid.h);
+    }
+
+    function drawSurges() {
+      surges.forEach((surge) => {
+        const centerX = surge.baseX + Math.sin(elapsed * surge.speed + surge.phase) * surge.range - cameraX;
+        if (centerX < -100 || centerX > WIDTH + 100) return;
+        for (let index = 0; index < 3; index += 1) {
+          const x = centerX + (index - 1) * 28;
+          const bob = Math.abs(Math.sin(elapsed * 7 + index)) * 5;
+          ctx.fillStyle = COLORS.deepInk;
+          ctx.fillRect(x - 13, floorY - 53 - bob, 26, 53);
+          ctx.fillStyle = index === 1 ? COLORS.orange : surge.color;
+          ctx.fillRect(x - 11, floorY - 30 - bob, 22, 28);
+          ctx.fillStyle = "#dba47a";
+          ctx.fillRect(x - 8, floorY - 48 - bob, 16, 16);
+        }
+      });
+    }
+
+    function drawFinish() {
+      const x = 4250 - cameraX;
+      if (x < -320 || x > WIDTH) return;
+      ctx.fillStyle = "rgba(101,193,140,.22)";
+      ctx.fillRect(x, 352, 250, floorY - 352);
+      ctx.strokeStyle = COLORS.green;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x, 352, 250, floorY - 352);
+      text("FRONT ROW", x + 125, 382, 22, COLORS.cream, "center", false);
+      text("VOLS", x + 125, 435, 39, COLORS.orange, "center", false);
+    }
+
+    function drawLink() {
+      const a = { x: players[0].x - cameraX, y: players[0].y - 37 };
+      const b = { x: players[1].x - cameraX, y: players[1].y - 37 };
+      const distance = linkDistance();
+      const tension = clamp((distance - 75) / (hardLink - 75), 0, 1);
+      const sag = 28 * (1 - tension);
+      for (let index = 0; index <= 28; index += 1) {
+        const t = index / 28;
+        const x = lerp(a.x, b.x, t);
+        const y = lerp(a.y, b.y, t) + Math.sin(t * Math.PI) * sag;
+        ctx.fillStyle = tension > 0.82 ? COLORS.coral : index % 2 === 0 ? COLORS.orange : COLORS.cream;
+        ctx.fillRect(Math.round(x) - 3, Math.round(y) - 3, 7, 7);
+      }
     }
 
     function draw(dimmed = false) {
-      drawStadium();
-      drawGates();
-      rows.forEach((row, index) => row.people.forEach((person) => drawFan(person, row, index)));
-      drawSeats();
-      particles.draw();
+      drawStadiumBackground();
+      drawCourse();
+      drawFinish();
+      drawPyramid();
+      drawSurges();
+      particles.draw(cameraX);
+      drawLink();
+      players.forEach((player) => player.draw(cameraX));
       players.forEach((player) => {
-        const feetY = player.seated ? 124 : player.y + 25 - player.hopHeight;
-        const shadowY = player.seated ? 122 : player.y + 24;
-        ctx.fillStyle = "rgba(25,16,38,.28)";
-        ctx.beginPath();
-        ctx.ellipse(player.x, shadowY, 21, 7, 0, 0, TAU);
-        ctx.fill();
-        drawCharacterSprite(player.character, player.x, feetY, {
-          scale: 2,
-          direction: player.direction,
-          moving: player.hopTime >= 0 || input.isDown(player.controls.left) || input.isDown(player.controls.right),
-          jumping: player.hopTime >= 0,
-          animation: player.animation,
-          label: false,
-          marker: false,
-          alpha: player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0 ? 0.55 : 1,
-        });
-        if (!player.seated) {
-          fillRoundRect(player.x - 27, player.y + 33, 54, 16, 3, "rgba(23,15,36,.78)");
-          text(player.character === "grant" ? "GRANT" : "EMMA", player.x, player.y + 45, 9, player.character === "grant" ? COLORS.blue : COLORS.pink, "center", false);
-        }
+        if (!player.hanging) return;
+        const x = player.x - cameraX;
+        fillRoundRect(x - 64, 410, 128, 25, 5, "rgba(25,16,39,.9)");
+        text(`RESCUE ${Math.max(0, player.rescueTimer).toFixed(1)}s`, x, 428, 11, COLORS.coral, "center", false);
+        ctx.fillStyle = "rgba(255,255,255,.14)";
+        ctx.fillRect(x - 48, 441, 96, 7);
+        ctx.fillStyle = COLORS.gold;
+        ctx.fillRect(x - 48, 441, 96 * clamp(player.rescueCharge / 0.7, 0, 1), 7);
       });
-      drawGameHud("FRONT ROW OR BUST", COLORS.orange, [
-        { label: "CHECKPOINTS", value: `${gates.filter((gate) => gate.open).length}/2`, color: COLORS.gold, width: 175 },
-        { label: "FRONT ROW", value: `${players.filter((player) => player.seated).length}/2`, color: COLORS.orange, width: 150 },
+
+      const progress = clamp(((players[0].x + players[1].x) / 2) / 4250, 0, 1);
+      ctx.fillStyle = "rgba(18,13,31,.72)";
+      ctx.fillRect(18, HEIGHT - 22, WIDTH - 36, 10);
+      ctx.fillStyle = COLORS.orange;
+      ctx.fillRect(20, HEIGHT - 20, (WIDTH - 40) * progress, 6);
+      drawHeart(20 + (WIDTH - 40) * progress, HEIGHT - 17, 12, COLORS.cream);
+
+      drawGameHud("LINKED THROUGH NEYLAND", COLORS.orange, [
+        { label: "ANCHOR BOOST", value: linkDistance() > boostLink ? "READY" : "STRETCH", color: linkDistance() > boostLink ? COLORS.green : COLORS.gold, width: 175 },
+        { label: "ANCHOR JUMPS", value: anchorBoosts, color: COLORS.orange, width: 155 },
+        { label: "LINK SAVES", value: linkSaves, color: COLORS.blue, width: 130 },
       ]);
       drawToast(toast, toastTimer, COLORS.orange);
-      if (screenTime < 2.8 && !dimmed) {
-        fillRoundRect(260, 137, 440, 45, 6, "rgba(20,13,34,.88)");
-        text("A / D / W     MOVE & JUMP     ← / → / ↑", WIDTH / 2, 165, 13, COLORS.cream, "center", false);
-      }
     }
 
     return { update, draw };
@@ -2213,10 +2378,10 @@
     const grantCodes = ["KeyW", "KeyA", "KeyS", "KeyD"];
     const emmaCodes = ["ArrowLeft", "ArrowUp", "ArrowDown", "ArrowRight"];
     const labels = {
-      KeyW: "W",
-      KeyA: "A",
-      KeyS: "S",
-      KeyD: "D",
+      KeyW: "↑",
+      KeyA: "←",
+      KeyS: "↓",
+      KeyD: "→",
       ArrowLeft: "←",
       ArrowUp: "↑",
       ArrowDown: "↓",
@@ -2413,7 +2578,7 @@
 
     function drawGuitarLane() {
       drawPanel(24, 82, 433, 381, "rgba(26,22,50,.86)", COLORS.blue);
-      text("GRANT'S SERENADE", 240, 111, 17, COLORS.blue, "center", false);
+      text("GRANT · FOLLOW THE ARROWS", 240, 111, 16, COLORS.blue, "center", false);
       drawCharacterSprite("grant", 48, 124, { scale: 1.5, marker: false, label: false });
       const laneXs = [104, 194, 284, 374];
       const targetY = 417;
@@ -2456,16 +2621,23 @@
       drawCharacterSprite("emma", 912, 124, { scale: 1.5, direction: -1, marker: false, label: false });
       const fenceX = 824;
       const laneYs = [201, 258, 315, 372];
+      const readySheep = sheepNotes.find((note) => !note.resolved && Math.abs(note.time - songTime) <= 0.24);
       laneYs.forEach((y, index) => {
         ctx.fillStyle = index % 2 ? "rgba(255,255,255,.035)" : "rgba(255,255,255,.06)";
         ctx.fillRect(524, y - 24, 376, 48);
       });
+      ctx.globalAlpha = readySheep ? 0.5 + Math.sin(screenTime * 15) * 0.22 : 0.2;
+      ctx.fillStyle = readySheep ? COLORS.gold : COLORS.cream;
+      ctx.fillRect(fenceX - 15, 149, 30, 259);
+      ctx.globalAlpha = 1;
       ctx.fillStyle = "#8a5b42";
       ctx.fillRect(fenceX - 5, 149, 10, 259);
       ctx.fillRect(fenceX + 54, 149, 10, 259);
       for (let y = 166; y < 408; y += 44) ctx.fillRect(fenceX - 5, y, 69, 7);
       ctx.fillStyle = COLORS.cream;
       ctx.fillRect(fenceX - 2, 149, 4, 259);
+      fillRoundRect(fenceX - 58, 128, 116, 24, 4, readySheep ? COLORS.gold : COLORS.deepInk);
+      text(readySheep ? "COUNT NOW!" : "COUNT LINE", fenceX, 145, 11, readySheep ? COLORS.ink : COLORS.cream, "center", false);
 
       sheepNotes.forEach((note) => {
         if (note.resolved) return;
@@ -2474,13 +2646,19 @@
         const x = fenceX - timeAway * 95;
         const y = laneYs[note.lane];
         const jump = Math.max(0, 1 - Math.abs(timeAway) / 0.5) * 24;
+        const ready = Math.abs(timeAway) <= 0.24;
+        if (ready) {
+          ctx.globalAlpha = 0.38 + Math.sin(screenTime * 16) * 0.15;
+          fillRoundRect(fenceX - 34, y - 25, 68, 50, 8, COLORS.gold);
+          ctx.globalAlpha = 1;
+          drawKey(labels[note.code], 854, y - 21, 42, input.isDown(note.code));
+        }
         drawPixelSheep(x, y - jump, 0.68, 1);
-        fillRoundRect(x - 16, y - 54 - jump, 32, 27, 4, Math.abs(timeAway) <= 0.24 ? COLORS.white : laneColors[note.code]);
+        fillRoundRect(x - 16, y - 54 - jump, 32, 27, 4, ready ? COLORS.white : laneColors[note.code]);
         text(labels[note.code], x, y - 35 - jump, 16, COLORS.ink, "center", false);
       });
 
-      emmaCodes.forEach((code, index) => drawKey(labels[code], 538 + index * 58, 425, 43, input.isDown(code)));
-      text(`COUNTED  ${sheepHits}`, 861, 450, 13, COLORS.cream, "center", false);
+      text(`COUNTED  ${sheepHits}`, 720, 449, 14, COLORS.cream, "center", false);
       if (emmaFlash.timer > 0) {
         ctx.globalAlpha = clamp(emmaFlash.timer * 5, 0, 1);
         text(emmaFlash.text, 720, 155, 19, emmaFlash.color, "center");
@@ -2515,7 +2693,7 @@
         ctx.fillStyle = "rgba(12,9,24,.68)";
         ctx.fillRect(0, 66, WIDTH, HEIGHT - 66);
         text(Math.max(1, Math.ceil(-songTime)), WIDTH / 2, 300, 92, COLORS.gold, "center");
-        text("GRANT: WASD NOTES     ·     EMMA: ARROW SHEEP", WIDTH / 2, 353, 15, COLORS.cream, "center");
+        text("FOLLOW THE BEAT     ·     COUNT AT THE GLOWING LINE", WIDTH / 2, 353, 15, COLORS.cream, "center");
       }
     }
 
@@ -2538,6 +2716,6 @@
 
   loadAssets().then(() => {
     selectedLevel = levels[selectedIndex];
-    goTo("title", "Grant and Emma: Side by Side. Press W or the up arrow to play.");
+    goTo("title", "Grant and Emma: Side by Side. Press Enter to play.");
   });
 })();

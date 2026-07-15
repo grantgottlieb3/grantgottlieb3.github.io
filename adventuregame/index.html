@@ -25,7 +25,7 @@
               width="960"
               height="540"
               tabindex="0"
-              aria-label="Grant and Emma cooperative adventure game. Grant uses A and D to run and W to jump. Emma uses the left and right arrow keys to run and the up arrow to jump."
+              aria-label="Grant and Emma cooperative adventure game. Grant uses WASD. Emma uses the arrow keys. Press Enter to select."
             >
               Your browser does not support the HTML canvas element.
             </canvas>
@@ -39,22 +39,23 @@
             <div class="player-dot grant-dot" aria-hidden="true"></div>
             <div>
               <strong>GRANT</strong>
-              <span><kbd>A</kbd><kbd>D</kbd> RUN &nbsp; <kbd>W</kbd> JUMP / SELECT</span>
+              <span>WASD</span>
             </div>
           </div>
-          <div class="deck-heart" aria-hidden="true">♥</div>
+          <div class="select-control">
+            <kbd>ENTER</kbd>
+            <span>SELECT</span>
+          </div>
           <div class="control-card emma-controls">
             <div class="player-dot emma-dot" aria-hidden="true"></div>
             <div>
               <strong>EMMA</strong>
-              <span><kbd>←</kbd><kbd>→</kbd> RUN &nbsp; <kbd>↑</kbd> JUMP / SELECT</span>
+              <span>ARROW KEYS</span>
             </div>
           </div>
         </div>
       </section>
 
-      <p class="keyboard-note">Two players · One hardware keyboard · Best played side by side</p>
-      <p class="small-screen-note">This keyboard adventure is designed for a laptop or desktop-sized screen.</p>
       <p id="game-status" class="sr-only" aria-live="polite">Loading game…</p>
     </main>
 

@@ -210,7 +210,7 @@ body::before {
 .control-card span {
   overflow: hidden;
   color: #d9c9ef;
-  font-size: clamp(8px, 1.1vw, 12px);
+  font-size: clamp(12px, 1.5vw, 17px);
   font-weight: 700;
   line-height: 1.7;
   text-overflow: ellipsis;
@@ -242,11 +242,14 @@ body::before {
   background: #ff91b4;
 }
 
-.deck-heart {
-  color: var(--coral);
-  font-size: clamp(20px, 3vw, 34px);
-  text-shadow: 2px 3px 0 #23143e;
-  animation: heart-beat 1.7s steps(2, end) infinite;
+.select-control {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  color: #d9c9ef;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
 }
 
 kbd {
@@ -262,20 +265,6 @@ kbd {
   font: inherit;
   line-height: 1.2;
   text-align: center;
-}
-
-.keyboard-note {
-  margin: 18px 0 0;
-  color: #aa98c3;
-  font-size: clamp(9px, 1.4vw, 12px);
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.small-screen-note {
-  display: none;
 }
 
 .no-script {
@@ -298,20 +287,6 @@ kbd {
   border: 0;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-@keyframes heart-beat {
-  0%,
-  74%,
-  100% {
-    transform: scale(1);
-  }
-  82% {
-    transform: scale(1.22);
-  }
-  90% {
-    transform: scale(0.96);
-  }
 }
 
 @media (max-width: 680px) {
@@ -358,23 +333,11 @@ kbd {
     display: none;
   }
 
-  .deck-heart {
-    display: none;
-  }
-
-  .small-screen-note {
-    display: block;
-    margin: 10px 14px 0;
-    color: var(--cream);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.45;
-    text-align: center;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .deck-heart {
-    animation: none;
+  .select-control {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: center;
   }
 }
