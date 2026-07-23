@@ -27,11 +27,9 @@ A clean, Apple‑inspired single‑page site built with just HTML/CSS/JS. Simple
 │   ├── edwin/index.html
 │   ├── starship/index.html
 │   ├── fea/index.html
-│   ├── spanish/index.html
 │   └── hev/index.html
 ├── budget-test.html        # standalone budgeting prototype
-├── emma-budget.html        # variant of the budgeting prototype
-└── api/ai.js               # serverless proxy for the Spanish app
+└── emma-budget.html        # variant of the budgeting prototype
 ```
 
 ## Suggested Sections to Keep Updated
