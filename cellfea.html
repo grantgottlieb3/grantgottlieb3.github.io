@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CellFEA · 2D Simulation Studio</title>
+<style>
+:root{
+  --panel:#eceef0; --panel-2:#f6f7f8; --panel-3:#e2e5e8;
+  --line:#c9ced4; --line-soft:#dde0e4;
+  --ink:#22282e; --ink-2:#5a636d; --ink-3:#8b939c;
+  --viewport:#1b2026; --grid-minor:#262d35; --grid-major:#313a44;
+  --accent:#2f74d0; --accent-soft:rgba(47,116,208,.22);
+  --support:#3fa96b; --force:#d9503f; --warn:#b97f14; --err:#c2382a;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  --sans:"Segoe UI",-apple-system,BlinkMacSystemFont,"Inter",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);font-size:13px;color:var(--ink);background:var(--panel);overflow:hidden}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:12.5px;color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+#app{display:flex;flex-direction:column;height:100%}
+
+/* ---------- Menu bar ---------- */
+#menubar{display:flex;align-items:center;gap:6px;height:44px;padding:0 10px;background:var(--panel-2);border-bottom:1px solid var(--line)}
+#brand{display:flex;align-items:baseline;gap:8px;margin-right:12px;user-select:none}
+#brand b{font-size:15px;letter-spacing:.02em}
+#brand span{font-size:11px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+.mbtn{padding:6px 11px;border-radius:4px;color:var(--ink);border:1px solid transparent}
+.mbtn:hover{background:var(--panel-3)}
+.mbtn.primary{background:var(--accent);color:#fff;font-weight:600;padding:6px 16px}
+.mbtn.primary:hover{background:#2864b6}
+.mbtn:disabled{opacity:.45;cursor:default}
+.msep{width:1px;height:22px;background:var(--line);margin:0 4px}
+#mode-seg{display:flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+#mode-seg button{padding:5px 16px;background:var(--panel-2);color:var(--ink-2)}
+#mode-seg button.active{background:var(--ink);color:#fff}
+#mode-seg button:disabled{opacity:.4;cursor:default}
+
+/* ---------- Toolbar ---------- */
+#toolbar{display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+.tbtn{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:4px;border:1px solid transparent;color:var(--ink-2)}
+.tbtn:hover{background:var(--panel-3)}
+.tbtn.active{background:#fff;border-color:var(--accent);color:var(--ink);box-shadow:0 0 0 1px var(--accent) inset}
+.tbtn kbd{font-family:var(--mono);font-size:10px;color:var(--ink-3);border:1px solid var(--line);border-radius:3px;padding:0 4px;background:var(--panel-2)}
+.tlabel{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+.tinput{width:64px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:#fff;font-family:var(--mono)}
+select.tinput{width:auto;font-family:var(--sans)}
+.tunit{font-size:11px;color:var(--ink-3);margin-left:-2px}
+
+/* ---------- Main layout ---------- */
+main{flex:1;display:flex;min-height:0}
+aside{background:var(--panel-2);overflow-y:auto}
+#left{width:230px;border-right:1px solid var(--line)}
+#right{width:292px;border-left:1px solid var(--line)}
+.panel-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);padding:10px 12px 6px}
+
+/* ---------- Model tree ---------- */
+.tree-sec{padding:2px 6px 8px}
+.tree-head{font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-2);padding:6px 8px 3px;text-transform:uppercase}
+.tree-item{display:flex;align-items:center;gap:7px;padding:4px 8px;border-radius:4px;cursor:pointer;color:var(--ink)}
+.tree-item:hover{background:var(--panel-3)}
+.tree-item.selected{background:var(--accent-soft)}
+.tree-item .glyph{width:14px;text-align:center;font-family:var(--mono);font-size:11px;flex:none}
+.tree-item .meta{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.tree-item .del{margin-left:4px;color:var(--ink-3);padding:0 4px;border-radius:3px;visibility:hidden}
+.tree-item:hover .del{visibility:visible}
+.tree-item .del:hover{color:var(--err);background:#fff}
+.tree-empty{padding:3px 10px;font-size:12px;color:var(--ink-3);font-style:italic}
+.tree-add{padding:4px 8px;font-size:12px;color:var(--accent);border-radius:4px;display:block}
+.tree-add:hover{background:var(--panel-3)}
+.swatch{width:10px;height:10px;border-radius:2px;border:1px solid rgba(0,0,0,.25);flex:none}
+
+/* ---------- Viewport ---------- */
+#viewport{flex:1;position:relative;background:var(--viewport);min-width:0}
+#canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#canvas.tool-draw{cursor:crosshair}
+#canvas.tool-erase{cursor:crosshair}
+#canvas.tool-pan{cursor:grab}
+#canvas.tool-pan:active{cursor:grabbing}
+#legend{position:absolute;top:14px;right:14px;background:rgba(20,24,29,.88);border:1px solid #3a434d;border-radius:6px;padding:10px 12px;color:#dfe4e9;display:none;user-select:none}
+#legend .lg-title{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#9aa4ae;margin-bottom:2px}
+#legend .lg-field{font-size:13px;font-weight:600;margin-bottom:8px}
+#legend .lg-body{display:flex;gap:8px;align-items:stretch}
+#legend .lg-bar{width:14px;height:150px;border-radius:3px;border:1px solid #454f5a}
+#legend .lg-ticks{display:flex;flex-direction:column;justify-content:space-between;font-family:var(--mono);font-size:11px}
+#legend .lg-note{margin-top:8px;font-size:10.5px;color:#c9a45a;max-width:130px}
+#vhint{position:absolute;left:14px;top:14px;color:#7d8792;font-size:12px;background:rgba(20,24,29,.7);padding:8px 12px;border-radius:6px;border:1px solid #333c46;pointer-events:none;max-width:290px;line-height:1.5}
+#coord{position:absolute;left:14px;bottom:12px;font-family:var(--mono);font-size:11px;color:#8b959f;background:rgba(20,24,29,.7);padding:4px 9px;border-radius:4px;pointer-events:none}
+
+/* ---------- Inspector (right panel) ---------- */
+.insp{padding:4px 12px 16px}
+.insp h4{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);margin:14px 0 6px}
+.insp h4:first-child{margin-top:4px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:12.5px}
+.kv .k{color:var(--ink-2)}
+.kv .v{font-family:var(--mono);text-align:right;white-space:nowrap}
+.kv .v.hot{color:var(--err);font-weight:600}
+.field-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.field-row label{flex:1;color:var(--ink-2);font-size:12.5px}
+.field-row input[type=number],.field-row select{width:110px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:#fff}
+.field-row input[type=number]{font-family:var(--mono)}
+.field-row input[type=range]{width:110px}
+.field-row input[type=checkbox]{accent-color:var(--accent)}
+.btn{display:inline-block;padding:6px 12px;border:1px solid var(--line);border-radius:4px;background:#fff;margin:3px 4px 3px 0}
+.btn:hover{border-color:var(--ink-3)}
+.btn.acc{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.acc:hover{background:#2864b6}
+.btn.danger{color:var(--err)}
+.btn.danger:hover{border-color:var(--err)}
+.btn.sm{padding:3px 9px;font-size:12px}
+.note{font-size:11.5px;color:var(--ink-3);line-height:1.45;margin-top:6px}
+.warnbox{background:#faf3e2;border:1px solid #e3cd96;border-radius:5px;padding:8px 10px;font-size:12px;color:#7a5a10;margin:8px 0}
+.chip{display:inline-block;padding:4px 9px;margin:2px 4px 2px 0;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:11.5px;color:var(--ink-2);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+#ai-out{background:#fff;border:1px solid var(--line-soft);border-radius:5px;padding:9px 11px;font-size:12.5px;line-height:1.55;margin-top:8px;white-space:pre-wrap;display:none}
+#ai-q{width:100%;border:1px solid var(--line);border-radius:4px;padding:6px 8px;resize:vertical;min-height:44px;margin-top:6px}
+
+/* ---------- Status bar ---------- */
+#statusbar{display:flex;align-items:center;gap:18px;height:26px;padding:0 12px;background:var(--panel-2);border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-2)}
+#statusbar .mono{font-family:var(--mono)}
+#status-msg{margin-left:auto;color:var(--ink-2)}
+#status-msg.err{color:var(--err);font-weight:600}
+
+/* ---------- Context menu ---------- */
+#ctxmenu{position:fixed;z-index:60;min-width:196px;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(10,15,20,.18);padding:4px;display:none;font-size:13px}
+.ctx-item{position:relative;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;cursor:pointer}
+.ctx-item:hover{background:var(--accent-soft)}
+.ctx-item.disabled{color:var(--ink-3);pointer-events:none}
+.ctx-item .arrow{margin-left:auto;color:var(--ink-3);font-size:11px}
+.ctx-sep{height:1px;background:var(--line-soft);margin:4px 6px}
+.ctx-sub{position:absolute;left:100%;top:-5px;min-width:190px;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(10,15,20,.18);padding:4px;display:none}
+.ctx-item:hover>.ctx-sub{display:block}
+
+/* ---------- Modals ---------- */
+#modal-root{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(20,26,32,.45)}
+.modal{background:#fff;border-radius:8px;min-width:360px;max-width:560px;max-height:82vh;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.modal header{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line-soft);font-weight:700;font-size:14px}
+.modal header .x{margin-left:auto;color:var(--ink-3);font-size:16px;padding:2px 8px;border-radius:4px}
+.modal header .x:hover{background:var(--panel-3)}
+.modal .body{padding:14px 18px}
+.modal footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line-soft)}
+.modal table{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0}
+.modal th,.modal td{border:1px solid var(--line-soft);padding:5px 9px;text-align:left}
+.modal th{background:var(--panel-2);font-weight:600}
+.modal td.num{font-family:var(--mono);text-align:right}
+.errline{color:var(--err);margin:4px 0;line-height:1.5}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="menubar">
+    <div id="brand"><b>CellFEA</b><span>2D Simulation Studio</span></div>
+    <button class="mbtn" id="btn-new">New</button>
+    <button class="mbtn" id="btn-example">Cantilever example</button>
+    <div class="msep"></div>
+    <button class="mbtn primary" id="btn-solve">▶ Solve</button>
+    <button class="mbtn" id="btn-verify">Verify solver</button>
+    <div class="msep"></div>
+    <button class="mbtn" id="btn-help">Help</button>
+    <div id="mode-seg" role="tablist" aria-label="Mode">
+      <button id="mode-model" class="active" role="tab">Model</button>
+      <button id="mode-results" role="tab" disabled>Results</button>
+    </div>
+  </header>
+
+  <div id="toolbar">
+    <button class="tbtn active" data-tool="select" title="Select cells">Select <kbd>V</kbd></button>
+    <button class="tbtn" data-tool="draw" title="Draw a rectangle of cells">Draw cells <kbd>D</kbd></button>
+    <button class="tbtn" data-tool="erase" title="Erase a rectangle of cells">Erase <kbd>E</kbd></button>
+    <button class="tbtn" data-tool="pan" title="Pan the view (or hold Space / middle mouse)">Pan <kbd>H</kbd></button>
+    <div class="msep"></div>
+    <span class="tlabel">Draw material</span>
+    <select id="draw-mat" class="tinput" title="Material assigned to newly drawn cells"></select>
+    <div class="msep"></div>
+    <span class="tlabel">Cell size</span>
+    <input id="in-cellsize" class="tinput" type="number" min="0.1" step="1" value="5"> <span class="tunit">mm</span>
+    <span class="tlabel">Thickness</span>
+    <input id="in-thick" class="tinput" type="number" min="0.1" step="1" value="10"> <span class="tunit">mm</span>
+    <div class="msep"></div>
+    <button class="tbtn" id="btn-fit" title="Fit model in view">Fit <kbd>F</kbd></button>
+  </div>
+
+  <main>
+    <aside id="left">
+      <div class="panel-title">Model</div>
+      <div id="tree"></div>
+    </aside>
+
+    <section id="viewport">
+      <canvas id="canvas"></canvas>
+      <div id="vhint"></div>
+      <div id="legend">
+        <div class="lg-title">Contour</div>
+        <div class="lg-field" id="lg-field"></div>
+        <div class="lg-body">
+          <div class="lg-bar" id="lg-bar"></div>
+          <div class="lg-ticks"><span id="lg-max"></span><span id="lg-mid"></span><span id="lg-min"></span></div>
+        </div>
+        <div class="lg-note" id="lg-note"></div>
+      </div>
+      <div id="coord"></div>
+    </section>
+
+    <aside id="right">
+      <div class="panel-title">Properties</div>
+      <div id="inspector" class="insp"></div>
+    </aside>
+  </main>
+
+  <footer id="statusbar">
+    <span>Units: <span class="mono">mm · N · MPa · °C</span></span>
+    <span>Cells: <span class="mono" id="st-cells">0</span></span>
+    <span>Nodes: <span class="mono" id="st-nodes">–</span></span>
+    <span id="status-msg">Ready</span>
+  </footer>
+</div>
+
+<div id="ctxmenu" role="menu"></div>
+<div id="modal-root"></div>
+
+<script>
+/* ============================================================================
+   CellFEA Solver Core
+   2D linear-elastic plane-stress finite element solver on a uniform grid of
+   square 4-node quadrilateral (Q4) elements.
+
+   FORMULATION
+   -----------
+   Each grid cell is one bilinear Q4 element with nodes at its corners.
+   Plane stress constitutive law:
+        D = E/(1-nu^2) * [ 1   nu  0
+                           nu  1   0
+                           0   0  (1-nu)/2 ]
+   Element stiffness (2x2 Gauss quadrature):
+        ke = sum_gp  B' * D * B * t * detJ
+   Global system:
+        K u = f
+   Dirichlet BCs (u = 0) are enforced by zeroing constrained rows/columns and
+   placing 1 on the diagonal, which keeps K symmetric positive definite.
+   The linear system is solved with a Jacobi-preconditioned Conjugate
+   Gradient method.
+
+   Strains are evaluated at the element centroid (xi = eta = 0):
+        eps = B(0,0) * ue        sigma = D * eps
+   Von Mises (plane stress, sigma_z = 0):
+        vm = sqrt( sx^2 - sx*sy + sy^2 + 3*txy^2 )
+   Principal stresses:
+        s1,s2 = (sx+sy)/2 +/- sqrt( ((sx-sy)/2)^2 + txy^2 )
+
+   UNITS (consistent set): mm, N, MPa (N/mm^2). E and yield in MPa,
+   lengths in mm, forces in N -> stresses in MPa, displacements in mm.
+
+   This module has no UI dependencies so the same solver runs in the
+   application, in automated tests, and in the built-in verification suite.
+   ========================================================================== */
+
+'use strict';
+
+/* ---------- Constitutive matrix (plane stress) ---------- */
+function Dmatrix(E, nu) {
+  const c = E / (1 - nu * nu);
+  return [
+    [c,        c * nu,   0],
+    [c * nu,   c,        0],
+    [0,        0,        c * (1 - nu) / 2]
+  ];
+}
+
+/* ---------- Strain-displacement matrix B (3x8) for a square Q4 ----------
+   Local node order (counter-clockwise, y up):
+     a=0 (-1,-1)  a=1 (+1,-1)  a=2 (+1,+1)  a=3 (-1,+1)
+   For a square of side h the Jacobian is diagonal: dN/dx = (2/h) dN/dxi. */
+function Bmatrix(xi, eta, h) {
+  const XI  = [-1, 1, 1, -1];
+  const ETA = [-1, -1, 1, 1];
+  const B = [new Float64Array(8), new Float64Array(8), new Float64Array(8)];
+  for (let a = 0; a < 4; a++) {
+    const dNdxi  = XI[a]  * (1 + ETA[a] * eta) / 4;
+    const dNdeta = ETA[a] * (1 + XI[a]  * xi)  / 4;
+    const dNdx = dNdxi  * 2 / h;
+    const dNdy = dNdeta * 2 / h;
+    B[0][2 * a]     = dNdx;               /* eps_x  = du/dx  */
+    B[1][2 * a + 1] = dNdy;               /* eps_y  = dv/dy  */
+    B[2][2 * a]     = dNdy;               /* gam_xy = du/dy + dv/dx */
+    B[2][2 * a + 1] = dNdx;
+  }
+  return B;
+}
+
+/* ---------- Element stiffness ke (8x8), 2x2 Gauss quadrature ---------- */
+function elementStiffness(E, nu, h, t) {
+  const D = Dmatrix(E, nu);
+  const ke = new Float64Array(64);
+  const g = 1 / Math.sqrt(3);
+  const GP = [[-g, -g], [g, -g], [g, g], [-g, g]]; /* weights = 1 */
+  const detJ = (h * h) / 4;
+  for (const [xi, eta] of GP) {
+    const B = Bmatrix(xi, eta, h);
+    /* DB = D * B  (3x8) */
+    const DB = [new Float64Array(8), new Float64Array(8), new Float64Array(8)];
+    for (let r = 0; r < 3; r++)
+      for (let c = 0; c < 8; c++)
+        DB[r][c] = D[r][0] * B[0][c] + D[r][1] * B[1][c] + D[r][2] * B[2][c];
+    /* ke += B' * DB * t * detJ */
+    for (let i = 0; i < 8; i++)
+      for (let j = 0; j < 8; j++) {
+        const s = B[0][i] * DB[0][j] + B[1][i] * DB[1][j] + B[2][i] * DB[2][j];
+        ke[i * 8 + j] += s * t * detJ;
+      }
+  }
+  return ke;
+}
+
+/* ---------- Sparse matrix assembly (row maps -> CSR) ---------- */
+function buildCSR(rowMaps, n) {
+  let nnz = 0;
+  for (let r = 0; r < n; r++) nnz += rowMaps[r].size;
+  const rowPtr = new Int32Array(n + 1);
+  const colIdx = new Int32Array(nnz);
+  const vals   = new Float64Array(nnz);
+  let k = 0;
+  for (let r = 0; r < n; r++) {
+    rowPtr[r] = k;
+    const cols = Array.from(rowMaps[r].keys()).sort((a, b) => a - b);
+    for (const c of cols) { colIdx[k] = c; vals[k] = rowMaps[r].get(c); k++; }
+  }
+  rowPtr[n] = k;
+  return { rowPtr, colIdx, vals, n };
+}
+
+function csrMatVec(A, x, y) {
+  const { rowPtr, colIdx, vals, n } = A;
+  for (let r = 0; r < n; r++) {
+    let s = 0;
+    for (let k = rowPtr[r]; k < rowPtr[r + 1]; k++) s += vals[k] * x[colIdx[k]];
+    y[r] = s;
+  }
+}
+
+/* ---------- Jacobi-preconditioned Conjugate Gradient ---------- */
+function cgSolve(A, b, tol, maxIter) {
+  const n = A.n;
+  const x = new Float64Array(n);
+  const r = Float64Array.from(b);
+  const z = new Float64Array(n);
+  const p = new Float64Array(n);
+  const Ap = new Float64Array(n);
+  const Minv = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let d = 0;
+    for (let k = A.rowPtr[i]; k < A.rowPtr[i + 1]; k++)
+      if (A.colIdx[k] === i) { d = A.vals[k]; break; }
+    if (d === 0) return { x: null, converged: false, iterations: 0, reason: 'zero diagonal (unconstrained or isolated DOF)' };
+    Minv[i] = 1 / d;
+  }
+  let bnorm = 0;
+  for (let i = 0; i < n; i++) bnorm += b[i] * b[i];
+  bnorm = Math.sqrt(bnorm);
+  if (bnorm === 0) return { x, converged: true, iterations: 0 };
+
+  for (let i = 0; i < n; i++) { z[i] = Minv[i] * r[i]; p[i] = z[i]; }
+  let rz = 0;
+  for (let i = 0; i < n; i++) rz += r[i] * z[i];
+
+  let it = 0;
+  for (; it < maxIter; it++) {
+    csrMatVec(A, p, Ap);
+    let pAp = 0;
+    for (let i = 0; i < n; i++) pAp += p[i] * Ap[i];
+    if (pAp <= 0) return { x: null, converged: false, iterations: it, reason: 'matrix not positive definite (model may be unconstrained)' };
+    const alpha = rz / pAp;
+    let rnorm = 0;
+    for (let i = 0; i < n; i++) {
+      x[i] += alpha * p[i];
+      r[i] -= alpha * Ap[i];
+      rnorm += r[i] * r[i];
+    }
+    if (Math.sqrt(rnorm) / bnorm < tol) { it++; break; }
+    let rzNew = 0;
+    for (let i = 0; i < n; i++) { z[i] = Minv[i] * r[i]; rzNew += r[i] * z[i]; }
+    const beta = rzNew / rz;
+    rz = rzNew;
+    for (let i = 0; i < n; i++) p[i] = z[i] + beta * p[i];
+  }
+  const converged = it < maxIter || true;
+  /* final residual check */
+  csrMatVec(A, x, Ap);
+  let res = 0;
+  for (let i = 0; i < n; i++) { const d = Ap[i] - b[i]; res += d * d; }
+  const ok = Math.sqrt(res) / bnorm < tol * 100;
+  return { x, converged: ok, iterations: it, reason: ok ? null : 'iterative solver did not converge; check constraints' };
+}
+
+/* ---------- Union-find for connectivity checks ---------- */
+function UnionFind(n) {
+  const parent = new Int32Array(n);
+  for (let i = 0; i < n; i++) parent[i] = i;
+  function find(a) { while (parent[a] !== a) { parent[a] = parent[parent[a]]; a = parent[a]; } return a; }
+  function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; }
+  return { find, union };
+}
+
+/* ============================================================================
+   solveModel(input)
+   input = {
+     h: cell size [mm],
+     t: thickness [mm],
+     cells: [ { i, j, E, nu, yield } ],           // one entry per element
+     fixedCells:  [ cellIndex, ... ],             // fully fixed (TX+TY at all 4 nodes)
+     fixedNodes:  [ "i,j", ... ] (optional),      // direct node constraints (used by tests)
+     loads: [ { cellIdxs: [cellIndex,...], fx, fy } ],       // total force, split over unique nodes
+     nodeLoads: [ { nodeKeys: ["i,j",...], fx, fy } ] (opt)  // total force on a node set (tests)
+   }
+   Returns { ok, error?, warnings, nodes, nodeIndex, elems, u, elem: {...arrays},
+             nodal: { ux, uy, umag }, stats }
+   ========================================================================== */
+function solveModel(input) {
+  const { h, t, cells } = input;
+  const warnings = [];
+
+  /* ----- Validation: basics ----- */
+  if (!cells || cells.length === 0)
+    return { ok: false, error: 'The model contains no cells. Draw geometry before solving.' };
+  const noMat = cells.filter(c => !(c.E > 0) || !(c.nu >= 0 && c.nu < 0.5));
+  if (noMat.length > 0)
+    return { ok: false, error: `${noMat.length} cell(s) have no valid material assigned. Select them and use Assign Material.` };
+  if (!(h > 0) || !(t > 0))
+    return { ok: false, error: 'Cell size and thickness must be positive.' };
+
+  /* ----- Node numbering ----- */
+  const nodeIndex = new Map();   /* "i,j" -> index */
+  const nodes = [];              /* [{i,j,x,y}] */
+  function nodeAt(i, j) {
+    const key = i + ',' + j;
+    let idx = nodeIndex.get(key);
+    if (idx === undefined) {
+      idx = nodes.length;
+      nodeIndex.set(key, idx);
+      nodes.push({ i, j, x: i * h, y: j * h });
+    }
+    return idx;
+  }
+  /* element connectivity (CCW, y up): (i,j) (i+1,j) (i+1,j+1) (i,j+1) */
+  const elems = cells.map(c => [
+    nodeAt(c.i, c.j), nodeAt(c.i + 1, c.j),
+    nodeAt(c.i + 1, c.j + 1), nodeAt(c.i, c.j + 1)
+  ]);
+  const nNodes = nodes.length;
+  const nDof = 2 * nNodes;
+
+  /* ----- Constrained DOFs ----- */
+  const fixedDof = new Uint8Array(nDof);
+  const fixedNodeSet = new Set();
+  for (const ci of (input.fixedCells || [])) {
+    for (const nd of elems[ci]) fixedNodeSet.add(nd);
+  }
+  for (const key of (input.fixedNodes || [])) {
+    const idx = nodeIndex.get(key);
+    if (idx !== undefined) fixedNodeSet.add(idx);
+  }
+  for (const nd of fixedNodeSet) { fixedDof[2 * nd] = 1; fixedDof[2 * nd + 1] = 1; }
+
+  if (fixedNodeSet.size === 0)
+    return { ok: false, error: 'The model has no constraints. Unconstrained rigid-body motion in X, Y and rotation is possible. Add a Fixed Support before solving.' };
+  if (fixedNodeSet.size < 2)
+    return { ok: false, error: 'The model is constrained at a single node, so rigid-body rotation is still possible. Fix at least one full cell (Fixed Support).' };
+
+  /* ----- Connectivity: every connected body must touch a constraint ----- */
+  const uf = UnionFind(nNodes);
+  for (const el of elems) { uf.union(el[0], el[1]); uf.union(el[1], el[2]); uf.union(el[2], el[3]); }
+  const rootHasFix = new Map();
+  for (const nd of fixedNodeSet) rootHasFix.set(uf.find(nd), true);
+  const freeBodies = new Set();
+  for (let e = 0; e < elems.length; e++) {
+    const r = uf.find(elems[e][0]);
+    if (!rootHasFix.get(r)) freeBodies.add(r);
+  }
+  if (freeBodies.size > 0)
+    return { ok: false, error: `${freeBodies.size} disconnected body/bodies have no constraint and can undergo rigid-body motion. Every separate region of cells needs its own Fixed Support (or connect it to a constrained region).` };
+
+  /* ----- Load vector ----- */
+  const f = new Float64Array(nDof);
+  let anyLoad = false;
+  for (const L of (input.loads || [])) {
+    const nset = new Set();
+    for (const ci of L.cellIdxs) for (const nd of elems[ci]) nset.add(nd);
+    if (nset.size === 0) continue;
+    const fx = L.fx / nset.size, fy = L.fy / nset.size;
+    for (const nd of nset) { f[2 * nd] += fx; f[2 * nd + 1] += fy; }
+    if (L.fx !== 0 || L.fy !== 0) anyLoad = true;
+  }
+  for (const L of (input.nodeLoads || [])) {
+    const idxs = L.nodeKeys.map(k => nodeIndex.get(k)).filter(v => v !== undefined);
+    if (idxs.length === 0) continue;
+    const fx = L.fx / idxs.length, fy = L.fy / idxs.length;
+    for (const nd of idxs) { f[2 * nd] += fx; f[2 * nd + 1] += fy; }
+    if (L.fx !== 0 || L.fy !== 0) anyLoad = true;
+  }
+  if (!anyLoad)
+    return { ok: false, error: 'No non-zero loads are applied. Apply a Force before solving (a load-free static model returns all zeros).' };
+
+  /* ----- Assembly (cache ke per unique material) ----- */
+  const keCache = new Map();
+  const rowMaps = new Array(nDof);
+  for (let r = 0; r < nDof; r++) rowMaps[r] = new Map();
+
+  for (let e = 0; e < elems.length; e++) {
+    const c = cells[e];
+    const mkey = c.E + '|' + c.nu;
+    let ke = keCache.get(mkey);
+    if (!ke) { ke = elementStiffness(c.E, c.nu, h, t); keCache.set(mkey, ke); }
+    const nd = elems[e];
+    const dofs = [2*nd[0], 2*nd[0]+1, 2*nd[1], 2*nd[1]+1, 2*nd[2], 2*nd[2]+1, 2*nd[3], 2*nd[3]+1];
+    for (let a = 0; a < 8; a++) {
+      const R = dofs[a];
+      if (fixedDof[R]) continue;
+      const rm = rowMaps[R];
+      for (let b = 0; b < 8; b++) {
+        const C = dofs[b];
+        if (fixedDof[C]) continue;
+        rm.set(C, (rm.get(C) || 0) + ke[a * 8 + b]);
+      }
+    }
+  }
+  for (let d = 0; d < nDof; d++) {
+    if (fixedDof[d]) { rowMaps[d].set(d, 1); f[d] = 0; }
+  }
+
+  const K = buildCSR(rowMaps, nDof);
+
+  /* ----- Solve K u = f ----- */
+  const t0 = Date.now();
+  const sol = cgSolve(K, f, 1e-10, Math.max(4000, nDof * 4));
+  const solveMs = Date.now() - t0;
+  if (!sol.x || !sol.converged)
+    return { ok: false, error: 'The linear solver failed: ' + (sol.reason || 'no convergence') + '. This usually indicates an insufficiently constrained model.' };
+  const u = sol.x;
+
+  /* ----- Nodal results ----- */
+  const ux = new Float64Array(nNodes), uy = new Float64Array(nNodes), umag = new Float64Array(nNodes);
+  for (let n = 0; n < nNodes; n++) {
+    ux[n] = u[2 * n]; uy[n] = u[2 * n + 1];
+    umag[n] = Math.hypot(ux[n], uy[n]);
+  }
+
+  /* ----- Element results at centroid ----- */
+  const nE = elems.length;
+  const R = {
+    ex: new Float64Array(nE), ey: new Float64Array(nE), gxy: new Float64Array(nE),
+    sx: new Float64Array(nE), sy: new Float64Array(nE), txy: new Float64Array(nE),
+    vm: new Float64Array(nE), s1: new Float64Array(nE), s2: new Float64Array(nE),
+    fos: new Float64Array(nE),
+    ux: new Float64Array(nE), uy: new Float64Array(nE), umag: new Float64Array(nE)
+  };
+  const B0 = Bmatrix(0, 0, h);
+  for (let e = 0; e < nE; e++) {
+    const nd = elems[e];
+    const ue = [ux[nd[0]], uy[nd[0]], ux[nd[1]], uy[nd[1]], ux[nd[2]], uy[nd[2]], ux[nd[3]], uy[nd[3]]];
+    let ex = 0, ey = 0, gxy = 0;
+    for (let k = 0; k < 8; k++) { ex += B0[0][k] * ue[k]; ey += B0[1][k] * ue[k]; gxy += B0[2][k] * ue[k]; }
+    const c = cells[e];
+    const D = Dmatrix(c.E, c.nu);
+    const sx  = D[0][0] * ex + D[0][1] * ey;
+    const sy  = D[1][0] * ex + D[1][1] * ey;
+    const txy = D[2][2] * gxy;
+    const vm = Math.sqrt(Math.max(0, sx * sx - sx * sy + sy * sy + 3 * txy * txy));
+    const cen = (sx + sy) / 2, rad = Math.hypot((sx - sy) / 2, txy);
+    R.ex[e] = ex; R.ey[e] = ey; R.gxy[e] = gxy;
+    R.sx[e] = sx; R.sy[e] = sy; R.txy[e] = txy;
+    R.vm[e] = vm; R.s1[e] = cen + rad; R.s2[e] = cen - rad;
+    R.fos[e] = vm > 1e-12 && c.yield > 0 ? c.yield / vm : Infinity;
+    R.ux[e]   = (ux[nd[0]] + ux[nd[1]] + ux[nd[2]] + ux[nd[3]]) / 4;
+    R.uy[e]   = (uy[nd[0]] + uy[nd[1]] + uy[nd[2]] + uy[nd[3]]) / 4;
+    R.umag[e] = (umag[nd[0]] + umag[nd[1]] + umag[nd[2]] + umag[nd[3]]) / 4;
+  }
+
+  let maxU = 0;
+  for (let n = 0; n < nNodes; n++) if (umag[n] > maxU) maxU = umag[n];
+
+  return {
+    ok: true, warnings,
+    nodes, nodeIndex, elems, u,
+    nodal: { ux, uy, umag },
+    elem: R,
+    stats: { nNodes, nElems: nE, nDof, cgIterations: sol.iterations, solveMs, maxDisplacement: maxU }
+  };
+}
+
+/* Node/test export (no-op in browser) */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { Dmatrix, Bmatrix, elementStiffness, solveModel, cgSolve, buildCSR };
+}
+/* ============================================================================
+   CellFEA application layer.
+   Layers per architecture spec:  UI -> model representation -> solver (above,
+   UI-independent) -> results -> visualization.
+   ========================================================================== */
+'use strict';
+
+/* ------------------------- Material library ------------------------- */
+/* Mechanical props used by the current structural solver: E, nu, yield.
+   Thermal props (k, cte, cp) are stored now so the model schema is ready
+   for the planned steady-state thermal / thermo-mechanical milestones. */
+const MATERIALS = [
+  { id:'steel',  name:'Structural Steel',    color:'#7e8a97', E:200000, nu:0.30, yield:250, rho:7850, k:60.5, cte:12.0, cp:434 },
+  { id:'al6061', name:'Aluminum 6061-T6',    color:'#aeb9c2', E:68900,  nu:0.33, yield:276, rho:2700, k:167,  cte:23.6, cp:896 },
+  { id:'ss304',  name:'Stainless Steel 304', color:'#93a29b', E:193000, nu:0.29, yield:215, rho:8000, k:16.2, cte:17.3, cp:500 },
+  { id:'copper', name:'Copper (annealed)',   color:'#b98d6d', E:110000, nu:0.34, yield:70,  rho:8960, k:401,  cte:16.5, cp:385 },
+  { id:'ti64',   name:'Titanium Ti-6Al-4V',  color:'#918aa4', E:113800, nu:0.34, yield:880, rho:4430, k:6.7,  cte:8.6,  cp:526 }
+];
+function getMat(id){ return MATERIALS.find(m=>m.id===id) || null; }
+
+/* ------------------------- Result fields ------------------------- */
+const FIELDS = [
+  { id:'umag', label:'Total displacement', unit:'mm',  sym:'|u|' },
+  { id:'ux',   label:'X displacement',     unit:'mm',  sym:'ux' },
+  { id:'uy',   label:'Y displacement',     unit:'mm',  sym:'uy' },
+  { id:'ex',   label:'Strain εx',          unit:'',    sym:'εx' },
+  { id:'ey',   label:'Strain εy',          unit:'',    sym:'εy' },
+  { id:'gxy',  label:'Shear strain γxy',   unit:'',    sym:'γxy' },
+  { id:'sx',   label:'Stress σx',          unit:'MPa', sym:'σx' },
+  { id:'sy',   label:'Stress σy',          unit:'MPa', sym:'σy' },
+  { id:'txy',  label:'Shear stress τxy',   unit:'MPa', sym:'τxy' },
+  { id:'vm',   label:'Von Mises stress',   unit:'MPa', sym:'σvm' },
+  { id:'s1',   label:'Principal σ1',       unit:'MPa', sym:'σ1' },
+  { id:'s2',   label:'Principal σ2',       unit:'MPa', sym:'σ2' },
+  { id:'fos',  label:'Factor of safety',   unit:'',    sym:'FoS', reversed:true, cap:20 }
+];
+
+/* ------------------------- Application state ------------------------- */
+const state = {
+  mode: 'model',                 /* 'model' | 'results' */
+  tool: 'select',                /* 'select' | 'draw' | 'erase' | 'pan' */
+  cellSize: 5,                   /* mm */
+  thickness: 10,                 /* mm */
+  drawMat: 'steel',              /* material for newly drawn cells ('' = none) */
+  cells: new Map(),              /* "i,j" -> { mat: matId|null } */
+  supports: [],                  /* { id, name, cellKeys:[], tx:true, ty:true } */
+  loads: [],                     /* { id, name, cellKeys:[], mag, angleDeg }  (math convention, y up) */
+  nextId: 1,
+  selection: new Set(),          /* cell keys */
+  inspect: null,                 /* {type:'load'|'support'|'material', id} tree selection */
+  results: null,                 /* solver output + field ranges */
+  field: 'vm',
+  defScale: 1, defAuto: true, showDeformed: true, showUndeformed: true,
+  probe: null,                   /* element index in results */
+  hover: null                    /* hovered cell key */
+};
+const camera = { x: 60, y: 25, scale: 6 };  /* world center (mm), px per mm */
+
+const K = (i,j)=> i+','+j;
+function parseKey(k){ const p=k.split(','); return [ +p[0], +p[1] ]; }
+
+/* ------------------------- Formatting ------------------------- */
+function fmt(v, unit){
+  if (v===Infinity) return '∞';
+  if (!isFinite(v)) return '–';
+  const a=Math.abs(v);
+  let s;
+  if (a!==0 && (a>=100000||a<0.001)) s=v.toExponential(3);
+  else if (a>=1000) s=v.toFixed(1);
+  else s=Number(v.toPrecision(4)).toString();
+  return unit? s+' '+unit : s;
+}
+
+/* ------------------------- Colormap ------------------------- */
+/* Engineering rainbow: blue -> cyan -> green -> yellow -> red */
+const CMAP=[[38,64,182],[41,148,201],[64,186,110],[229,203,52],[209,58,43]];
+function cmap(tt){
+  const t=Math.min(1,Math.max(0,tt));
+  const x=t*(CMAP.length-1), i=Math.min(CMAP.length-2,Math.floor(x)), f=x-i;
+  const a=CMAP[i], b=CMAP[i+1];
+  return `rgb(${Math.round(a[0]+f*(b[0]-a[0]))},${Math.round(a[1]+f*(b[1]-a[1]))},${Math.round(a[2]+f*(b[2]-a[2]))})`;
+}
+
+/* ------------------------- Coordinate transforms ------------------------- */
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let cw=0, ch=0, dpr=1;
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  const r=canvas.getBoundingClientRect();
+  cw=r.width; ch=r.height;
+  canvas.width=Math.round(cw*dpr); canvas.height=Math.round(ch*dpr);
+  draw();
+}
+function w2sx(x){ return cw/2 + (x-camera.x)*camera.scale; }
+function w2sy(y){ return ch/2 - (y-camera.y)*camera.scale; }
+function s2wx(px){ return camera.x + (px-cw/2)/camera.scale; }
+function s2wy(py){ return camera.y - (py-ch/2)/camera.scale; }
+function cellAt(px,py){
+  const h=state.cellSize;
+  return [ Math.floor(s2wx(px)/h), Math.floor(s2wy(py)/h) ];
+}
+
+/* ------------------------- Derived model helpers ------------------------- */
+function cellList(){ return Array.from(state.cells.keys()); }
+function modelBBox(){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for (const k of state.cells.keys()){
+    const [i,j]=parseKey(k);
+    if(i<x0)x0=i; if(j<y0)y0=j; if(i+1>x1)x1=i+1; if(j+1>y1)y1=j+1;
+  }
+  if(x0===Infinity) return null;
+  const h=state.cellSize;
+  return {x0:x0*h,y0:y0*h,x1:x1*h,y1:y1*h};
+}
+function fitView(){
+  const bb=modelBBox();
+  if(!bb){ camera.x=60;camera.y=25;camera.scale=6; draw(); return; }
+  camera.x=(bb.x0+bb.x1)/2; camera.y=(bb.y0+bb.y1)/2;
+  const sx=cw/((bb.x1-bb.x0)*1.35+1), sy=ch/((bb.y1-bb.y0)*1.6+1);
+  camera.scale=Math.max(0.05,Math.min(sx,sy,200));
+  draw();
+}
+/* connected components of cells via shared edges (for tree display) */
+function bodyComponents(){
+  const seen=new Set(), comps=[];
+  for(const start of state.cells.keys()){
+    if(seen.has(start)) continue;
+    const q=[start]; seen.add(start); let n=0;
+    while(q.length){
+      const k=q.pop(); n++;
+      const [i,j]=parseKey(k);
+      for(const nb of [K(i+1,j),K(i-1,j),K(i,j+1),K(i,j-1)])
+        if(state.cells.has(nb)&&!seen.has(nb)){ seen.add(nb); q.push(nb); }
+    }
+    comps.push(n);
+  }
+  return comps;
+}
+/* boundary edges of the cell set (for undeformed outline) */
+function boundaryEdges(){
+  const cnt=new Map();
+  const add=(a,b)=>{ const k=a<b? a+'|'+b : b+'|'+a; cnt.set(k,(cnt.get(k)||0)+1); };
+  for(const key of state.cells.keys()){
+    const [i,j]=parseKey(key);
+    add(K(i,j),K(i+1,j)); add(K(i+1,j),K(i+1,j+1));
+    add(K(i,j+1),K(i+1,j+1)); add(K(i,j),K(i,j+1));
+  }
+  const out=[];
+  for(const [e,c] of cnt) if(c===1){ const [a,b]=e.split('|'); out.push([parseKey(a),parseKey(b)]); }
+  return out;
+}
+
+/* ------------------------- Interaction transient state ------------------------- */
+const drag = { active:false, kind:null, x0:0, y0:0, x1:0, y1:0, camX:0, camY:0, moved:false };
+let spaceDown=false;
+
+/* ------------------------- Rendering ------------------------- */
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--viewport');
+  ctx.fillRect(0,0,cw,ch);
+  drawGrid();
+  if(state.mode==='results' && state.results) drawResults();
+  else drawModel();
+  drawOverlays();
+}
+
+function drawGrid(){
+  const h=state.cellSize, s=camera.scale, px=h*s;
+  const x0=s2wx(0), x1=s2wx(cw), y1=s2wy(0), y0=s2wy(ch);
+  const i0=Math.floor(x0/h)-1, i1=Math.ceil(x1/h)+1;
+  const j0=Math.floor(y0/h)-1, j1=Math.ceil(y1/h)+1;
+  if(px>=7){
+    ctx.lineWidth=1;
+    for(let i=i0;i<=i1;i++){
+      ctx.strokeStyle = i%5===0? '#313a44':'#252c34';
+      const sx=Math.round(w2sx(i*h))+.5;
+      ctx.beginPath(); ctx.moveTo(sx,0); ctx.lineTo(sx,ch); ctx.stroke();
+    }
+    for(let j=j0;j<=j1;j++){
+      ctx.strokeStyle = j%5===0? '#313a44':'#252c34';
+      const sy=Math.round(w2sy(j*h))+.5;
+      ctx.beginPath(); ctx.moveTo(0,sy); ctx.lineTo(cw,sy); ctx.stroke();
+    }
+  }
+  /* axes through origin */
+  ctx.lineWidth=1.2;
+  ctx.strokeStyle='rgba(196,90,80,.55)';
+  ctx.beginPath(); ctx.moveTo(0,w2sy(0)); ctx.lineTo(cw,w2sy(0)); ctx.stroke();
+  ctx.strokeStyle='rgba(88,170,110,.55)';
+  ctx.beginPath(); ctx.moveTo(w2sx(0),0); ctx.lineTo(w2sx(0),ch); ctx.stroke();
+}
+
+function cellRectPx(i,j){
+  const h=state.cellSize;
+  const x=w2sx(i*h), y=w2sy((j+1)*h);
+  return [x,y,h*camera.scale,h*camera.scale];
+}
+
+function drawModel(){
+  const h=state.cellSize;
+  /* cells */
+  for(const [key,c] of state.cells){
+    const [i,j]=parseKey(key);
+    const [x,y,w,hh]=cellRectPx(i,j);
+    if(x>cw||y>ch||x+w<0||y+hh<0) continue;
+    const m=getMat(c.mat);
+    ctx.fillStyle=m? m.color : '#39414b';
+    ctx.fillRect(x,y,w,hh);
+    if(w>5){
+      ctx.strokeStyle='rgba(0,0,0,.28)'; ctx.lineWidth=1;
+      ctx.strokeRect(x+.5,y+.5,w-1,hh-1);
+      if(!m){ ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.setLineDash([3,3]); ctx.strokeRect(x+2,y+2,w-4,hh-4); ctx.setLineDash([]); }
+    }
+  }
+  drawSupports(null);
+  drawLoads(null);
+  drawSelection();
+  drawInspectHighlight();
+  /* hover */
+  if(state.hover && state.tool==='select' && state.cells.has(state.hover)){
+    const [i,j]=parseKey(state.hover);
+    const [x,y,w,hh]=cellRectPx(i,j);
+    ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=1.5;
+    ctx.strokeRect(x+.75,y+.75,w-1.5,hh-1.5);
+  }
+  drawDragPreview();
+}
+
+function drawSupports(nodePos){
+  ctx.save();
+  for(const s of state.supports){
+    for(const key of s.cellKeys){
+      if(!state.cells.has(key)) continue;
+      const [i,j]=parseKey(key);
+      let x,y,w,hh;
+      if(nodePos){ /* results-mode: draw on (possibly deformed) quad bbox */
+        const q=quadPx(i,j,nodePos); x=Math.min(q[0][0],q[3][0]); y=Math.min(q[3][1],q[2][1]);
+        w=Math.max(q[1][0],q[2][0])-x; hh=Math.max(q[0][1],q[1][1])-y;
+      } else { [x,y,w,hh]=cellRectPx(i,j); }
+      if(x>cw||y>ch||x+w<0||y+hh<0) continue;
+      ctx.strokeStyle='rgba(63,169,107,.95)'; ctx.lineWidth=Math.min(4,Math.max(1.5,w*0.06));
+      ctx.strokeRect(x+1,y+1,w-2,hh-2);
+      /* diagonal hatch */
+      ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,hh); ctx.clip();
+      ctx.lineWidth=1; ctx.strokeStyle='rgba(63,169,107,.55)';
+      const step=Math.max(5,w/4);
+      for(let d=-hh; d<w; d+=step){ ctx.beginPath(); ctx.moveTo(x+d,y+hh); ctx.lineTo(x+d+hh,y); ctx.stroke(); }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function drawLoads(nodePos){
+  ctx.save();
+  for(const L of state.loads){
+    const rad=L.angleDeg*Math.PI/180;
+    const dx=Math.cos(rad), dy=Math.sin(rad); /* world dir, y up */
+    let cx=0, cy=0, n=0;
+    for(const key of L.cellKeys){
+      if(!state.cells.has(key)) continue;
+      const [i,j]=parseKey(key);
+      const h=state.cellSize;
+      const wx=(i+.5)*h, wy=(j+.5)*h;
+      const sx=w2sx(wx), sy=w2sy(wy);
+      cx+=sx; cy+=sy; n++;
+      drawArrow(sx,sy,dx,-dy,Math.max(14,Math.min(38,state.cellSize*camera.scale*.9)));
+    }
+    if(n>0 && camera.scale*state.cellSize>4){
+      ctx.fillStyle='#f2b3ab'; ctx.font='11px '+getComputedStyle(document.body).getPropertyValue('--mono');
+      ctx.fillText(`${L.name}: ${fmt(L.mag,'N')}`, cx/n+10, cy/n-10);
+    }
+  }
+  ctx.restore();
+}
+function drawArrow(sx,sy,ux,uy,len){
+  const tx=sx+ux*len, ty=sy+uy*len;
+  ctx.strokeStyle='#e0604f'; ctx.fillStyle='#e0604f'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(tx,ty); ctx.stroke();
+  const a=Math.atan2(uy,ux), hs=Math.max(5,len*.28);
+  ctx.beginPath();
+  ctx.moveTo(tx,ty);
+  ctx.lineTo(tx-hs*Math.cos(a-0.42), ty-hs*Math.sin(a-0.42));
+  ctx.lineTo(tx-hs*Math.cos(a+0.42), ty-hs*Math.sin(a+0.42));
+  ctx.closePath(); ctx.fill();
+}
+
+function drawSelection(){
+  if(state.selection.size===0) return;
+  ctx.save();
+  ctx.fillStyle='rgba(47,116,208,.30)'; ctx.strokeStyle='rgba(96,160,236,.95)'; ctx.lineWidth=1.5;
+  for(const key of state.selection){
+    if(!state.cells.has(key)) continue;
+    const [i,j]=parseKey(key);
+    const [x,y,w,hh]=cellRectPx(i,j);
+    ctx.fillRect(x,y,w,hh); ctx.strokeRect(x+.75,y+.75,w-1.5,hh-1.5);
+  }
+  ctx.restore();
+}
+function drawInspectHighlight(){
+  if(!state.inspect) return;
+  let keys=null;
+  if(state.inspect.type==='load'){ const L=state.loads.find(l=>l.id===state.inspect.id); keys=L&&L.cellKeys; }
+  if(state.inspect.type==='support'){ const S=state.supports.find(s=>s.id===state.inspect.id); keys=S&&S.cellKeys; }
+  if(state.inspect.type==='material'){ keys=[]; for(const [k,c] of state.cells) if(c.mat===state.inspect.id) keys.push(k); }
+  if(!keys) return;
+  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.setLineDash([4,3]); ctx.lineWidth=1.5;
+  for(const key of keys){
+    if(!state.cells.has(key)) continue;
+    const [i,j]=parseKey(key);
+    const [x,y,w,hh]=cellRectPx(i,j);
+    ctx.strokeRect(x+1,y+1,w-2,hh-2);
+  }
+  ctx.restore();
+}
+
+function drawDragPreview(){
+  if(!drag.active||(drag.kind!=='draw'&&drag.kind!=='erase'&&drag.kind!=='box')) return;
+  const x=Math.min(drag.x0,drag.x1), y=Math.min(drag.y0,drag.y1);
+  const w=Math.abs(drag.x1-drag.x0), h=Math.abs(drag.y1-drag.y0);
+  ctx.save();
+  if(drag.kind==='erase'){ ctx.strokeStyle='#e0604f'; ctx.fillStyle='rgba(224,96,79,.12)'; }
+  else if(drag.kind==='draw'){ ctx.strokeStyle='#9fb6d9'; ctx.fillStyle='rgba(120,160,220,.12)'; }
+  else { ctx.strokeStyle='#6fa2e6'; ctx.fillStyle='rgba(47,116,208,.10)'; }
+  ctx.setLineDash([5,4]); ctx.lineWidth=1.25;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x+.5,y+.5,w,h);
+  if(drag.kind==='draw'||drag.kind==='erase'){
+    const [i0,j0]=cellAt(Math.min(drag.x0,drag.x1),Math.max(drag.y0,drag.y1));
+    const [i1,j1]=cellAt(Math.max(drag.x0,drag.x1),Math.min(drag.y0,drag.y1));
+    const ni=i1-i0+1, nj=j1-j0+1;
+    ctx.setLineDash([]); ctx.fillStyle='#cfd7df'; ctx.font='11px '+getComputedStyle(document.body).getPropertyValue('--mono');
+    ctx.fillText(`${ni} × ${nj} cells  (${fmt(ni*state.cellSize)} × ${fmt(nj*state.cellSize)} mm)`, x+6, y-6);
+  }
+  ctx.restore();
+}
+
+/* ------------------------- Results rendering ------------------------- */
+function nodeScreenPositions(){
+  /* returns Map nodeIdx -> [sx,sy], deformed if enabled */
+  const R=state.results;
+  const pos=new Array(R.nodes.length);
+  const sc = state.showDeformed? state.defScale : 0;
+  for(let n=0;n<R.nodes.length;n++){
+    const nd=R.nodes[n];
+    pos[n]=[ w2sx(nd.x + sc*R.nodal.ux[n]), w2sy(nd.y + sc*R.nodal.uy[n]) ];
+  }
+  return pos;
+}
+function quadPx(i,j,pos){
+  const R=state.results;
+  const n0=R.nodeIndex.get(K(i,j)), n1=R.nodeIndex.get(K(i+1,j)),
+        n2=R.nodeIndex.get(K(i+1,j+1)), n3=R.nodeIndex.get(K(i,j+1));
+  return [pos[n0],pos[n1],pos[n2],pos[n3]];
+}
+
+function fieldValue(fid,e){
+  return state.results.elem[fid][e];
+}
+function fieldNorm(fid,v){
+  const f=FIELDS.find(x=>x.id===fid);
+  const rg=state.results.ranges[fid];
+  let vv=v, lo=rg.lo, hi=rg.hi;
+  if(f.cap!==undefined){ vv=Math.min(v,f.cap); hi=Math.min(hi,f.cap); }
+  let t = hi>lo? (vv-lo)/(hi-lo) : 0.5;
+  if(f.reversed) t=1-t;
+  return t;
+}
+
+function drawResults(){
+  const R=state.results;
+  const pos=nodeScreenPositions();
+  /* undeformed outline ghost */
+  if(state.showDeformed && state.showUndeformed && state.defScale!==0){
+    ctx.save(); ctx.strokeStyle='rgba(160,170,180,.45)'; ctx.setLineDash([5,4]); ctx.lineWidth=1;
+    for(const [[i0,j0],[i1,j1]] of R.outline){
+      const h=state.cellSize;
+      ctx.beginPath();
+      ctx.moveTo(w2sx(i0*h),w2sy(j0*h)); ctx.lineTo(w2sx(i1*h),w2sy(j1*h)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  /* element fills */
+  const fid=state.field;
+  for(let e=0;e<R.cellsRef.length;e++){
+    const c=R.cellsRef[e];
+    const q=quadPx(c.i,c.j,pos);
+    ctx.fillStyle=cmap(fieldNorm(fid,fieldValue(fid,e)));
+    ctx.beginPath();
+    ctx.moveTo(q[0][0],q[0][1]); ctx.lineTo(q[1][0],q[1][1]);
+    ctx.lineTo(q[2][0],q[2][1]); ctx.lineTo(q[3][0],q[3][1]);
+    ctx.closePath(); ctx.fill();
+    if(state.cellSize*camera.scale>7){ ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.lineWidth=.75; ctx.stroke(); }
+  }
+  drawSupports(pos);
+  drawLoads(null);
+  /* probe highlight */
+  if(state.probe!==null && state.probe<R.cellsRef.length){
+    const c=R.cellsRef[state.probe];
+    const q=quadPx(c.i,c.j,pos);
+    ctx.save(); ctx.strokeStyle='#ffffff'; ctx.lineWidth=2.25;
+    ctx.beginPath();
+    ctx.moveTo(q[0][0],q[0][1]); ctx.lineTo(q[1][0],q[1][1]);
+    ctx.lineTo(q[2][0],q[2][1]); ctx.lineTo(q[3][0],q[3][1]);
+    ctx.closePath(); ctx.stroke(); ctx.restore();
+  }
+}
+
+function drawOverlays(){
+  /* origin marker */
+  const ox=w2sx(0), oy=w2sy(0);
+  ctx.fillStyle='#9aa4ae'; ctx.font='10px '+getComputedStyle(document.body).getPropertyValue('--mono');
+  ctx.fillText('0,0', ox+4, oy+12);
+}
+/* ============================================================================
+   UI layer: interaction, model editing, tree, inspector, solve, verification,
+   and the educational assistant. All physics lives in the solver core above.
+   ========================================================================== */
+
+const $=id=>document.getElementById(id);
+const statusMsg=(m,err)=>{ const el=$('status-msg'); el.textContent=m; el.className=err?'err':''; };
+
+/* ------------------------- Model editing actions ------------------------- */
+function invalidateResults(){
+  if(state.results){ state.results=null; state.probe=null; setMode('model'); }
+  $('mode-results').disabled=true;
+}
+function pruneBCs(){
+  state.supports.forEach(s=> s.cellKeys=s.cellKeys.filter(k=>state.cells.has(k)));
+  state.loads.forEach(l=> l.cellKeys=l.cellKeys.filter(k=>state.cells.has(k)));
+  state.supports=state.supports.filter(s=>s.cellKeys.length>0);
+  state.loads=state.loads.filter(l=>l.cellKeys.length>0);
+  if(state.inspect){
+    const t=state.inspect;
+    if(t.type==='load'&&!state.loads.find(l=>l.id===t.id)) state.inspect=null;
+    if(t.type==='support'&&!state.supports.find(s=>s.id===t.id)) state.inspect=null;
+  }
+}
+function addCellsRect(i0,j0,i1,j1){
+  const mat=state.drawMat||null;
+  let n=0;
+  for(let i=Math.min(i0,i1);i<=Math.max(i0,i1);i++)
+    for(let j=Math.min(j0,j1);j<=Math.max(j0,j1);j++){
+      const k=K(i,j);
+      if(!state.cells.has(k)){ state.cells.set(k,{mat}); n++; }
+    }
+  if(n>0){ invalidateResults(); statusMsg(`Added ${n} cells`); }
+  updateAll();
+}
+function eraseRect(i0,j0,i1,j1){
+  let n=0;
+  for(let i=Math.min(i0,i1);i<=Math.max(i0,i1);i++)
+    for(let j=Math.min(j0,j1);j<=Math.max(j0,j1);j++){
+      const k=K(i,j);
+      if(state.cells.delete(k)){ state.selection.delete(k); n++; }
+    }
+  if(n>0){ pruneBCs(); invalidateResults(); statusMsg(`Erased ${n} cells`); }
+  updateAll();
+}
+function assignMaterial(matId){
+  if(state.selection.size===0) return;
+  for(const k of state.selection) state.cells.get(k).mat=matId;
+  invalidateResults();
+  statusMsg(`Assigned ${getMat(matId).name} to ${state.selection.size} cells`);
+  updateAll();
+}
+function addSupportFromSelection(){
+  if(state.selection.size===0) return;
+  const id=state.nextId++;
+  state.supports.push({ id, name:'Fixed Support '+(state.supports.length+1), cellKeys:[...state.selection], tx:true, ty:true });
+  invalidateResults(); statusMsg('Fixed support applied to '+state.selection.size+' cells');
+  updateAll();
+}
+function addLoadFromSelection(mag,angleDeg){
+  const id=state.nextId++;
+  state.loads.push({ id, name:'Force '+(state.loads.length+1), cellKeys:[...state.selection], mag, angleDeg });
+  invalidateResults(); statusMsg(`Force of ${fmt(mag,'N')} applied`);
+  updateAll();
+}
+function removeBCsFromSelection(){
+  state.supports.forEach(s=> s.cellKeys=s.cellKeys.filter(k=>!state.selection.has(k)));
+  state.loads.forEach(l=> l.cellKeys=l.cellKeys.filter(k=>!state.selection.has(k)));
+  pruneBCs(); invalidateResults(); updateAll();
+}
+function deleteSelection(){
+  for(const k of state.selection) state.cells.delete(k);
+  state.selection.clear(); pruneBCs(); invalidateResults(); updateAll();
+}
+function newModel(){
+  showModal({title:'New model', body:'<p>Clear all geometry, materials, loads and constraints?</p>',
+    buttons:[{label:'Cancel'},{label:'Clear model',cls:'acc',cb:()=>{
+      state.cells.clear(); state.supports=[]; state.loads=[]; state.selection.clear();
+      state.inspect=null; invalidateResults(); fitView(); updateAll(); statusMsg('New model');
+    }}]});
+}
+function loadExample(){
+  state.cells.clear(); state.supports=[]; state.loads=[]; state.selection.clear(); state.inspect=null;
+  state.cellSize=5; state.thickness=10;
+  $('in-cellsize').value=5; $('in-thick').value=10;
+  for(let i=0;i<40;i++) for(let j=0;j<8;j++) state.cells.set(K(i,j),{mat:'steel'});
+  const left=[],right=[];
+  for(let j=0;j<8;j++){ left.push(K(0,j)); right.push(K(39,j)); }
+  state.supports=[{id:state.nextId++,name:'Fixed Support 1',cellKeys:left,tx:true,ty:true}];
+  state.loads=[{id:state.nextId++,name:'Force 1',cellKeys:right,mag:1000,angleDeg:270}];
+  invalidateResults(); fitView(); updateAll();
+  statusMsg('Cantilever example loaded: 200 × 40 × 10 mm steel beam, fixed left, 1000 N down at tip. Click Solve.');
+}
+
+/* ------------------------- Solve pipeline ------------------------- */
+function buildSolverInput(){
+  const cellsArr=[], idxByKey=new Map();
+  for(const [k,c] of state.cells){
+    const [i,j]=parseKey(k);
+    const m=getMat(c.mat);
+    idxByKey.set(k,cellsArr.length);
+    cellsArr.push({ i, j, E:m?m.E:0, nu:m?m.nu:0, yield:m?m.yield:0 });
+  }
+  const fixedCells=[];
+  for(const s of state.supports) for(const k of s.cellKeys){ const ix=idxByKey.get(k); if(ix!==undefined) fixedCells.push(ix); }
+  const loads=state.loads.map(L=>{
+    const r=L.angleDeg*Math.PI/180;
+    return { cellIdxs:L.cellKeys.map(k=>idxByKey.get(k)).filter(v=>v!==undefined),
+             fx:L.mag*Math.cos(r), fy:L.mag*Math.sin(r) };
+  });
+  return { h:state.cellSize, t:state.thickness, cells:cellsArr, fixedCells, loads, cellsRef:cellsArr };
+}
+function niceScale(v){
+  if(!(v>0)) return 1;
+  const e=Math.pow(10,Math.floor(Math.log10(v)));
+  const m=v/e;
+  return (m<1.5?1:m<3.5?2:m<7.5?5:10)*e;
+}
+function runSolve(){
+  if(state.cells.size===0){ showError('The model contains no cells. Use the Draw tool to create geometry, or load the cantilever example.'); return; }
+  statusMsg('Solving…');
+  setTimeout(()=>{
+    const inp=buildSolverInput();
+    const t0=performance.now();
+    const R=solveModel(inp);
+    if(!R.ok){ showError(R.error); statusMsg('Solve failed', true); return; }
+    /* post-process for visualization */
+    R.cellsRef=inp.cellsRef;
+    R.elemIndexByKey=new Map();
+    inp.cellsRef.forEach((c,e)=>R.elemIndexByKey.set(K(c.i,c.j),e));
+    R.outline=boundaryEdges();
+    R.ranges={};
+    for(const f of FIELDS){
+      let lo=Infinity,hi=-Infinity;
+      const arr=R.elem[f.id];
+      for(let e=0;e<arr.length;e++){
+        let v=arr[e];
+        if(f.cap!==undefined&&v>f.cap) v=f.cap;
+        if(v<lo)lo=v; if(v>hi)hi=v;
+      }
+      R.ranges[f.id]={lo,hi};
+    }
+    state.results=R;
+    const bb=modelBBox();
+    const diag=Math.hypot(bb.x1-bb.x0,bb.y1-bb.y0);
+    state.defScale = R.stats.maxDisplacement>0? niceScale(0.08*diag/R.stats.maxDisplacement) : 1;
+    state.defAuto=true; state.probe=null; state.field='vm';
+    $('mode-results').disabled=false;
+    setMode('results');
+    const ms=(performance.now()-t0).toFixed(0);
+    statusMsg(`Solved: ${R.stats.nElems} elements, ${R.stats.nDof} DOF, ${R.stats.cgIterations} CG iterations, ${ms} ms. Max |u| = ${fmt(R.stats.maxDisplacement,'mm')}, max σvm = ${fmt(R.ranges.vm.hi,'MPa')}.`);
+    updateAll();
+  },20);
+}
+function showError(msg){
+  showModal({title:'Cannot solve', body:`<div class="errline">${esc(msg)}</div>`, buttons:[{label:'OK',cls:'acc'}]});
+}
+
+/* ------------------------- Mode ------------------------- */
+function setMode(m){
+  if(m==='results'&&!state.results) return;
+  state.mode=m;
+  $('mode-model').classList.toggle('active',m==='model');
+  $('mode-results').classList.toggle('active',m==='results');
+  updateAll();
+}
+
+/* ------------------------- Canvas interaction ------------------------- */
+function setTool(t){
+  state.tool=t;
+  document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
+  canvas.className='tool-'+t;
+  draw();
+}
+document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+
+canvas.addEventListener('mousedown',e=>{
+  hideCtx();
+  const px=e.offsetX, py=e.offsetY;
+  if(e.button===1 || spaceDown || state.tool==='pan'){
+    drag.active=true; drag.kind='pan'; drag.x0=px; drag.y0=py; drag.camX=camera.x; drag.camY=camera.y; drag.moved=false;
+    e.preventDefault(); return;
+  }
+  if(e.button!==0) return;
+  drag.active=true; drag.moved=false;
+  drag.x0=drag.x1=px; drag.y0=drag.y1=py;
+  if(state.mode==='results'){ drag.kind='probe'; return; }
+  if(state.tool==='draw') drag.kind='draw';
+  else if(state.tool==='erase') drag.kind='erase';
+  else drag.kind='box';
+});
+window.addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  const px=e.clientX-r.left, py=e.clientY-r.top;
+  /* coordinate readout */
+  if(px>=0&&py>=0&&px<=cw&&py<=ch){
+    const wx=s2wx(px), wy=s2wy(py);
+    const [ci,cj]=cellAt(px,py);
+    $('coord').textContent=`x ${wx.toFixed(1)} mm   y ${wy.toFixed(1)} mm   ·   cell (${ci}, ${cj})`;
+    const hk=K(ci,cj);
+    if(state.hover!==hk){ state.hover=hk; if(!drag.active) draw(); }
+  }
+  if(!drag.active) return;
+  drag.moved=true;
+  if(drag.kind==='pan'){
+    camera.x=drag.camX-(px-drag.x0)/camera.scale;
+    camera.y=drag.camY+(py-drag.y0)/camera.scale;
+    draw(); return;
+  }
+  drag.x1=px; drag.y1=py;
+  draw();
+});
+window.addEventListener('mouseup',e=>{
+  if(!drag.active) return;
+  const kind=drag.kind; drag.active=false;
+  const r=canvas.getBoundingClientRect();
+  const px=e.clientX-r.left, py=e.clientY-r.top;
+  if(kind==='pan'){ draw(); return; }
+  const [ia,ja]=cellAt(drag.x0,drag.y0);
+  const [ib,jb]=cellAt(px,py);
+  if(kind==='draw'){ addCellsRect(ia,ja,ib,jb); return; }
+  if(kind==='erase'){ eraseRect(ia,ja,ib,jb); return; }
+  if(kind==='probe'){
+    if(Math.abs(px-drag.x0)<5&&Math.abs(py-drag.y0)<5){
+      const eIdx=state.results.elemIndexByKey.get(K(ib,jb));
+      state.probe = eIdx!==undefined? eIdx : null;
+      updateAll();
+    } else draw();
+    return;
+  }
+  /* selection */
+  if(!drag.moved || (Math.abs(px-drag.x0)<4&&Math.abs(py-drag.y0)<4)){
+    const k=K(ib,jb);
+    state.inspect=null;
+    if(state.cells.has(k)){
+      if(e.shiftKey){ state.selection.has(k)? state.selection.delete(k):state.selection.add(k); }
+      else { state.selection.clear(); state.selection.add(k); }
+    } else if(!e.shiftKey) state.selection.clear();
+  } else {
+    if(!e.shiftKey) state.selection.clear();
+    state.inspect=null;
+    for(let i=Math.min(ia,ib);i<=Math.max(ia,ib);i++)
+      for(let j=Math.min(ja,jb);j<=Math.max(ja,jb);j++){
+        const k=K(i,j);
+        if(state.cells.has(k)) state.selection.add(k);
+      }
+  }
+  updateAll();
+});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const px=e.offsetX, py=e.offsetY;
+  const wx=s2wx(px), wy=s2wy(py);
+  const f=Math.pow(1.0015,-e.deltaY);
+  camera.scale=Math.min(300,Math.max(0.03,camera.scale*f));
+  camera.x=wx-(px-cw/2)/camera.scale;
+  camera.y=wy+(py-ch/2)/camera.scale;
+  draw();
+},{passive:false});
+
+/* ------------------------- Context menu ------------------------- */
+const ctxEl=$('ctxmenu');
+function hideCtx(){ ctxEl.style.display='none'; }
+document.addEventListener('click',e=>{ if(!ctxEl.contains(e.target)) hideCtx(); });
+canvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  if(state.mode==='results'){ return; }
+  const [ci,cj]=cellAt(e.offsetX,e.offsetY);
+  const k=K(ci,cj);
+  if(state.cells.has(k) && !state.selection.has(k)){
+    if(!e.shiftKey) state.selection.clear();
+    state.selection.add(k); updateAll();
+  }
+  buildCtxMenu(state.selection.size>0);
+  ctxEl.style.display='block';
+  const mw=ctxEl.offsetWidth, mh=ctxEl.offsetHeight;
+  ctxEl.style.left=Math.min(e.clientX,window.innerWidth-mw-8)+'px';
+  ctxEl.style.top =Math.min(e.clientY,window.innerHeight-mh-8)+'px';
+});
+function buildCtxMenu(hasSel){
+  let html='';
+  if(hasSel){
+    let mats='';
+    for(const m of MATERIALS)
+      mats+=`<div class="ctx-item" data-act="mat" data-id="${m.id}"><span class="swatch" style="background:${m.color}"></span>${esc(m.name)}</div>`;
+    mats+=`<div class="ctx-sep"></div><div class="ctx-item" data-act="newmat">+ New material…</div>`;
+    html+=`<div class="ctx-item">Assign Material<span class="arrow">▸</span><div class="ctx-sub">${mats}</div></div>`;
+    html+=`<div class="ctx-item" data-act="force">Apply Force…</div>`;
+    html+=`<div class="ctx-item" data-act="fix">Fixed Support</div>`;
+    html+=`<div class="ctx-sep"></div>`;
+    html+=`<div class="ctx-item" data-act="rmbc">Remove loads / supports here</div>`;
+    html+=`<div class="ctx-item" data-act="del">Delete cells</div>`;
+    html+=`<div class="ctx-sep"></div>`;
+    html+=`<div class="ctx-item" data-act="props">Properties</div>`;
+  } else {
+    html+=`<div class="ctx-item" data-act="selall">Select all</div>`;
+    html+=`<div class="ctx-item" data-act="fit">Fit view</div>`;
+  }
+  ctxEl.innerHTML=html;
+  ctxEl.querySelectorAll('[data-act]').forEach(el=>el.addEventListener('click',()=>{
+    const a=el.dataset.act;
+    hideCtx();
+    if(a==='mat') assignMaterial(el.dataset.id);
+    else if(a==='newmat') newMaterialDialog(true);
+    else if(a==='force') forceDialog();
+    else if(a==='fix') addSupportFromSelection();
+    else if(a==='rmbc') removeBCsFromSelection();
+    else if(a==='del') deleteSelection();
+    else if(a==='props') renderInspector();
+    else if(a==='selall'){ state.selection=new Set(state.cells.keys()); updateAll(); }
+    else if(a==='fit') fitView();
+  }));
+}
+
+/* ------------------------- Modal system ------------------------- */
+const modalRoot=$('modal-root');
+function showModal({title,body,buttons}){
+  modalRoot.innerHTML=`<div class="modal" role="dialog" aria-label="${esc(title)}">
+    <header>${esc(title)}<button class="x" aria-label="Close">✕</button></header>
+    <div class="body">${body}</div>
+    <footer></footer></div>`;
+  const foot=modalRoot.querySelector('footer');
+  (buttons||[{label:'Close'}]).forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='btn'+(b.cls?' '+b.cls:'');
+    btn.textContent=b.label;
+    btn.addEventListener('click',()=>{ if(b.cb){ if(b.cb()===false) return; } closeModal(); });
+    foot.appendChild(btn);
+  });
+  modalRoot.querySelector('.x').addEventListener('click',closeModal);
+  modalRoot.addEventListener('mousedown',e=>{ if(e.target===modalRoot) closeModal(); });
+  modalRoot.style.display='flex';
+  const firstInput=modalRoot.querySelector('input,select,button.acc');
+  if(firstInput) firstInput.focus();
+}
+function closeModal(){ modalRoot.style.display='none'; modalRoot.innerHTML=''; }
+
+function forceDialog(existing){
+  const L=existing;
+  const mag=L?L.mag:1000;
+  const presets=[['-Y (down)',270],['+Y (up)',90],['+X (right)',0],['-X (left)',180]];
+  const isPreset=L? presets.some(p=>p[1]===L.angleDeg):true;
+  const ang=L?L.angleDeg:270;
+  showModal({
+    title: L? 'Edit '+L.name : 'Apply Force',
+    body:`
+      <div class="field-row"><label>Total magnitude</label><input id="f-mag" type="number" step="any" value="${mag}"> <span class="tunit">N</span></div>
+      <div class="field-row"><label>Direction</label>
+        <select id="f-dir">${presets.map(p=>`<option value="${p[1]}" ${p[1]===ang&&isPreset?'selected':''}>${p[0]}</option>`).join('')}
+        <option value="custom" ${!isPreset?'selected':''}>Custom angle…</option></select></div>
+      <div class="field-row" id="f-angrow" style="display:${isPreset?'none':'flex'}"><label>Angle (0° = +X, CCW)</label><input id="f-ang" type="number" step="any" value="${ang}"> <span class="tunit">°</span></div>
+      <div class="note">The total force is distributed uniformly over the nodes of the ${L?L.cellKeys.length:state.selection.size} selected cell(s). This is a simplification of a consistent load; refine cells for smoother load introduction.</div>`,
+    buttons:[{label:'Cancel'},{label:L?'Apply changes':'Apply force',cls:'acc',cb:()=>{
+      const m=parseFloat($('f-mag').value);
+      if(!isFinite(m)||m===0){ alert('Enter a non-zero magnitude in N.'); return false; }
+      const dirV=$('f-dir').value;
+      const a = dirV==='custom'? parseFloat($('f-ang').value)||0 : parseFloat(dirV);
+      if(L){ L.mag=m; L.angleDeg=a; invalidateResults(); updateAll(); }
+      else addLoadFromSelection(m,a);
+    }}]
+  });
+  $('f-dir').addEventListener('change',()=>{ $('f-angrow').style.display = $('f-dir').value==='custom'?'flex':'none'; });
+}
+
+function newMaterialDialog(assignToSel){
+  showModal({
+    title:'New material',
+    body:`
+      <div class="field-row"><label>Name</label><input id="m-name" type="text" value="Custom material" style="width:150px;padding:4px 6px;border:1px solid var(--line);border-radius:4px"></div>
+      <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin:10px 0 4px">Mechanical</h4>
+      <div class="field-row"><label>Young's modulus E</label><input id="m-E" type="number" step="any" value="200000"> <span class="tunit">MPa</span></div>
+      <div class="field-row"><label>Poisson's ratio ν</label><input id="m-nu" type="number" step="0.01" value="0.30"></div>
+      <div class="field-row"><label>Yield strength</label><input id="m-y" type="number" step="any" value="250"> <span class="tunit">MPa</span></div>
+      <div class="field-row"><label>Density</label><input id="m-rho" type="number" step="any" value="7850"> <span class="tunit">kg/m³</span></div>
+      <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin:10px 0 4px">Thermal (stored for future thermal analysis)</h4>
+      <div class="field-row"><label>Conductivity k</label><input id="m-k" type="number" step="any" value="60"> <span class="tunit">W/m·K</span></div>
+      <div class="field-row"><label>CTE</label><input id="m-cte" type="number" step="any" value="12"> <span class="tunit">µm/m·K</span></div>
+      <div class="field-row"><label>Specific heat</label><input id="m-cp" type="number" step="any" value="450"> <span class="tunit">J/kg·K</span></div>`,
+    buttons:[{label:'Cancel'},{label:'Create material',cls:'acc',cb:()=>{
+      const E=parseFloat($('m-E').value), nu=parseFloat($('m-nu').value), y=parseFloat($('m-y').value);
+      if(!(E>0)){ alert('Young\u2019s modulus must be positive (MPa).'); return false; }
+      if(!(nu>=0&&nu<0.5)){ alert('Poisson\u2019s ratio must be in [0, 0.5) for plane stress.'); return false; }
+      const hue=(MATERIALS.length*57)%360;
+      const mat={ id:'custom'+Date.now(), name:$('m-name').value||'Custom material',
+        color:`hsl(${hue},18%,62%)`, E, nu, yield:y>0?y:0,
+        rho:parseFloat($('m-rho').value)||0, k:parseFloat($('m-k').value)||0,
+        cte:parseFloat($('m-cte').value)||0, cp:parseFloat($('m-cp').value)||0 };
+      MATERIALS.push(mat);
+      populateDrawMat();
+      if(assignToSel&&state.selection.size>0) assignMaterial(mat.id); else updateAll();
+    }}]
+  });
+}
+
+/* ------------------------- Verification suite ------------------------- */
+function runVerification(){
+  const rows=[];
+  /* Axial bar: 100 x 10 mm, t 5, E 200000, P 1000 N */
+  {
+    const nx=20,ny=2,h=5,t=5,E=200000,nu=0.3,P=1000;
+    const cells=[]; for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)cells.push({i,j,E,nu,yield:250});
+    const fixedNodes=[],tip=[];
+    for(let j=0;j<=ny;j++){ fixedNodes.push('0,'+j); tip.push(nx+','+j); }
+    const r=solveModel({h,t,cells,fixedCells:[],fixedNodes,loads:[],nodeLoads:[{nodeKeys:tip,fx:P,fy:0}]});
+    if(r.ok){
+      let d=0; for(const k of tip) d+=r.nodal.ux[r.nodeIndex.get(k)]; d/=tip.length;
+      const dA=P*100/((10*t)*E);
+      let sx=0; for(let j=0;j<ny;j++) sx+=r.elem.sx[j*nx+10]; sx/=ny;
+      const sA=P/(10*t);
+      rows.push(['Axial bar: tip displacement δ = PL/AE', fmt(d,'mm'), fmt(dA,'mm'), pct(d,dA)]);
+      rows.push(['Axial bar: mid-span σx = P/A', fmt(sx,'MPa'), fmt(sA,'MPa'), pct(sx,sA)]);
+    } else rows.push(['Axial bar','solver error','',r.error]);
+  }
+  /* Cantilever: 200 x 40 mm, t 10, E 200000, nu .3, P 1000 N tip, three meshes */
+  for(const [nx,ny] of [[20,4],[40,8],[80,16]]){
+    const L=200,H=40,h=L/nx,t=10,E=200000,nu=0.3,P=1000;
+    const cells=[]; for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)cells.push({i,j,E,nu,yield:250});
+    const fixedNodes=[],tip=[];
+    for(let j=0;j<=ny;j++){ fixedNodes.push('0,'+j); tip.push(nx+','+j); }
+    const r=solveModel({h,t,cells,fixedCells:[],fixedNodes,loads:[],nodeLoads:[{nodeKeys:tip,fx:0,fy:-P}]});
+    if(r.ok){
+      let d=0; for(const k of tip) d+=r.nodal.uy[r.nodeIndex.get(k)]; d=-d/tip.length;
+      const I=t*H**3/12, G=E/(2*(1+nu));
+      const dT=P*L**3/(3*E*I)+P*L/((5/6)*G*t*H);
+      rows.push([`Cantilever tip deflection, ${nx}×${ny} mesh (Timoshenko)`, fmt(d,'mm'), fmt(dT,'mm'), pct(d,dT)]);
+    } else rows.push(['Cantilever','solver error','',r.error]);
+  }
+  const table=`<table><tr><th>Case</th><th>FEA</th><th>Analytical</th><th>Error</th></tr>
+    ${rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</table>
+    <div class="note">All values are computed live by the same solver used for your models, then compared against closed-form solutions (δ = PL/AE, δ = PL³/3EI + shear per Timoshenko beam theory with κ = 5/6).
+    Deflection error decreases with mesh refinement, as expected for bilinear Q4 elements, which are mildly too stiff in bending on coarse meshes.
+    Stress at a clamped corner is theoretically singular, so peak root stress grows with refinement; probe stresses one or more cells away from constraints for mesh-converged values.</div>`;
+  showModal({title:'Solver verification vs analytical solutions', body:table, buttons:[{label:'Close',cls:'acc'}]});
+}
+function pct(a,b){ return b!==0? ((100*(a-b)/b).toFixed(2)+'%') : '–'; }
+
+/* ------------------------- Model tree ------------------------- */
+function renderTree(){
+  const tree=$('tree');
+  let html='';
+  /* Geometry */
+  const comps=bodyComponents();
+  html+=`<div class="tree-sec"><div class="tree-head">Geometry</div>`;
+  if(comps.length===0) html+=`<div class="tree-empty">No cells. Use Draw (D).</div>`;
+  else comps.forEach((n,ix)=> html+=`<div class="tree-item"><span class="glyph">▦</span>Body ${ix+1}<span class="meta">${n} cells</span></div>`);
+  html+=`</div>`;
+  /* Materials */
+  const counts=new Map();
+  for(const c of state.cells.values()) counts.set(c.mat,(counts.get(c.mat)||0)+1);
+  html+=`<div class="tree-sec"><div class="tree-head">Materials</div>`;
+  for(const m of MATERIALS){
+    const n=counts.get(m.id)||0;
+    const sel=state.inspect&&state.inspect.type==='material'&&state.inspect.id===m.id;
+    html+=`<div class="tree-item ${sel?'selected':''}" data-t="material" data-id="${m.id}"><span class="swatch" style="background:${m.color}"></span>${esc(m.name)}<span class="meta">${n||''}</span></div>`;
+  }
+  if(counts.get(null)) html+=`<div class="tree-item"><span class="swatch" style="background:#39414b"></span><i>Unassigned</i><span class="meta">${counts.get(null)}</span></div>`;
+  html+=`<button class="tree-add" data-t="addmat">+ Add material</button></div>`;
+  /* Loads */
+  html+=`<div class="tree-sec"><div class="tree-head">Loads</div>`;
+  if(state.loads.length===0) html+=`<div class="tree-empty">None. Select cells → right-click.</div>`;
+  for(const L of state.loads){
+    const sel=state.inspect&&state.inspect.type==='load'&&state.inspect.id===L.id;
+    html+=`<div class="tree-item ${sel?'selected':''}" data-t="load" data-id="${L.id}"><span class="glyph" style="color:var(--force)">↓</span>${esc(L.name)}<span class="meta">${fmt(L.mag,'N')}</span><button class="del" data-del="load" data-id="${L.id}" title="Delete">✕</button></div>`;
+  }
+  html+=`</div>`;
+  /* Constraints */
+  html+=`<div class="tree-sec"><div class="tree-head">Constraints</div>`;
+  if(state.supports.length===0) html+=`<div class="tree-empty">None. Select cells → right-click.</div>`;
+  for(const S of state.supports){
+    const sel=state.inspect&&state.inspect.type==='support'&&state.inspect.id===S.id;
+    html+=`<div class="tree-item ${sel?'selected':''}" data-t="support" data-id="${S.id}"><span class="glyph" style="color:var(--support)">▲</span>${esc(S.name)}<span class="meta">${S.cellKeys.length} cells</span><button class="del" data-del="support" data-id="${S.id}" title="Delete">✕</button></div>`;
+  }
+  html+=`</div>`;
+  tree.innerHTML=html;
+  tree.querySelectorAll('.tree-item[data-t]').forEach(el=>el.addEventListener('click',e=>{
+    if(e.target.dataset.del) return;
+    const t=el.dataset.t;
+    state.inspect={type:t, id: t==='material'? el.dataset.id : +el.dataset.id};
+    state.selection.clear();
+    updateAll();
+  }));
+  tree.querySelectorAll('[data-del]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const id=+el.dataset.id;
+    if(el.dataset.del==='load') state.loads=state.loads.filter(l=>l.id!==id);
+    else state.supports=state.supports.filter(s=>s.id!==id);
+    if(state.inspect&&state.inspect.id===id) state.inspect=null;
+    invalidateResults(); updateAll();
+  }));
+  const add=tree.querySelector('[data-t="addmat"]');
+  if(add) add.addEventListener('click',()=>newMaterialDialog(false));
+}
+/* ------------------------- Inspector (right panel) ------------------------- */
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderInspector(){
+  const el=$('inspector');
+  if(state.mode==='results'&&state.results){ renderResultsInspector(el); return; }
+  if(state.inspect){ 
+    if(state.inspect.type==='load'){ renderLoadInspector(el); return; }
+    if(state.inspect.type==='support'){ renderSupportInspector(el); return; }
+    if(state.inspect.type==='material'){ renderMaterialInspector(el); return; }
+  }
+  if(state.selection.size>0){ renderSelectionInspector(el); return; }
+  renderModelSummary(el);
+}
+
+function renderModelSummary(el){
+  const h=state.cellSize;
+  const n=state.cells.size;
+  let unassigned=0; for(const c of state.cells.values()) if(!c.mat) unassigned++;
+  const check=(ok,warnTxt)=> ok? '<span style="color:var(--support)">✓</span>' : `<span style="color:var(--warn)">○</span>`;
+  el.innerHTML=`
+    <h4>Model summary</h4>
+    <div class="kv">
+      <span class="k">Cells</span><span class="v">${n}</span>
+      <span class="k">Cell size</span><span class="v">${fmt(h,'mm')}</span>
+      <span class="k">Thickness</span><span class="v">${fmt(state.thickness,'mm')}</span>
+      <span class="k">Area</span><span class="v">${fmt(n*h*h,'mm²')}</span>
+      <span class="k">Mass</span><span class="v">${fmt(modelMass(),'kg')}</span>
+    </div>
+    <h4>Solve checklist</h4>
+    <div class="kv">
+      <span class="k">${check(n>0)} Geometry drawn</span><span class="v">${n>0?'':'use Draw (D)'}</span>
+      <span class="k">${check(n>0&&unassigned===0)} Materials assigned</span><span class="v">${unassigned>0? unassigned+' missing':''}</span>
+      <span class="k">${check(state.supports.length>0)} Fixed support</span><span class="v"></span>
+      <span class="k">${check(state.loads.length>0)} Load applied</span><span class="v"></span>
+    </div>
+    <div class="note">Workflow: draw cells → select cells → right-click to assign a material, add a fixed support and apply a force → Solve. Analysis type: 2D static linear-elastic, plane stress, small displacements.</div>`;
+}
+function modelMass(){
+  let m=0; const h=state.cellSize/1000, t=state.thickness/1000;
+  for(const c of state.cells.values()){ const mat=getMat(c.mat); if(mat) m+=mat.rho*h*h*t; }
+  return m;
+}
+
+function renderSelectionInspector(el){
+  const n=state.selection.size;
+  const counts=new Map();
+  for(const k of state.selection){ const c=state.cells.get(k); if(c) counts.set(c.mat,(counts.get(c.mat)||0)+1); }
+  let matRows='';
+  for(const [id,cnt] of counts){
+    const m=getMat(id);
+    matRows+=`<span class="k">${m?esc(m.name):'<i>Unassigned</i>'}</span><span class="v">${cnt}</span>`;
+  }
+  el.innerHTML=`
+    <h4>Selection</h4>
+    <div class="kv">
+      <span class="k">Cells</span><span class="v">${n}</span>
+      <span class="k">Area</span><span class="v">${fmt(n*state.cellSize**2,'mm²')}</span>
+      ${matRows}
+    </div>
+    <h4>Assign material</h4>
+    <div class="field-row">
+      <select id="sel-mat">${MATERIALS.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select>
+      <button class="btn sm acc" id="sel-mat-apply">Apply</button>
+    </div>
+    <h4>Boundary conditions</h4>
+    <button class="btn" id="sel-fix">Fixed support</button>
+    <button class="btn" id="sel-force">Apply force…</button>
+    <button class="btn" id="sel-rmbc">Remove BCs</button>
+    <h4>Edit</h4>
+    <button class="btn danger" id="sel-del">Delete cells</button>
+    <div class="note">Tip: right-clicking the selection opens the same actions as a context menu.</div>`;
+  $('sel-mat-apply').addEventListener('click',()=>assignMaterial($('sel-mat').value));
+  $('sel-fix').addEventListener('click',addSupportFromSelection);
+  $('sel-force').addEventListener('click',()=>forceDialog());
+  $('sel-rmbc').addEventListener('click',removeBCsFromSelection);
+  $('sel-del').addEventListener('click',deleteSelection);
+}
+
+function renderLoadInspector(el){
+  const L=state.loads.find(l=>l.id===state.inspect.id);
+  if(!L){ state.inspect=null; renderInspector(); return; }
+  const r=L.angleDeg*Math.PI/180;
+  el.innerHTML=`
+    <h4>${esc(L.name)}</h4>
+    <div class="kv">
+      <span class="k">Magnitude</span><span class="v">${fmt(L.mag,'N')}</span>
+      <span class="k">Direction</span><span class="v">${fmt(L.angleDeg,'°')}</span>
+      <span class="k">Components</span><span class="v">Fx ${fmt(L.mag*Math.cos(r),'N')}, Fy ${fmt(L.mag*Math.sin(r),'N')}</span>
+      <span class="k">Distribution</span><span class="v">Uniform over nodes</span>
+      <span class="k">Applied to</span><span class="v">${L.cellKeys.length} cells</span>
+    </div>
+    <button class="btn acc" id="ld-edit">Edit…</button>
+    <button class="btn danger" id="ld-del">Delete</button>`;
+  $('ld-edit').addEventListener('click',()=>forceDialog(L));
+  $('ld-del').addEventListener('click',()=>{ state.loads=state.loads.filter(x=>x.id!==L.id); state.inspect=null; invalidateResults(); updateAll(); });
+}
+
+function renderSupportInspector(el){
+  const S=state.supports.find(s=>s.id===state.inspect.id);
+  if(!S){ state.inspect=null; renderInspector(); return; }
+  el.innerHTML=`
+    <h4>${esc(S.name)}</h4>
+    <div class="kv"><span class="k">Applied to</span><span class="v">${S.cellKeys.length} cells</span></div>
+    <h4>Constrained DOF</h4>
+    <div class="field-row"><label>Translation X</label><input type="checkbox" checked disabled></div>
+    <div class="field-row"><label>Translation Y</label><input type="checkbox" checked disabled></div>
+    <div class="note">The current solver supports fully fixed cells (all nodes of the cell fixed in X and Y). Roller and per-DOF constraints are on the roadmap.</div>
+    <button class="btn danger" id="sp-del">Delete</button>`;
+  $('sp-del').addEventListener('click',()=>{ state.supports=state.supports.filter(x=>x.id!==S.id); state.inspect=null; invalidateResults(); updateAll(); });
+}
+
+function renderMaterialInspector(el){
+  const m=getMat(state.inspect.id);
+  if(!m){ state.inspect=null; renderInspector(); return; }
+  let n=0; for(const c of state.cells.values()) if(c.mat===m.id) n++;
+  el.innerHTML=`
+    <h4><span class="swatch" style="display:inline-block;background:${m.color};margin-right:6px"></span>${esc(m.name)}</h4>
+    <h4>Mechanical</h4>
+    <div class="kv">
+      <span class="k">Young's modulus</span><span class="v">${fmt(m.E/1000,'GPa')}</span>
+      <span class="k">Poisson's ratio</span><span class="v">${m.nu}</span>
+      <span class="k">Yield strength</span><span class="v">${fmt(m.yield,'MPa')}</span>
+      <span class="k">Density</span><span class="v">${fmt(m.rho,'kg/m³')}</span>
+    </div>
+    <h4>Thermal</h4>
+    <div class="kv">
+      <span class="k">Conductivity</span><span class="v">${fmt(m.k,'W/m·K')}</span>
+      <span class="k">CTE</span><span class="v">${fmt(m.cte,'µm/m·K')}</span>
+      <span class="k">Specific heat</span><span class="v">${fmt(m.cp,'J/kg·K')}</span>
+    </div>
+    <div class="kv" style="margin-top:8px"><span class="k">Used by</span><span class="v">${n} cells</span></div>
+    ${n>0?`<button class="btn" id="mat-sel">Select those cells</button>`:''}
+    <div class="note">Thermal properties are stored now and will be used by the planned steady-state thermal and thermo-mechanical analyses.</div>`;
+  const b=$('mat-sel');
+  if(b) b.addEventListener('click',()=>{
+    state.selection.clear();
+    for(const [k,c] of state.cells) if(c.mat===m.id) state.selection.add(k);
+    state.inspect=null; updateAll();
+  });
+}
+
+/* ------------------------- Results inspector + probe ------------------------- */
+function renderResultsInspector(el){
+  const R=state.results;
+  const f=FIELDS.find(x=>x.id===state.field);
+  let probeHTML='<div class="note">Click any cell in the viewport to probe its element results.</div>';
+  if(state.probe!==null){
+    const e=state.probe, c=R.cellsRef[e], m=getMat(state.cells.get(K(c.i,c.j))?.mat)||MATERIALS.find(m=>m.E===c.E&&m.nu===c.nu);
+    const v=id=>R.elem[id][e];
+    const fosV=v('fos');
+    probeHTML=`
+      <div class="kv">
+        <span class="k">Element</span><span class="v">${e}</span>
+        <span class="k">Cell (i, j)</span><span class="v">(${c.i}, ${c.j})</span>
+        <span class="k">Centroid</span><span class="v">${fmt((c.i+.5)*state.cellSize)}, ${fmt((c.j+.5)*state.cellSize)} mm</span>
+        <span class="k">Material</span><span class="v">${m?esc(m.name):'–'}</span>
+      </div>
+      <h4>Displacement (element average)</h4>
+      <div class="kv">
+        <span class="k">ux</span><span class="v">${fmt(v('ux'),'mm')}</span>
+        <span class="k">uy</span><span class="v">${fmt(v('uy'),'mm')}</span>
+        <span class="k">|u|</span><span class="v">${fmt(v('umag'),'mm')}</span>
+      </div>
+      <h4>Strain (centroid)</h4>
+      <div class="kv">
+        <span class="k">εx</span><span class="v">${fmt(v('ex'))}</span>
+        <span class="k">εy</span><span class="v">${fmt(v('ey'))}</span>
+        <span class="k">γxy</span><span class="v">${fmt(v('gxy'))}</span>
+      </div>
+      <h4>Stress (centroid)</h4>
+      <div class="kv">
+        <span class="k">σx</span><span class="v">${fmt(v('sx'),'MPa')}</span>
+        <span class="k">σy</span><span class="v">${fmt(v('sy'),'MPa')}</span>
+        <span class="k">τxy</span><span class="v">${fmt(v('txy'),'MPa')}</span>
+        <span class="k">σ1 / σ2</span><span class="v">${fmt(v('s1'))} / ${fmt(v('s2'))} MPa</span>
+        <span class="k">Von Mises</span><span class="v ${m&&v('vm')>m.yield?'hot':''}">${fmt(v('vm'),'MPa')}</span>
+        <span class="k">Yield strength</span><span class="v">${m?fmt(m.yield,'MPa'):'–'}</span>
+        <span class="k">Factor of safety</span><span class="v ${fosV<1.5?'hot':''}">${fosV>1000?'> 1000':fmt(fosV)}</span>
+      </div>
+      <h4>Understand this result</h4>
+      <div>
+        <span class="chip" data-q="Why is the stress at this element what it is? Is it high or low relative to the rest of the model, and what physical mechanism causes it?">Why this stress here?</span>
+        <span class="chip" data-q="Explain what Von Mises stress means and how to interpret this element's value against the material yield strength.">What is Von Mises?</span>
+        <span class="chip" data-q="Explain why the structure deformed the way it did under these loads and constraints.">Why this deformation?</span>
+        <span class="chip" data-q="If I changed this element's material to one with a higher Young's modulus, what would change in displacement and stress, and why?">Effect of stiffer material?</span>
+      </div>
+      <textarea id="ai-q" placeholder="Or ask your own question about this result…"></textarea>
+      <button class="btn acc sm" id="ai-ask">Explain result</button>
+      <div id="ai-out"></div>`;
+  }
+  el.innerHTML=`
+    <h4>Result</h4>
+    <div class="field-row"><label>Field</label>
+      <select id="res-field">${FIELDS.map(x=>`<option value="${x.id}" ${x.id===state.field?'selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
+    <div class="kv">
+      <span class="k">Min</span><span class="v">${fmt(R.ranges[state.field].lo, f.unit)}</span>
+      <span class="k">Max</span><span class="v">${fmt(R.ranges[state.field].hi, f.unit)}${f.cap!==undefined&&hasCapped()? ' (capped '+f.cap+')':''}</span>
+      <span class="k">Max |u| (model)</span><span class="v">${fmt(R.stats.maxDisplacement,'mm')}</span>
+    </div>
+    <h4>Deformed shape</h4>
+    <div class="field-row"><label>Show deformed</label><input type="checkbox" id="res-showdef" ${state.showDeformed?'checked':''}></div>
+    <div class="field-row"><label>Scale factor</label><input type="number" id="res-scale" step="any" value="${state.defScale}"><button class="btn sm" id="res-auto" title="Set scale so max displayed displacement is ~8% of model size">Auto</button></div>
+    <div class="field-row"><label>Undeformed outline</label><input type="checkbox" id="res-ghost" ${state.showUndeformed?'checked':''}></div>
+    <div class="note">Displayed deformation is exaggerated ×${fmt(state.defScale)} for visibility. All numerical values use the actual computed displacement (max ${fmt(R.stats.maxDisplacement,'mm')}).</div>
+    <h4>Element probe</h4>
+    ${probeHTML}`;
+  $('res-field').addEventListener('change',e=>{ state.field=e.target.value; updateAll(); });
+  $('res-showdef').addEventListener('change',e=>{ state.showDeformed=e.target.checked; draw(); });
+  $('res-ghost').addEventListener('change',e=>{ state.showUndeformed=e.target.checked; draw(); });
+  $('res-scale').addEventListener('change',e=>{ const v=parseFloat(e.target.value); if(isFinite(v)&&v>=0){ state.defScale=v; state.defAuto=false; updateAll(); } });
+  $('res-auto').addEventListener('click',()=>{
+    const bb=modelBBox(); const diag=Math.hypot(bb.x1-bb.x0,bb.y1-bb.y0);
+    state.defScale=R.stats.maxDisplacement>0? niceScale(0.08*diag/R.stats.maxDisplacement):1;
+    updateAll();
+  });
+  el.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',()=>askAI(ch.dataset.q)));
+  const askBtn=$('ai-ask');
+  if(askBtn) askBtn.addEventListener('click',()=>{ const q=$('ai-q').value.trim(); askAI(q||'Explain this element result in the context of the whole model.'); });
+}
+function hasCapped(){
+  const f=FIELDS.find(x=>x.id===state.field);
+  if(f.cap===undefined) return false;
+  const arr=state.results.elem[f.id];
+  for(let i=0;i<arr.length;i++) if(arr[i]>f.cap) return true;
+  return false;
+}
+
+/* ------------------------- Educational AI assistant ------------------------- */
+function buildAIContext(){
+  const R=state.results, bb=modelBBox();
+  const matsUsed=[...new Set([...state.cells.values()].map(c=>c.mat))].map(id=>{
+    const m=getMat(id); return m? {name:m.name,E_MPa:m.E,nu:m.nu,yield_MPa:m.yield}:{name:'unassigned'};
+  });
+  const ctxObj={
+    analysis:'2D static linear-elastic plane stress FEA; square bilinear Q4 elements; small displacements; units mm/N/MPa',
+    geometry:{ cells:state.cells.size, cellSize_mm:state.cellSize, thickness_mm:state.thickness,
+      bbox_mm:bb?{w:bb.x1-bb.x0,h:bb.y1-bb.y0}:null },
+    materials:matsUsed,
+    supports:state.supports.map(s=>({name:s.name,type:'fully fixed cells',nCells:s.cellKeys.length,
+      cells:summarizeRegion(s.cellKeys)})),
+    loads:state.loads.map(l=>({name:l.name,magnitude_N:l.mag,angle_deg_ccw_from_plusX:l.angleDeg,
+      nCells:l.cellKeys.length,cells:summarizeRegion(l.cellKeys)})),
+    globalResults:R?{ maxDisplacement_mm:R.stats.maxDisplacement,
+      vonMises_MPa:{min:R.ranges.vm.lo,max:R.ranges.vm.hi},
+      sigmaX_MPa:R.ranges.sx, sigmaY_MPa:R.ranges.sy }:null
+  };
+  if(state.probe!==null&&R){
+    const e=state.probe,c=R.cellsRef[e];
+    const v=id=>R.elem[id][e];
+    ctxObj.probedElement={
+      cell_ij:[c.i,c.j], centroid_mm:[(c.i+.5)*state.cellSize,(c.j+.5)*state.cellSize],
+      material:{E_MPa:c.E,nu:c.nu,yield_MPa:c.yield},
+      ux_mm:v('ux'),uy_mm:v('uy'),
+      strain:{ex:v('ex'),ey:v('ey'),gxy:v('gxy')},
+      stress_MPa:{sx:v('sx'),sy:v('sy'),txy:v('txy'),vonMises:v('vm'),s1:v('s1'),s2:v('s2')},
+      factorOfSafety:v('fos')===Infinity? 'very large' : v('fos'),
+      nearSupport:isNearBC(c,state.supports), nearLoad:isNearBC(c,state.loads)
+    };
+  }
+  return ctxObj;
+}
+function summarizeRegion(keys){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const k of keys){ const [i,j]=parseKey(k); if(i<x0)x0=i;if(j<y0)y0=j;if(i>x1)x1=i;if(j>y1)y1=j; }
+  return `cells i=${x0}..${x1}, j=${y0}..${y1}`;
+}
+function isNearBC(c,list){
+  for(const o of list) for(const k of o.cellKeys){
+    const [i,j]=parseKey(k);
+    if(Math.abs(i-c.i)<=2&&Math.abs(j-c.j)<=2) return true;
+  }
+  return false;
+}
+async function askAI(question){
+  const out=$('ai-out');
+  out.style.display='block';
+  out.textContent='Analyzing the model…';
+  try{
+    const prompt=`You are the educational assistant inside CellFEA, a 2D finite-element learning tool. Below is the ACTUAL current simulation state as JSON, followed by the user's question. Ground your answer only in this data plus standard solid mechanics. Explain the physical mechanism (load path, bending, constraint effects, stress concentration, Poisson effects, etc.) in clear language a mechanical engineering student can follow, staying technically correct. Where relevant, mention model simplifications (coarse mesh, point-like load introduction, clamp singularities). Keep it under 180 words. Plain text only, no markdown headers or bullet lists.
+
+SIMULATION STATE:
+${JSON.stringify(buildAIContext())}
+
+QUESTION: ${question}`;
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000,
+        messages:[{role:'user',content:prompt}] })
+    });
+    if(!resp.ok) throw new Error('API responded '+resp.status);
+    const data=await resp.json();
+    const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    out.textContent=text||'No explanation returned.';
+  }catch(err){
+    out.textContent='The explanation service is unavailable right now ('+err.message+'). The numerical results above are unaffected.';
+  }
+}
+
+/* ------------------------- Legend ------------------------- */
+function updateLegend(){
+  const lg=$('legend');
+  if(state.mode!=='results'||!state.results){ lg.style.display='none'; return; }
+  lg.style.display='block';
+  const f=FIELDS.find(x=>x.id===state.field);
+  const rg=state.results.ranges[state.field];
+  let hi=rg.hi; if(f.cap!==undefined) hi=Math.min(hi,f.cap);
+  $('lg-field').textContent=f.sym+(f.unit?' ['+f.unit+']':'');
+  /* gradient sampled through fieldNorm so reversed fields (FoS) render correctly */
+  const stops=[];
+  for(let s=0;s<=6;s++){
+    const v=rg.lo+(hi-rg.lo)*s/6;                        /* s=0 -> lo at 0% (bottom) */
+    stops.push(cmap(fieldNorm(state.field,v))+' '+(100*s/6).toFixed(0)+'%');
+  }
+  $('lg-bar').style.background=`linear-gradient(to top, ${stops.join(',')})`;
+  $('lg-max').textContent=fmt(hi)+(f.cap!==undefined&&hasCapped()?'+':'');
+  $('lg-mid').textContent=fmt((hi+rg.lo)/2);
+  $('lg-min').textContent=fmt(rg.lo);
+  $('lg-note').textContent = state.showDeformed&&state.defScale!==1?
+    `Deformation shown ×${fmt(state.defScale)} (exaggerated)` : '';
+}
+
+/* ------------------------- Status bar / hint ------------------------- */
+function updateStatus(){
+  $('st-cells').textContent=state.cells.size;
+  $('st-nodes').textContent=state.results? state.results.stats.nNodes : '–';
+  const hint=$('vhint');
+  if(state.cells.size===0){
+    hint.style.display='block';
+    hint.innerHTML=`<b>Getting started</b><br>1. Pick the <b>Draw cells</b> tool (D) and drag a rectangle.<br>2. Select cells (V), right-click → material, support, force.<br>3. Press <b>Solve</b>.<br><br>Or click <b>Cantilever example</b> above. Scroll to zoom, middle-drag or Space to pan.`;
+  } else if(state.mode==='results'){
+    hint.style.display='block';
+    hint.innerHTML=`<b>Results</b> · click a cell to probe it. Switch field and deformation scale in Properties.`;
+  } else hint.style.display='none';
+}
+
+/* ------------------------- Global update ------------------------- */
+function updateAll(){
+  renderTree();
+  renderInspector();
+  updateLegend();
+  updateStatus();
+  draw();
+}
+
+/* ------------------------- Toolbar / menu wiring ------------------------- */
+function populateDrawMat(){
+  const sel=$('draw-mat');
+  sel.innerHTML=`<option value="">None (assign later)</option>`+
+    MATERIALS.map(m=>`<option value="${m.id}" ${m.id===state.drawMat?'selected':''}>${esc(m.name)}</option>`).join('');
+}
+$('draw-mat').addEventListener('change',e=>state.drawMat=e.target.value);
+$('in-cellsize').addEventListener('change',e=>{
+  const v=parseFloat(e.target.value);
+  if(v>0){ state.cellSize=v; invalidateResults(); updateAll(); }
+  else e.target.value=state.cellSize;
+});
+$('in-thick').addEventListener('change',e=>{
+  const v=parseFloat(e.target.value);
+  if(v>0){ state.thickness=v; invalidateResults(); updateAll(); }
+  else e.target.value=state.thickness;
+});
+$('btn-fit').addEventListener('click',fitView);
+$('btn-new').addEventListener('click',newModel);
+$('btn-example').addEventListener('click',loadExample);
+$('btn-solve').addEventListener('click',runSolve);
+$('btn-verify').addEventListener('click',runVerification);
+$('mode-model').addEventListener('click',()=>setMode('model'));
+$('mode-results').addEventListener('click',()=>setMode('results'));
+$('btn-help').addEventListener('click',()=>showModal({
+  title:'CellFEA help',
+  body:`
+    <p style="margin-bottom:8px"><b>What this is.</b> A 2D static linear-elastic finite element tool. Each grid cell is one plane-stress bilinear quadrilateral element. Units are fixed to mm / N / MPa.</p>
+    <table>
+      <tr><th>Action</th><th>How</th></tr>
+      <tr><td>Draw / erase cells</td><td>Tools D / E, drag a rectangle</td></tr>
+      <tr><td>Select cells</td><td>Tool V: click, Shift-click, or drag a box</td></tr>
+      <tr><td>Material, force, support</td><td>Right-click the selection</td></tr>
+      <tr><td>Pan / zoom / fit</td><td>Middle-drag or Space or H · scroll wheel · F</td></tr>
+      <tr><td>Select all / delete</td><td>Ctrl+A · Delete</td></tr>
+      <tr><td>Probe results</td><td>In Results mode, click a cell</td></tr>
+    </table>
+    <p style="margin-top:8px"><b>Assumptions and limits.</b> Small displacements, linear elastic material, fully fixed supports, loads split uniformly over the nodes of the chosen cells, stresses evaluated at element centroids. Stress next to a clamped corner is mesh-dependent (theoretically singular). Use Verify solver to see live comparisons against analytical solutions.</p>`,
+  buttons:[{label:'Close',cls:'acc'}]
+}));
+
+/* ------------------------- Keyboard ------------------------- */
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if(e.code==='Space'){ spaceDown=true; canvas.style.cursor='grab'; e.preventDefault(); return; }
+  if(e.key==='Escape'){
+    if(modalRoot.style.display==='flex'){ closeModal(); return; }
+    hideCtx(); state.selection.clear(); state.inspect=null; state.probe=null; updateAll(); return;
+  }
+  if(e.key==='v'||e.key==='V') setTool('select');
+  else if(e.key==='d'||e.key==='D') setTool('draw');
+  else if(e.key==='e'||e.key==='E') setTool('erase');
+  else if(e.key==='h'||e.key==='H') setTool('pan');
+  else if(e.key==='f'||e.key==='F') fitView();
+  else if(e.key==='Delete'||e.key==='Backspace'){ if(state.mode==='model') deleteSelection(); }
+  else if((e.key==='a'||e.key==='A')&&(e.ctrlKey||e.metaKey)){
+    e.preventDefault(); state.selection=new Set(state.cells.keys()); updateAll();
+  }
+});
+window.addEventListener('keyup',e=>{
+  if(e.code==='Space'){ spaceDown=false; canvas.style.cursor=''; }
+});
+
+/* ------------------------- Init ------------------------- */
+window.addEventListener('resize',resize);
+populateDrawMat();
+resize();
+fitView();
+updateAll();
+statusMsg('Ready. Draw geometry or load the cantilever example.');
+
+</script>
+</body>
+</html>
