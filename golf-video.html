@@ -1,0 +1,2496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A simple, manual golf shot tracer and scorecard video editor.">
+  <title>Flightline — Golf Shot Tracer</title>
+  <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --canvas: #f2f3ef;
+      --panel: #fbfcf9;
+      --paper: #ffffff;
+      --ink: #171b17;
+      --ink-2: #454c45;
+      --muted: #7a8279;
+      --faint: #aeb5ad;
+      --line: #e1e5de;
+      --line-strong: #cfd5cc;
+      --accent: #d7f35c;
+      --accent-strong: #bddb36;
+      --accent-ink: #26320b;
+      --success: #2d825d;
+      --success-soft: #e8f4ed;
+      --danger: #b64d41;
+      --danger-soft: #faece9;
+      --video: #101310;
+      --shadow-sm: 0 1px 2px rgba(22, 28, 22, .05), 0 4px 14px rgba(22, 28, 22, .04);
+      --shadow-lg: 0 22px 70px rgba(10, 14, 10, .16);
+      --radius-sm: 9px;
+      --radius: 14px;
+      --radius-lg: 22px;
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: var(--sans);
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+      outline: 3px solid rgba(179, 208, 50, .36);
+      outline-offset: 2px;
+    }
+    button:disabled { cursor: not-allowed; opacity: .44; }
+    .hidden { display: none !important; }
+
+    .app { display: flex; flex-direction: column; height: 100%; min-width: 960px; }
+
+    /* Top navigation */
+    .topbar {
+      height: 68px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 18px;
+      background: rgba(251, 252, 249, .96);
+      border-bottom: 1px solid var(--line);
+      z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 238px; }
+    .brand-mark {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      color: var(--accent-ink);
+      background: var(--accent);
+      border-radius: 11px;
+      box-shadow: inset 0 0 0 1px rgba(66, 85, 18, .12);
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-copy { line-height: 1.02; }
+    .brand-name { display: block; font-weight: 780; font-size: 15px; letter-spacing: -.02em; }
+    .brand-sub { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+    .project-name {
+      width: min(290px, 25vw);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: transparent;
+      color: var(--ink-2);
+      font-size: 13px;
+      font-weight: 620;
+      text-overflow: ellipsis;
+    }
+    .project-name:hover, .project-name:focus { background: var(--paper); border-color: var(--line); }
+    .session-status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .session-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .top-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+    .icon-btn, .quiet-btn, .primary-btn, .danger-btn {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+      cursor: pointer;
+      transition: border-color .16s ease, background .16s ease, transform .16s ease;
+    }
+    .icon-btn:hover, .quiet-btn:hover { border-color: var(--line-strong); background: #f7f8f5; }
+    .icon-btn:active, .quiet-btn:active, .primary-btn:active { transform: translateY(1px); }
+    .icon-btn { width: 36px; display: inline-grid; place-items: center; padding: 0; }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .quiet-btn, .primary-btn, .danger-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; font-size: 12px; font-weight: 680; }
+    .quiet-btn svg, .primary-btn svg { width: 15px; height: 15px; }
+    .primary-btn { color: var(--accent-ink); background: var(--accent); border-color: #c5df4e; box-shadow: 0 5px 14px rgba(157, 185, 35, .16); }
+    .primary-btn:hover { background: #def766; border-color: var(--accent-strong); }
+    .danger-btn { color: var(--danger); background: var(--danger-soft); border-color: #efd0ca; }
+
+    /* Three-column workspace */
+    .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 286px minmax(470px, 1fr) 326px; }
+    .left-panel, .right-panel { min-height: 0; background: var(--panel); }
+    .left-panel { display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+    .right-panel { display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+    .panel-top { flex: none; padding: 18px 16px 14px; }
+    .eyebrow { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 780; letter-spacing: .12em; text-transform: uppercase; }
+    .panel-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .panel-heading { margin: 0; font-size: 17px; font-weight: 760; letter-spacing: -.025em; }
+    .round-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 14px;
+      padding: 10px;
+      background: #f1f3ee;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .summary-item { min-width: 0; }
+    .summary-value { display: block; font-size: 15px; font-weight: 760; letter-spacing: -.03em; }
+    .summary-label { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+
+    .upload-button { width: 100%; margin-top: 12px; }
+    .media-section { flex: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .section-toggle {
+      width: 100%;
+      height: 39px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 730;
+    }
+    .section-toggle .count-pill { margin-left: 7px; }
+    .section-toggle .chevron { margin-left: auto; transition: transform .18s ease; }
+    .section-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+    .count-pill { min-width: 19px; height: 19px; display: inline-grid; place-items: center; padding: 0 5px; border-radius: 999px; background: #e7eae3; color: var(--ink-2); font-size: 9px; font-weight: 750; }
+    .media-shelf { max-height: 205px; overflow: auto; padding: 0 10px 10px; }
+    .media-shelf-actions { display: flex; justify-content: flex-end; margin-bottom: 7px; }
+    .text-btn { border: 0; padding: 3px 5px; background: transparent; color: var(--ink-2); cursor: pointer; font-size: 10px; font-weight: 700; }
+    .text-btn:hover { color: var(--ink); text-decoration: underline; }
+    .media-card {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) 22px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+      cursor: grab;
+      box-shadow: var(--shadow-sm);
+    }
+    .media-card:hover { border-color: #bbc2b7; }
+    .media-thumb { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: #fff; background: #242a24; }
+    .media-thumb svg { width: 15px; height: 15px; }
+    .media-copy { min-width: 0; }
+    .media-name { display: block; overflow: hidden; color: var(--ink-2); font-size: 10.5px; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
+    .media-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; white-space: nowrap; }
+    .media-add { width: 22px; height: 22px; border: 0; border-radius: 6px; background: #eff1ec; cursor: pointer; font-size: 15px; line-height: 1; }
+    .media-add:hover { background: var(--accent); }
+
+    .holes-head {
+      flex: none;
+      display: grid;
+      grid-template-columns: 20px minmax(68px, 1fr) 55px 45px 21px;
+      gap: 5px;
+      padding: 10px 12px 7px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 780;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .hole-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 7px 8px; }
+    .hole-row {
+      display: grid;
+      grid-template-columns: 20px minmax(68px, 1fr) 55px 45px 21px;
+      gap: 5px;
+      align-items: center;
+      min-height: 49px;
+      padding: 5px;
+      margin-bottom: 3px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .14s ease, border-color .14s ease;
+    }
+    .hole-row:hover { background: #f2f4ef; }
+    .hole-row.active { background: var(--paper); border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
+    .hole-row.drop-target { border-color: var(--accent-strong); background: #f6fadf; }
+    .drag-grip { border: 0; padding: 5px 1px; color: var(--faint); background: transparent; cursor: grab; font-size: 12px; letter-spacing: -2px; }
+    .hole-main { min-width: 0; }
+    button.hole-main { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: left; }
+    .hole-title { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 720; }
+    .status-mark { width: 7px; height: 7px; flex: none; border-radius: 50%; background: #d5d9d2; box-shadow: 0 0 0 2px #f0f2ed; }
+    .status-mark.partial { background: #d9a83b; }
+    .status-mark.complete { background: var(--success); }
+    .hole-sub { display: block; margin: 4px 0 0 13px; color: var(--muted); font-size: 8.5px; white-space: nowrap; }
+    .table-input {
+      width: 100%;
+      height: 28px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--ink-2);
+      font-size: 10px;
+      text-align: center;
+    }
+    .table-input:hover, .table-input:focus { border-color: var(--line); background: var(--paper); }
+    .relative-score { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); font-size: 9px; font-weight: 760; }
+    .relative-score.over { color: #9a493d; background: #f7e9e6; }
+    .relative-score.under { color: #287053; background: #e7f2ec; }
+    .left-footer { flex: none; display: grid; grid-template-columns: 1fr auto auto auto; gap: 5px; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+    .small-btn { height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer; color: var(--ink-2); font-size: 10px; font-weight: 680; }
+    .small-btn:hover { border-color: var(--line-strong); color: var(--ink); }
+
+    /* Center editor */
+    .editor { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: auto; background: #eef0eb; }
+    .editor-inner { width: 100%; max-width: 1080px; min-height: 100%; margin: 0 auto; padding: 19px 22px 24px; display: flex; flex-direction: column; }
+    .editor-heading { flex: none; min-height: 44px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .editor-title { margin: 0; font-size: 18px; font-weight: 760; letter-spacing: -.035em; }
+    .editor-meta { margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .shot-switcher { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .shot-pill { height: 29px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: rgba(255,255,255,.58); cursor: pointer; color: var(--ink-2); font-size: 9px; font-weight: 720; }
+    .shot-pill.active { color: var(--accent-ink); background: var(--accent); border-color: #c6dc55; }
+    .add-shot { width: 29px; padding: 0; font-size: 15px; }
+
+    .empty-state {
+      flex: 1;
+      min-height: 490px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #d8dcd4;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 72% 20%, rgba(215,243,92,.12), transparent 28%),
+        linear-gradient(145deg, #1a1e1a, #0f120f 58%, #171c17);
+      box-shadow: 0 20px 55px rgba(21, 26, 20, .1);
+    }
+    .empty-card { width: min(470px, calc(100% - 44px)); padding: 32px; border: 1px solid rgba(255,255,255,.15); border-radius: 20px; background: rgba(249, 251, 247, .96); box-shadow: var(--shadow-lg); text-align: center; }
+    .empty-visual { position: relative; height: 92px; margin: -12px auto 12px; overflow: hidden; }
+    .empty-visual svg { width: 210px; height: 96px; }
+    .empty-card h2 { margin: 0; font-size: 23px; letter-spacing: -.045em; }
+    .empty-card > p { max-width: 350px; margin: 9px auto 18px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .drop-upload { width: 100%; min-height: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed #c7cdc2; border-radius: 14px; background: #f7f8f5; cursor: pointer; transition: border .18s ease, background .18s ease; }
+    .drop-upload:hover, .drop-upload.dragover { border-color: #a9bf3e; background: #f7fadf; }
+    .drop-upload strong { font-size: 12px; }
+    .drop-upload span { color: var(--muted); font-size: 9.5px; }
+    .upload-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--accent-ink); background: var(--accent); }
+    .upload-icon svg { width: 16px; height: 16px; }
+    .format-line { margin-top: 13px; color: var(--muted); font-size: 9px; }
+    .best-results { display: flex; align-items: flex-start; gap: 7px; margin: 15px auto 0; color: var(--ink-2); font-size: 9.5px; line-height: 1.4; text-align: left; }
+    .best-results svg { width: 14px; height: 14px; flex: none; color: var(--success); }
+
+    .video-workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .stage-shell {
+      position: relative;
+      flex: 1;
+      min-height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      background: #171b17;
+      background-image: radial-gradient(circle at center, #252b25 0, #151915 62%);
+      overflow: hidden;
+      box-shadow: 0 20px 55px rgba(21, 26, 20, .13);
+    }
+    .video-stage {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      max-height: calc(100vh - 245px);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #090b09;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 18px 55px rgba(0,0,0,.32);
+      user-select: none;
+    }
+    .video-stage.tool-active { cursor: crosshair; }
+    .video-stage video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; background: #090b09; }
+    .stage-overlay { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 4; }
+    .tracer-shadow { fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: .42; }
+    .tracer-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .tracer-guide { fill: none; stroke: rgba(255,255,255,.62); stroke-width: 1.5; stroke-dasharray: 5 7; }
+    .tracer-handle { cursor: grab; vector-effect: non-scaling-stroke; }
+    .tracer-handle:active { cursor: grabbing; }
+    .handle-label { fill: #fff; font-family: var(--sans); font-size: 24px; font-weight: 760; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(0,0,0,.42); stroke-width: 4px; }
+    .stage-badge { position: absolute; top: 10px; z-index: 8; display: flex; align-items: center; gap: 6px; height: 27px; padding: 0 9px; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; color: rgba(255,255,255,.82); background: rgba(12,15,12,.66); backdrop-filter: blur(8px); font-size: 8px; font-weight: 740; letter-spacing: .04em; text-transform: uppercase; pointer-events: none; }
+    .orientation-badge { left: 10px; }
+    .ratio-badge { right: 10px; }
+    .placement-tip { position: absolute; left: 50%; bottom: 14px; z-index: 9; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; color: var(--ink); background: rgba(255,255,255,.94); box-shadow: 0 8px 25px rgba(0,0,0,.2); font-size: 9px; font-weight: 690; white-space: nowrap; pointer-events: none; }
+    .placement-tip .esc { padding: 2px 5px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--muted); font-size: 7px; }
+
+    .scorecard-overlay {
+      position: absolute;
+      z-index: 6;
+      width: 27%;
+      min-width: 0;
+      max-width: 60%;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 12px;
+      background: rgba(18, 22, 18, .88);
+      box-shadow: 0 10px 28px rgba(0,0,0,.24);
+      overflow: hidden;
+      cursor: move;
+      transform-origin: center;
+      backdrop-filter: blur(8px);
+    }
+    .scorecard-overlay::before { content: ""; display: block; height: 4px; background: var(--accent); }
+    .scorecard-inner { padding: 11px 13px 12px; }
+    .scorecard-kicker { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 7px; color: rgba(255,255,255,.65); font-size: 7px; font-weight: 790; letter-spacing: .12em; text-transform: uppercase; }
+    .scorecard-kicker strong { color: var(--accent); font-size: 9px; }
+    .scorecard-main { display: flex; align-items: baseline; gap: 7px; }
+    .scorecard-hole { font-size: 22px; font-weight: 810; letter-spacing: -.045em; }
+    .scorecard-detail { color: rgba(255,255,255,.76); font-size: 9px; font-weight: 610; }
+    .scorecard-bottom { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
+    .scorecard-shot { font-size: 8px; font-weight: 710; text-transform: uppercase; letter-spacing: .08em; }
+    .scorecard-score { min-width: 29px; padding: 4px 7px; border-radius: 7px; color: var(--accent-ink); background: var(--accent); font-size: 10px; font-weight: 820; text-align: center; }
+    .scorecard-overlay.preset-minimal { min-width: 132px; border: 0; border-radius: 9px; background: rgba(10,12,10,.7); box-shadow: none; }
+    .scorecard-overlay.preset-minimal::before { display: none; }
+    .scorecard-overlay.preset-minimal .scorecard-inner { padding: 9px 11px; }
+    .scorecard-overlay.preset-minimal .scorecard-kicker, .scorecard-overlay.preset-minimal .scorecard-bottom { display: none; }
+    .scorecard-overlay.preset-minimal .scorecard-hole { font-size: 16px; }
+    .scorecard-overlay.preset-social { min-width: 180px; color: var(--ink); border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.9); }
+    .scorecard-overlay.preset-social .scorecard-kicker, .scorecard-overlay.preset-social .scorecard-detail { color: rgba(23,27,23,.62); }
+    .scorecard-overlay.preset-social .scorecard-kicker strong { color: #537117; }
+    .scorecard-overlay.preset-social .scorecard-bottom { border-color: rgba(23,27,23,.12); }
+    .scorecard-overlay.preset-social .scorecard-score { background: var(--ink); color: #fff; }
+
+    .video-controls {
+      flex: none;
+      display: grid;
+      grid-template-columns: auto minmax(120px, 1fr) auto auto auto;
+      align-items: center;
+      gap: 10px;
+      min-height: 57px;
+      padding: 9px 12px;
+      border: 1px solid #d6dbd3;
+      border-top: 0;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      background: var(--paper);
+      box-shadow: 0 14px 32px rgba(21,26,20,.07);
+    }
+    .play-btn { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: #1a1e1a; cursor: pointer; }
+    .play-btn svg { width: 15px; height: 15px; }
+    .scrub-wrap { display: grid; grid-template-columns: minmax(80px, 1fr) 78px; align-items: center; gap: 9px; }
+    .scrubber { width: 100%; accent-color: #242a24; cursor: pointer; }
+    .timecode { color: var(--muted); font-family: var(--mono); font-size: 9px; white-space: nowrap; }
+    .clip-control { height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: #f8f9f6; cursor: pointer; color: var(--ink-2); font-size: 9px; font-weight: 690; }
+    .clip-control:hover { border-color: var(--line-strong); }
+    .clip-range { color: var(--muted); font-size: 8px; white-space: nowrap; }
+    .quick-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+    .quick-step { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.62); cursor: pointer; text-align: left; }
+    .quick-step:hover { border-color: var(--line-strong); background: var(--paper); }
+    .quick-step.active { border-color: #bdce68; background: #f7fadf; }
+    .quick-step.done .step-number { color: #fff; background: var(--success); }
+    .step-number { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 7px; color: var(--ink-2); background: #e3e7df; font-size: 8px; font-weight: 800; }
+    .quick-step strong { display: block; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .quick-step span { display: block; margin-top: 2px; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Inspector */
+    .inspector-tabs { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 12px 0; border-bottom: 1px solid var(--line); }
+    .inspector-tab { position: relative; height: 39px; border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 10px; font-weight: 720; }
+    .inspector-tab.active { color: var(--ink); }
+    .inspector-tab.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--ink); }
+    .inspector-content { flex: 1; min-height: 0; overflow-y: auto; padding: 15px 14px 24px; }
+    .inspector-empty { display: grid; place-items: center; height: 100%; padding: 30px; color: var(--muted); font-size: 11px; line-height: 1.6; text-align: center; }
+    .inspector-section { padding-bottom: 17px; margin-bottom: 17px; border-bottom: 1px solid var(--line); }
+    .inspector-section:last-child { margin: 0; border-bottom: 0; }
+    .section-label { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; font-size: 10px; font-weight: 770; letter-spacing: .02em; }
+    .section-note { margin: -3px 0 11px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+    .workflow-list { display: grid; gap: 7px; }
+    .workflow-action {
+      width: 100%;
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: 26px 1fr auto;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--paper);
+      cursor: pointer;
+      text-align: left;
+    }
+    .workflow-action:hover { border-color: var(--line-strong); }
+    .workflow-action.next { border-color: #bfd255; background: #f7fadf; box-shadow: 0 4px 12px rgba(153,179,44,.1); }
+    .workflow-action.done { background: #f7f9f5; }
+    .workflow-icon { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); background: #eef1eb; font-size: 9px; font-weight: 800; }
+    .workflow-action.next .workflow-icon { color: var(--accent-ink); background: var(--accent); }
+    .workflow-action.done .workflow-icon { color: #fff; background: var(--success); }
+    .workflow-copy strong { display: block; font-size: 10px; }
+    .workflow-copy span { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
+    .workflow-arrow { color: var(--faint); font-size: 14px; }
+
+    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .preset-card { min-width: 0; padding: 8px 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); cursor: pointer; text-align: center; }
+    .preset-card:hover { border-color: var(--line-strong); }
+    .preset-card.active { border-color: #aebf51; box-shadow: inset 0 0 0 1px #cbdc73; background: #fafce9; }
+    .preset-preview { height: 29px; display: grid; place-items: center; margin-bottom: 5px; }
+    .tracer-sample { width: 42px; height: 22px; overflow: visible; }
+    .score-sample { width: 48px; height: 27px; border-radius: 5px; background: #1c211c; box-shadow: inset 0 3px var(--accent); }
+    .score-sample.minimal { height: 19px; background: #313631; box-shadow: none; }
+    .score-sample.social { background: #f0f2ee; border: 1px solid #d8dcd4; box-shadow: inset 0 3px var(--accent); }
+    .preset-card strong { display: block; overflow: hidden; font-size: 8.5px; text-overflow: ellipsis; }
+    .control-row { display: grid; grid-template-columns: minmax(0, 1fr) 112px; align-items: center; gap: 10px; min-height: 37px; }
+    .control-row > label, .control-label { color: var(--ink-2); font-size: 9px; font-weight: 630; }
+    .field, .select-field {
+      width: 100%;
+      height: 32px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--paper);
+      font-size: 10px;
+    }
+    .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .field-stack label { display: block; margin: 0 0 5px; color: var(--muted); font-size: 8px; font-weight: 680; text-transform: uppercase; letter-spacing: .05em; }
+    .range-field { width: 100%; accent-color: #252b25; }
+    .color-field { width: 36px; height: 28px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer; }
+    .switch { position: relative; width: 34px; height: 20px; justify-self: end; }
+    .switch input { position: absolute; opacity: 0; }
+    .switch span { position: absolute; inset: 0; border-radius: 999px; background: #d8ddd5; cursor: pointer; transition: background .18s ease; }
+    .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .18s ease; }
+    .switch input:checked + span { background: #607921; }
+    .switch input:checked + span::after { transform: translateX(14px); }
+    details.customize { margin-top: 11px; border: 1px solid var(--line); border-radius: 11px; background: #f7f8f5; }
+    details.customize summary { padding: 10px; cursor: pointer; color: var(--ink-2); font-size: 9px; font-weight: 720; list-style: none; }
+    details.customize summary::-webkit-details-marker { display: none; }
+    details.customize summary::after { content: "+"; float: right; color: var(--muted); font-size: 13px; line-height: .8; }
+    details.customize[open] summary::after { content: "−"; }
+    .customize-body { padding: 0 10px 10px; }
+    .button-row { display: flex; gap: 7px; margin-top: 11px; }
+    .button-row > button { flex: 1; }
+    .position-grid { width: 98px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; justify-self: end; }
+    .position-cell { width: 28px; height: 22px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); cursor: pointer; }
+    .position-cell:hover, .position-cell.active { border-color: #aebf51; background: var(--accent); }
+    .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
+    .check-item { display: flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: 8.5px; }
+    .check-item input { accent-color: #607921; }
+
+    .export-choice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .ratio-choice { min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); cursor: pointer; color: var(--muted); font-size: 8px; font-weight: 700; }
+    .ratio-choice.active { color: var(--ink); border-color: #afc052; background: #fafce9; box-shadow: inset 0 0 0 1px #d5e48c; }
+    .ratio-shape { display: block; border: 1.5px solid currentColor; border-radius: 2px; }
+    .ratio-source { width: 23px; height: 17px; }
+    .ratio-wide { width: 28px; height: 16px; }
+    .ratio-tall { width: 14px; height: 25px; }
+    .quality-choice { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: #eef0eb; }
+    .quality-choice button { height: 31px; border: 0; border-radius: 7px; background: transparent; cursor: pointer; color: var(--muted); font-size: 9px; font-weight: 700; }
+    .quality-choice button.active { color: var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); }
+    .export-card { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #f5f7f2; }
+    .export-line { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 7px; color: var(--muted); font-size: 9px; }
+    .export-line:last-child { margin: 0; }
+    .export-line strong { color: var(--ink-2); font-weight: 700; }
+    .export-disclosure { display: flex; align-items: flex-start; gap: 7px; margin-top: 11px; color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+    .export-disclosure svg { width: 13px; height: 13px; flex: none; }
+
+    /* Modal, export progress, toast */
+    .modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(11,14,11,.62); backdrop-filter: blur(4px); }
+    .modal { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow: auto; border: 1px solid rgba(255,255,255,.15); border-radius: 19px; background: var(--paper); box-shadow: var(--shadow-lg); }
+    .modal-head { display: flex; align-items: flex-start; gap: 15px; padding: 20px 21px 14px; }
+    .modal-head h2 { margin: 0; font-size: 18px; letter-spacing: -.035em; }
+    .modal-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .modal-close { width: 30px; height: 30px; margin-left: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer; }
+    .modal-body { padding: 7px 21px 20px; }
+    .progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: #e8ebe5; }
+    .progress-fill { width: 0; height: 100%; border-radius: inherit; background: var(--accent-strong); transition: width .2s linear; }
+    .progress-meta { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 9px; }
+    .export-preview { height: 136px; display: grid; place-items: center; margin: 15px 0; border-radius: 12px; color: rgba(255,255,255,.76); background: #171b17; font-size: 10px; }
+    .toast-stack { position: fixed; right: 18px; bottom: 18px; z-index: 130; display: grid; gap: 8px; pointer-events: none; }
+    .toast { min-width: 250px; max-width: 360px; display: flex; align-items: flex-start; gap: 9px; padding: 12px 13px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: #fff; background: rgba(25,30,25,.94); box-shadow: 0 13px 35px rgba(0,0,0,.24); animation: toast-in .22s ease both; font-size: 10px; line-height: 1.45; }
+    .toast.success::before { content: "✓"; color: var(--accent); font-weight: 800; }
+    .toast.error::before { content: "!"; color: #ff978d; font-weight: 800; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+    @media (max-width: 1220px) {
+      .workspace { grid-template-columns: 250px minmax(450px, 1fr) 300px; }
+      .brand { min-width: 210px; }
+      .editor-inner { padding-left: 14px; padding-right: 14px; }
+      .stage-shell { padding: 14px; }
+      .scorecard-overlay { transform: scale(.88); }
+    }
+    @media (max-width: 1020px) {
+      body { overflow: auto; }
+      .app { min-width: 760px; height: auto; min-height: 100%; }
+      .workspace { min-height: calc(100vh - 68px); grid-template-columns: 230px minmax(450px, 1fr); }
+      .right-panel { position: fixed; top: 68px; right: 0; bottom: 0; width: 310px; z-index: 30; box-shadow: -18px 0 45px rgba(20,25,20,.16); }
+      .right-panel:not(:focus-within) { transform: translateX(278px); transition: transform .2s ease; }
+      .right-panel:hover { transform: translateX(0); }
+      .right-panel.open { transform: translateX(0) !important; }
+      .project-name { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="Flightline Golf Shot Studio">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M5 19C6.7 10.8 10.2 5.8 18.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="5" cy="19" r="2" fill="currentColor"/>
+            <circle cx="18.5" cy="4" r="1.45" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+        </div>
+        <div class="brand-copy"><span class="brand-name">Flightline</span><span class="brand-sub">Golf shot studio</span></div>
+      </div>
+      <input class="project-name" id="projectName" value="Untitled round" aria-label="Project name" spellcheck="false">
+      <div class="session-status" title="Video files remain available while this tab is open">Session only</div>
+      <div class="top-actions">
+        <button class="icon-btn" id="undoBtn" title="Undo (Ctrl/⌘ Z)" aria-label="Undo" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 8 4.5 12 9 16"/><path d="M5 12h8.5a5.5 5.5 0 0 1 5.5 5.5"/></svg>
+        </button>
+        <button class="icon-btn" id="redoBtn" title="Redo (Ctrl/⌘ Shift Z)" aria-label="Redo" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 8 4.5 4-4.5 4"/><path d="M19 12h-8.5A5.5 5.5 0 0 0 5 17.5"/></svg>
+        </button>
+        <button class="quiet-btn" id="previewBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.8 12s3.3-6 9.2-6 9.2 6 9.2 6-3.3 6-9.2 6-9.2-6-9.2-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+          <span>Preview</span>
+        </button>
+        <button class="primary-btn" id="topExportBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 20h14"/></svg>
+          Export
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="left-panel" aria-label="Round organizer">
+        <div class="panel-top">
+          <p class="eyebrow">Round organizer</p>
+          <div class="panel-heading-row">
+            <h2 class="panel-heading">Your round</h2>
+            <span class="count-pill" id="holeCount">18</span>
+          </div>
+          <div class="round-summary">
+            <div class="summary-item"><span class="summary-value" id="totalStrokes">—</span><span class="summary-label">Strokes</span></div>
+            <div class="summary-item"><span class="summary-value" id="totalRelative">—</span><span class="summary-label">To par</span></div>
+            <div class="summary-item"><span class="summary-value" id="completeCount">0/18</span><span class="summary-label">Ready</span></div>
+          </div>
+          <button class="primary-btn upload-button" id="uploadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 14v5h16v-5"/></svg>
+            Upload videos
+          </button>
+          <input id="fileInput" type="file" multiple hidden accept="video/mp4,video/quicktime,video/webm,video/x-m4v,.mp4,.mov,.webm,.m4v">
+        </div>
+
+        <section class="media-section hidden" id="mediaSection">
+          <button class="section-toggle" id="mediaToggle" aria-expanded="false">
+            Media inbox <span class="count-pill" id="mediaCount">0</span><span class="chevron">⌄</span>
+          </button>
+          <div class="media-shelf hidden" id="mediaShelf">
+            <div class="media-shelf-actions"><button class="text-btn" id="autoAssignBtn">Assign unassigned in order</button></div>
+            <div id="mediaCards"></div>
+          </div>
+        </section>
+
+        <div class="holes-head"><span></span><span>Hole</span><span>Yards</span><span>Score</span><span></span></div>
+        <div class="hole-list" id="holeList"></div>
+        <div class="left-footer">
+          <button class="small-btn" id="addHoleBtn">＋ Add hole</button>
+          <button class="small-btn" id="moveUpBtn" title="Move selected hole up">↑</button>
+          <button class="small-btn" id="moveDownBtn" title="Move selected hole down">↓</button>
+          <button class="small-btn" id="deleteHoleBtn" title="Delete selected hole">×</button>
+        </div>
+      </aside>
+
+      <main class="editor" aria-label="Video editor">
+        <div class="editor-inner">
+          <div class="editor-heading">
+            <div><h1 class="editor-title" id="editorTitle">Hole 1</h1><div class="editor-meta" id="editorMeta">No video assigned · Par 4</div></div>
+            <div class="shot-switcher" id="shotSwitcher"></div>
+          </div>
+
+          <section class="empty-state" id="emptyState">
+            <div class="empty-card">
+              <div class="empty-visual" aria-hidden="true">
+                <svg viewBox="0 0 220 100" fill="none">
+                  <path d="M17 88C59 61 116 73 203 49V100H17Z" fill="#e9ece5"/>
+                  <path d="M109 84C115 57 130 31 177 16" stroke="#abc634" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M109 84C115 57 130 31 177 16" stroke="#d7f35c" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="109" cy="84" r="5" fill="#1d221d"/>
+                  <circle cx="177" cy="16" r="4" fill="#fff" stroke="#7d8d35" stroke-width="2"/>
+                  <path d="m27 65 17-22 15 19 22-29 27 41" stroke="#cdd2ca" stroke-width="2"/>
+                </svg>
+              </div>
+              <h2>Bring your shot to life</h2>
+              <p>Drop in one swing or an entire round. Your videos stay on this device while you edit.</p>
+              <button class="drop-upload" id="emptyUploadBtn">
+                <span class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V5m0 0L8.5 8.5M12 5l3.5 3.5"/><path d="M5 15v4h14v-4"/></svg></span>
+                <strong>Choose videos or drag them here</strong>
+                <span>Single shot · Multiple clips · Full round</span>
+              </button>
+              <div class="format-line">MP4, MOV, WebM or M4V · Vertical and horizontal</div>
+              <div class="best-results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 8.5"/></svg><span><strong>Best results:</strong> use a down-the-line video where the ball flight stays visible.</span></div>
+            </div>
+          </section>
+
+          <section class="video-workspace hidden" id="videoWorkspace">
+            <div class="stage-shell">
+              <div class="video-stage" id="videoStage">
+                <video id="video" preload="metadata" playsinline></video>
+                <svg class="stage-overlay" id="stageOverlay" viewBox="0 0 16 9" preserveAspectRatio="none" aria-label="Shot tracer editing surface">
+                  <defs><filter id="tracerGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="9" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                  <path class="tracer-shadow" id="tracerShadow" d=""/>
+                  <path class="tracer-line" id="tracerPath" d=""/>
+                  <path class="tracer-guide" id="tracerGuide" d=""/>
+                  <g id="tracerHandles">
+                    <circle class="tracer-handle" data-handle="start" id="startHandle" tabindex="0" role="button" aria-label="Adjust ball start point" r="12" fill="#fff" stroke="#202720" stroke-width="4"/>
+                    <circle class="tracer-handle" data-handle="control" id="controlHandle" tabindex="0" role="button" aria-label="Adjust flight curve" r="11" fill="#d7f35c" stroke="#202720" stroke-width="4"/>
+                    <circle class="tracer-handle" data-handle="end" id="endHandle" tabindex="0" role="button" aria-label="Adjust ball end point" r="12" fill="#fff" stroke="#202720" stroke-width="4"/>
+                    <text class="handle-label" id="startLabel">S</text><text class="handle-label" id="controlLabel">↕</text><text class="handle-label" id="endLabel">E</text>
+                  </g>
+                </svg>
+                <div class="stage-badge orientation-badge" id="orientationBadge">Horizontal</div>
+                <div class="stage-badge ratio-badge" id="ratioBadge">Source · 16:9</div>
+                <div class="scorecard-overlay preset-broadcast" id="scorecardOverlay"><div class="scorecard-inner" id="scorecardInner"></div></div>
+                <div class="placement-tip hidden" id="placementTip"><span id="placementText">Click the ball on this frame</span><span class="esc">ESC</span></div>
+              </div>
+            </div>
+            <div class="video-controls">
+              <button class="play-btn" id="playBtn" aria-label="Play video"><svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="m8 5 11 7-11 7Z"/></svg></button>
+              <div class="scrub-wrap"><input class="scrubber" id="scrubber" type="range" min="0" max="1" step="0.001" value="0" aria-label="Video position"><span class="timecode" id="timecode">0:00 / 0:00</span></div>
+              <button class="clip-control" id="setInBtn">Set in</button>
+              <button class="clip-control" id="setOutBtn">Set out</button>
+              <span class="clip-range" id="clipRange">Full clip</span>
+            </div>
+            <div class="quick-flow">
+              <button class="quick-step" id="quickStart" data-quick="start"><span class="step-number">1</span><span><strong>Mark ball start</strong><span>Pause just after impact</span></span></button>
+              <button class="quick-step" id="quickEnd" data-quick="end"><span class="step-number">2</span><span><strong>Mark ball end</strong><span>Find the landing point</span></span></button>
+              <button class="quick-step" id="quickCurve" data-quick="curve"><span class="step-number">3</span><span><strong>Shape the flight</strong><span>Drag to bend the line</span></span></button>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <aside class="right-panel" aria-label="Editing controls">
+        <div class="inspector-tabs" role="tablist" aria-label="Editor tools">
+          <button class="inspector-tab active" data-panel="tracer" role="tab" aria-controls="inspectorContent">Tracer</button>
+          <button class="inspector-tab" data-panel="scorecard" role="tab" aria-controls="inspectorContent">Scorecard</button>
+          <button class="inspector-tab" data-panel="export" role="tab" aria-controls="inspectorContent">Export</button>
+        </div>
+        <div class="inspector-content" id="inspectorContent" role="tabpanel"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+    <div class="modal">
+      <div class="modal-head"><div><h2 id="exportModalTitle">Exporting your video</h2><p>Flightline is rendering your tracer and scorecard in real time. Keep this tab open.</p></div><button class="modal-close" id="exportCloseBtn" aria-label="Close" disabled>×</button></div>
+      <div class="modal-body">
+        <div class="export-preview" id="exportStatus">Preparing frames…</div>
+        <div class="progress-track" id="exportProgressTrack" role="progressbar" aria-label="Export progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="exportProgress"></div></div>
+        <div class="progress-meta"><span id="exportPercent">0%</span><span id="exportRemaining">Starting…</span></div>
+        <div class="button-row"><button class="danger-btn" id="cancelExportBtn">Cancel export</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script>
+    "use strict";
+
+    // Application code is intentionally dependency-free so this page can run directly on GitHub Pages.
+    const uid = (prefix = "id") => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const TRACER_PRESETS = {
+      classic: { preset: "classic", color: "#d7f35c", width: 6, opacity: .96, glow: false, speed: 1 },
+      glow: { preset: "glow", color: "#f2ff78", width: 7, opacity: 1, glow: true, speed: 1 },
+      minimal: { preset: "minimal", color: "#ffffff", width: 3, opacity: .84, glow: false, speed: 1 }
+    };
+
+    function createShot(number = 1, videoId = null) {
+      return {
+        id: uid("shot"), number, videoId, distance: "", clipIn: 0, clipOut: null,
+        startTime: 0, endTime: 2.5, start: null, end: null, control: null,
+        tracer: { ...TRACER_PRESETS.classic }
+      };
+    }
+
+    function createHole(number) {
+      const firstShot = createShot(1);
+      return {
+        id: uid("hole"), number, par: 4, distance: "", strokes: "",
+        shots: [firstShot], activeShotId: firstShot.id,
+        scorecard: {
+          visible: true, preset: "broadcast", position: "tr", x: .82, y: .18, scale: 1,
+          font: "system", text: "#ffffff", background: "#121612", opacity: .88,
+          border: true, radius: 12, align: "left",
+          fields: { hole: true, par: true, distance: true, shot: true, score: true }
+        }
+      };
+    }
+
+    const initialHoles = [createHole(1)];
+    const state = {
+      projectName: "Untitled round",
+      holes: initialHoles,
+      assets: [],
+      activeHoleId: initialHoles[0].id,
+      panel: "tracer",
+      tool: "idle",
+      preview: false,
+      outputRatio: "source",
+      quality: "standard",
+      mediaOpen: false,
+      history: [],
+      redo: [],
+      dragging: null,
+      exportJob: null
+    };
+
+    const dom = {
+      projectName: document.getElementById("projectName"),
+      holeCount: document.getElementById("holeCount"),
+      totalStrokes: document.getElementById("totalStrokes"),
+      totalRelative: document.getElementById("totalRelative"),
+      completeCount: document.getElementById("completeCount"),
+      holeList: document.getElementById("holeList"),
+      mediaSection: document.getElementById("mediaSection"),
+      mediaToggle: document.getElementById("mediaToggle"),
+      mediaCount: document.getElementById("mediaCount"),
+      mediaShelf: document.getElementById("mediaShelf"),
+      mediaCards: document.getElementById("mediaCards"),
+      fileInput: document.getElementById("fileInput"),
+      editorTitle: document.getElementById("editorTitle"),
+      editorMeta: document.getElementById("editorMeta"),
+      shotSwitcher: document.getElementById("shotSwitcher"),
+      emptyState: document.getElementById("emptyState"),
+      videoWorkspace: document.getElementById("videoWorkspace"),
+      videoStage: document.getElementById("videoStage"),
+      stageOverlay: document.getElementById("stageOverlay"),
+      stageShell: document.querySelector(".stage-shell"),
+      video: document.getElementById("video"),
+      tracerPath: document.getElementById("tracerPath"),
+      tracerShadow: document.getElementById("tracerShadow"),
+      tracerGuide: document.getElementById("tracerGuide"),
+      tracerHandles: document.getElementById("tracerHandles"),
+      startHandle: document.getElementById("startHandle"),
+      endHandle: document.getElementById("endHandle"),
+      controlHandle: document.getElementById("controlHandle"),
+      startLabel: document.getElementById("startLabel"),
+      endLabel: document.getElementById("endLabel"),
+      controlLabel: document.getElementById("controlLabel"),
+      orientationBadge: document.getElementById("orientationBadge"),
+      ratioBadge: document.getElementById("ratioBadge"),
+      placementTip: document.getElementById("placementTip"),
+      placementText: document.getElementById("placementText"),
+      scorecardOverlay: document.getElementById("scorecardOverlay"),
+      scorecardInner: document.getElementById("scorecardInner"),
+      playBtn: document.getElementById("playBtn"),
+      playIcon: document.getElementById("playIcon"),
+      scrubber: document.getElementById("scrubber"),
+      timecode: document.getElementById("timecode"),
+      clipRange: document.getElementById("clipRange"),
+      inspectorContent: document.getElementById("inspectorContent"),
+      rightPanel: document.querySelector(".right-panel"),
+      undoBtn: document.getElementById("undoBtn"),
+      redoBtn: document.getElementById("redoBtn"),
+      previewBtn: document.getElementById("previewBtn"),
+      exportModal: document.getElementById("exportModal"),
+      exportProgress: document.getElementById("exportProgress"),
+      exportProgressTrack: document.getElementById("exportProgressTrack"),
+      exportPercent: document.getElementById("exportPercent"),
+      exportRemaining: document.getElementById("exportRemaining"),
+      exportStatus: document.getElementById("exportStatus"),
+      exportCloseBtn: document.getElementById("exportCloseBtn"),
+      toastStack: document.getElementById("toastStack")
+    };
+
+    let loadedAssetId = null;
+    let loadedShotId = null;
+    let animationFrame = 0;
+
+    const activeHole = () => state.holes.find(hole => hole.id === state.activeHoleId) || state.holes[0];
+    const activeShot = () => {
+      const hole = activeHole();
+      return hole?.shots.find(shot => shot.id === hole.activeShotId) || hole?.shots[0] || null;
+    };
+    const getAsset = id => state.assets.find(asset => asset.id === id) || null;
+    const activeAsset = () => getAsset(activeShot()?.videoId);
+    const isTracerComplete = shot => Boolean(shot?.start && shot?.end && shot?.control);
+    const hasScore = hole => Number(hole?.strokes) > 0 && Number(hole?.par) > 0;
+    const holeHasVideo = hole => hole.shots.some(shot => Boolean(getAsset(shot.videoId)?.playable));
+    const holeIsReady = hole => {
+      const assignedShots = hole.shots.filter(shot => Boolean(getAsset(shot.videoId)?.playable));
+      return assignedShots.length > 0 && assignedShots.every(isTracerComplete) && hasScore(hole);
+    };
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
+    }
+
+    function formatTime(seconds) {
+      const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+      const minutes = Math.floor(safe / 60);
+      const secs = Math.floor(safe % 60).toString().padStart(2, "0");
+      return `${minutes}:${secs}`;
+    }
+
+    function formatRelative(value) {
+      if (!Number.isFinite(value)) return "—";
+      if (value === 0) return "E";
+      return value > 0 ? `+${value}` : `${value}`;
+    }
+
+    function scoreRelative(hole) {
+      if (!hasScore(hole)) return null;
+      return Number(hole.strokes) - Number(hole.par);
+    }
+
+    function displayDistance(hole, shot) {
+      return shot.distance || (Number(shot.number) === 1 ? hole.distance : "");
+    }
+
+    function outputAspect(asset = activeAsset()) {
+      if (state.outputRatio === "16:9") return 16 / 9;
+      if (state.outputRatio === "9:16") return 9 / 16;
+      return asset?.width && asset?.height ? asset.width / asset.height : 16 / 9;
+    }
+
+    function scorecardWidthFraction(card, asset = activeAsset()) {
+      const vertical = outputAspect(asset) < 1;
+      if (card.preset === "minimal") return vertical ? .42 : .2;
+      return vertical ? .48 : .27;
+    }
+
+    function deepCopy(value) { return JSON.parse(JSON.stringify(value)); }
+
+    function projectSnapshot() {
+      return JSON.stringify({
+        projectName: state.projectName,
+        holes: state.holes,
+        activeHoleId: state.activeHoleId,
+        panel: state.panel,
+        outputRatio: state.outputRatio,
+        quality: state.quality
+      });
+    }
+
+    function restoreSnapshot(snapshot) {
+      const saved = JSON.parse(snapshot);
+      state.projectName = saved.projectName;
+      state.holes = saved.holes;
+      state.activeHoleId = saved.activeHoleId;
+      state.panel = saved.panel;
+      state.outputRatio = saved.outputRatio;
+      state.quality = saved.quality;
+      state.tool = "idle";
+      state.preview = false;
+      dom.projectName.value = state.projectName;
+    }
+
+    function commit(label, mutator) {
+      const before = projectSnapshot();
+      mutator();
+      const after = projectSnapshot();
+      if (before !== after) {
+        state.history.push({ label, snapshot: before });
+        if (state.history.length > 60) state.history.shift();
+        state.redo = [];
+      }
+      renderAll();
+    }
+
+    function undo() {
+      const entry = state.history.pop();
+      if (!entry) return;
+      state.redo.push({ label: entry.label, snapshot: projectSnapshot() });
+      restoreSnapshot(entry.snapshot);
+      renderAll();
+      toast(`Undid ${entry.label}`);
+    }
+
+    function redo() {
+      const entry = state.redo.pop();
+      if (!entry) return;
+      state.history.push({ label: entry.label, snapshot: projectSnapshot() });
+      restoreSnapshot(entry.snapshot);
+      renderAll();
+      toast(`Redid ${entry.label}`);
+    }
+
+    function toast(message, type = "success") {
+      const item = document.createElement("div");
+      item.className = `toast ${type}`;
+      item.textContent = message;
+      dom.toastStack.appendChild(item);
+      window.setTimeout(() => item.remove(), 3600);
+    }
+
+    function containRect(sourceWidth, sourceHeight, targetWidth, targetHeight) {
+      const sourceRatio = sourceWidth / sourceHeight;
+      const targetRatio = targetWidth / targetHeight;
+      if (sourceRatio > targetRatio) {
+        const width = targetWidth;
+        const height = width / sourceRatio;
+        return { x: 0, y: (targetHeight - height) / 2, width, height };
+      }
+      const height = targetHeight;
+      const width = height * sourceRatio;
+      return { x: (targetWidth - width) / 2, y: 0, width, height };
+    }
+
+    function currentVideoRect() {
+      const asset = activeAsset();
+      const width = dom.videoStage.clientWidth || 1;
+      const height = dom.videoStage.clientHeight || 1;
+      if (!asset?.width || !asset?.height) return { x: 0, y: 0, width, height };
+      return containRect(asset.width, asset.height, width, height);
+    }
+
+    function videoPointToSvg(point) {
+      const rect = currentVideoRect();
+      return {
+        x: rect.x + point.x * rect.width,
+        y: rect.y + point.y * rect.height
+      };
+    }
+
+    function eventToVideoPoint(event) {
+      const bounds = dom.videoStage.getBoundingClientRect();
+      const rect = currentVideoRect();
+      const x = event.clientX - bounds.left;
+      const y = event.clientY - bounds.top;
+      if (x < rect.x || x > rect.x + rect.width || y < rect.y || y > rect.y + rect.height) return null;
+      return { x: clamp((x - rect.x) / rect.width, 0, 1), y: clamp((y - rect.y) / rect.height, 0, 1) };
+    }
+
+    function defaultControl(start, end) {
+      const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+      const dx = end.x - start.x;
+      const bend = Math.max(.055, Math.min(.14, Math.abs(end.y - start.y) * .13));
+      return { x: clamp(mid.x + (dx >= 0 ? -bend : bend), .03, .97), y: clamp(mid.y - .045, .03, .97) };
+    }
+
+    function quadraticControl(start, end, apex) {
+      return { x: 2 * apex.x - .5 * (start.x + end.x), y: 2 * apex.y - .5 * (start.y + end.y) };
+    }
+
+    function activeClipRange() {
+      const shot = activeShot();
+      const asset = activeAsset();
+      return {
+        start: Math.max(0, Number(shot?.clipIn) || 0),
+        end: Math.min(asset?.duration || 0, Number.isFinite(Number(shot?.clipOut)) && shot?.clipOut !== null ? Number(shot.clipOut) : (asset?.duration || 0))
+      };
+    }
+
+    function hexToRgba(hex, alpha) {
+      const clean = String(hex || "#000000").replace("#", "");
+      const full = clean.length === 3 ? clean.split("").map(char => char + char).join("") : clean.padEnd(6, "0").slice(0, 6);
+      const value = Number.parseInt(full, 16);
+      return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+    }
+
+    function assetAssignment(assetId) {
+      const matches = [];
+      state.holes.forEach(hole => {
+        if (hole.shots.some(shot => shot.videoId === assetId)) matches.push(`Hole ${hole.number}`);
+      });
+      return matches.length ? matches.join(", ") : "Unassigned";
+    }
+
+    function renderRound() {
+      dom.holeCount.textContent = state.holes.length;
+      const scored = state.holes.filter(hasScore);
+      const strokes = scored.reduce((sum, hole) => sum + Number(hole.strokes), 0);
+      const relative = scored.reduce((sum, hole) => sum + Number(hole.strokes) - Number(hole.par), 0);
+      const completed = state.holes.filter(holeIsReady).length;
+      dom.totalStrokes.textContent = scored.length ? strokes : "—";
+      dom.totalRelative.textContent = scored.length ? formatRelative(relative) : "—";
+      dom.completeCount.textContent = `${completed}/${state.holes.length}`;
+
+      dom.holeList.innerHTML = state.holes.map(hole => {
+        const complete = holeIsReady(hole);
+        const partial = holeHasVideo(hole) || hasScore(hole) || hole.shots.some(shot => shot.start || shot.end);
+        const relativeScore = scoreRelative(hole);
+        const assignedShots = hole.shots.filter(shot => getAsset(shot.videoId)).length;
+        const statusText = complete ? "Ready" : partial ? "In progress" : "Not started";
+        return `<div class="hole-row ${hole.id === state.activeHoleId ? "active" : ""}" data-hole-id="${hole.id}" role="group" aria-label="Hole ${hole.number}, ${statusText}">
+          <button class="drag-grip" draggable="true" data-drag-hole="${hole.id}" title="Drag to reorder" aria-label="Reorder hole ${hole.number}">••</button>
+          <button class="hole-main" data-open-hole="${hole.id}"><span class="hole-title"><span class="status-mark ${complete ? "complete" : partial ? "partial" : ""}"></span>Hole ${hole.number}</span><span class="hole-sub">${assignedShots ? `${assignedShots} clip${assignedShots === 1 ? "" : "s"}` : "Drop a clip"} · Par ${hole.par}</span></button>
+          <input class="table-input" type="number" min="1" max="999" value="${escapeHTML(hole.distance)}" placeholder="—" data-hole-field="distance" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} distance">
+          <input class="table-input" type="number" min="1" max="20" value="${escapeHTML(hole.strokes)}" placeholder="—" data-hole-field="strokes" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} strokes">
+          <span class="relative-score ${relativeScore > 0 ? "over" : relativeScore < 0 ? "under" : ""}" title="Relative to par">${formatRelative(relativeScore)}</span>
+        </div>`;
+      }).join("");
+    }
+
+    function renderMedia() {
+      dom.mediaSection.classList.toggle("hidden", state.assets.length === 0);
+      dom.mediaCount.textContent = state.assets.length;
+      dom.mediaToggle.setAttribute("aria-expanded", String(state.mediaOpen));
+      dom.mediaShelf.classList.toggle("hidden", !state.mediaOpen);
+      dom.mediaCards.innerHTML = state.assets.map(asset => {
+        const orientation = asset.orientation === "vertical" ? "Vertical" : asset.orientation === "square" ? "Square" : "Horizontal";
+        const assignment = assetAssignment(asset.id);
+        return `<div class="media-card" draggable="${asset.playable}" data-asset-id="${asset.id}" title="Drag onto a hole">
+          <span class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="12" height="14" rx="2"/><path d="m16 10 4-2v8l-4-2"/></svg></span>
+          <span class="media-copy"><span class="media-name">${escapeHTML(asset.name)}</span><span class="media-meta">${asset.playable ? `${formatTime(asset.duration)} · ${orientation} · ${assignment}` : "Codec not supported"}</span></span>
+          <button class="media-add" data-assign-asset="${asset.id}" ${asset.playable ? "" : "disabled"} title="Assign to selected hole">+</button>
+        </div>`;
+      }).join("");
+    }
+
+    function updateStageAspect() {
+      const asset = activeAsset();
+      if (!asset || dom.videoWorkspace.classList.contains("hidden")) return;
+      let ratio = asset.width / asset.height;
+      if (state.outputRatio === "16:9") ratio = 16 / 9;
+      if (state.outputRatio === "9:16") ratio = 9 / 16;
+      const shellWidth = Math.max(200, dom.stageShell.clientWidth - 40);
+      const shellHeight = Math.max(220, dom.stageShell.clientHeight - 40);
+      let width = shellWidth;
+      let height = width / ratio;
+      if (height > shellHeight) { height = shellHeight; width = height * ratio; }
+      dom.videoStage.style.width = `${Math.max(150, width)}px`;
+      dom.videoStage.style.height = `${Math.max(220, height)}px`;
+      dom.videoStage.style.aspectRatio = `${ratio}`;
+      renderOverlay();
+    }
+
+    function loadActiveVideo() {
+      const asset = activeAsset();
+      if (!asset || !asset.playable) return;
+      const shotId = activeShot()?.id;
+      const shotChanged = loadedShotId !== shotId;
+      loadedShotId = shotId;
+      if (loadedAssetId !== asset.id) {
+        loadedAssetId = asset.id;
+        dom.video.pause();
+        dom.video.src = asset.url;
+        dom.video.load();
+      }
+      if (shotChanged) {
+        const seekToClip = () => { dom.video.currentTime = clamp(activeClipRange().start, 0, asset.duration || 0); };
+        if (dom.video.readyState >= 1) seekToClip();
+        else dom.video.addEventListener("loadedmetadata", seekToClip, { once: true });
+      }
+      dom.scrubber.max = asset.duration || 1;
+      const orientation = asset.orientation === "vertical" ? "Vertical" : asset.orientation === "square" ? "Square" : "Horizontal";
+      dom.orientationBadge.textContent = orientation;
+      const sourceRatio = `${asset.width}:${asset.height}`;
+      dom.ratioBadge.textContent = state.outputRatio === "source" ? `Source · ${sourceRatio}` : state.outputRatio;
+      requestAnimationFrame(updateStageAspect);
+    }
+
+    function renderEditor() {
+      const hole = activeHole();
+      const shot = activeShot();
+      const asset = activeAsset();
+      if (!hole || !shot) return;
+      dom.editorTitle.textContent = `Hole ${hole.number}`;
+      dom.editorMeta.textContent = `${asset ? asset.name : "No video assigned"} · Par ${hole.par}${hole.distance ? ` · ${hole.distance} yd` : ""}`;
+      dom.shotSwitcher.innerHTML = hole.shots.map(item => `<button class="shot-pill ${item.id === hole.activeShotId ? "active" : ""}" data-shot-id="${item.id}">Shot ${item.number}${item.videoId ? "" : " · empty"}</button>`).join("") + `<button class="shot-pill add-shot" id="addShotBtn" title="Add another tracer" ${asset ? "" : "disabled"}>+</button>`;
+      dom.emptyState.classList.toggle("hidden", Boolean(asset?.playable));
+      dom.videoWorkspace.classList.toggle("hidden", !asset?.playable);
+      if (asset?.playable) {
+        loadActiveVideo();
+        const range = activeClipRange();
+        dom.clipRange.textContent = `${formatTime(range.start)}–${formatTime(range.end)}`;
+        renderOverlay();
+        renderScorecard();
+        renderQuickFlow();
+      }
+    }
+
+    function renderQuickFlow() {
+      const shot = activeShot();
+      const steps = [
+        [document.getElementById("quickStart"), Boolean(shot?.start), state.tool === "mark-start"],
+        [document.getElementById("quickEnd"), Boolean(shot?.end), state.tool === "mark-end"],
+        [document.getElementById("quickCurve"), Boolean(shot?.control), state.tool === "curve"]
+      ];
+      steps.forEach(([element, done, active]) => {
+        element.classList.toggle("done", done);
+        element.classList.toggle("active", active || (!done && !steps.some(item => item[2]) && ((element.id === "quickStart" && !shot?.start) || (element.id === "quickEnd" && shot?.start && !shot?.end) || (element.id === "quickCurve" && shot?.end && !shot?.control))));
+        element.querySelector(".step-number").textContent = done ? "✓" : element.id === "quickStart" ? "1" : element.id === "quickEnd" ? "2" : "3";
+      });
+    }
+
+    function renderOverlay() {
+      const shot = activeShot();
+      if (!shot || !dom.videoStage.clientWidth) return;
+      const style = shot.tracer;
+      const showEditing = !state.preview;
+      dom.stageOverlay.setAttribute("viewBox", `0 0 ${Math.max(1, dom.videoStage.clientWidth)} ${Math.max(1, dom.videoStage.clientHeight)}`);
+      dom.videoStage.classList.toggle("tool-active", state.tool !== "idle");
+      dom.placementTip.classList.toggle("hidden", state.tool === "idle");
+      dom.placementText.textContent = state.tool === "mark-start" ? "Click the ball on this frame" : state.tool === "mark-end" ? "Click the approximate landing point" : "Drag anywhere to shape the flight path";
+      if (!shot.start) {
+        dom.tracerPath.setAttribute("d", "");
+        dom.tracerShadow.setAttribute("d", "");
+        dom.tracerGuide.setAttribute("d", "");
+        dom.tracerHandles.style.display = "none";
+        return;
+      }
+
+      const start = videoPointToSvg(shot.start);
+      const lineWidth = style.width;
+      [dom.startHandle, dom.startLabel].forEach(element => { element.setAttribute("x", start.x); element.setAttribute("cx", start.x); element.setAttribute("y", start.y); element.setAttribute("cy", start.y); });
+      dom.startLabel.setAttribute("y", start.y + 8);
+      dom.tracerHandles.style.display = showEditing ? "block" : "none";
+      dom.startHandle.style.display = showEditing ? "block" : "none";
+      dom.startLabel.style.display = showEditing ? "block" : "none";
+
+      if (!shot.end) {
+        dom.tracerPath.setAttribute("d", "");
+        dom.tracerShadow.setAttribute("d", "");
+        dom.tracerGuide.setAttribute("d", "");
+        dom.endHandle.style.display = dom.controlHandle.style.display = dom.endLabel.style.display = dom.controlLabel.style.display = "none";
+        return;
+      }
+
+      const end = videoPointToSvg(shot.end);
+      const apexNorm = shot.control || defaultControl(shot.start, shot.end);
+      const apex = videoPointToSvg(apexNorm);
+      const controlNorm = quadraticControl(shot.start, shot.end, apexNorm);
+      const control = videoPointToSvg(controlNorm);
+      const d = `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
+      dom.tracerPath.setAttribute("d", d);
+      dom.tracerShadow.setAttribute("d", d);
+      dom.tracerGuide.setAttribute("d", `M ${start.x} ${start.y} L ${apex.x} ${apex.y} L ${end.x} ${end.y}`);
+      dom.tracerPath.style.stroke = style.color;
+      dom.tracerPath.style.strokeWidth = lineWidth;
+      dom.tracerPath.style.opacity = style.opacity;
+      dom.tracerPath.style.filter = style.glow ? "url(#tracerGlow)" : "none";
+      dom.tracerShadow.style.stroke = style.color;
+      dom.tracerShadow.style.strokeWidth = lineWidth * (style.glow ? 3.6 : 1.8);
+      dom.tracerShadow.style.display = style.glow ? "block" : "none";
+      dom.tracerGuide.style.display = showEditing ? "block" : "none";
+
+      const handleRadius = 10;
+      [[dom.endHandle, end], [dom.controlHandle, apex]].forEach(([element, point]) => { element.setAttribute("cx", point.x); element.setAttribute("cy", point.y); element.setAttribute("r", handleRadius); element.style.display = showEditing ? "block" : "none"; });
+      [[dom.endLabel, end, "E"], [dom.controlLabel, apex, "↕"]].forEach(([element, point, label]) => { element.setAttribute("x", point.x); element.setAttribute("y", point.y + 8); element.textContent = label; element.style.display = showEditing ? "block" : "none"; });
+      dom.startHandle.setAttribute("r", handleRadius);
+      updateTracerProgress();
+    }
+
+    function updateTracerProgress() {
+      const shot = activeShot();
+      if (!shot?.start || !shot?.end || !dom.tracerPath.getAttribute("d")) return;
+      let length = 1000;
+      try { length = dom.tracerPath.getTotalLength(); } catch (_) { /* SVG may be hidden during a layout pass. */ }
+      let progress = 1;
+      if (!dom.video.paused || state.preview) {
+        const duration = Math.max(.08, shot.endTime - shot.startTime);
+        progress = clamp(((dom.video.currentTime - shot.startTime) / duration) * shot.tracer.speed, 0, 1);
+      }
+      [dom.tracerPath, dom.tracerShadow].forEach(path => {
+        path.style.strokeDasharray = `${length}`;
+        path.style.strokeDashoffset = `${length * (1 - progress)}`;
+        path.style.visibility = progress <= 0 ? "hidden" : "visible";
+      });
+    }
+
+    function renderScorecard() {
+      const hole = activeHole();
+      const shot = activeShot();
+      if (!hole || !shot) return;
+      const card = hole.scorecard;
+      const distance = displayDistance(hole, shot);
+      const relative = scoreRelative(hole);
+      const pieces = [];
+      if (card.preset === "minimal") {
+        const minimal = [card.fields.hole ? `H${hole.number}` : "", card.fields.par ? `Par ${hole.par}` : "", card.fields.distance && distance ? `${distance} yd` : "", card.fields.shot ? `Shot ${shot.number}` : "", card.fields.score ? formatRelative(relative) : ""].filter(Boolean).join(" · ");
+        pieces.push(`<div class="scorecard-main"><span class="scorecard-detail">${escapeHTML(minimal)}</span></div>`);
+      } else {
+        if (card.fields.hole) pieces.push(`<div class="scorecard-kicker"><span>Hole ${escapeHTML(hole.number)}</span></div>`);
+        if (card.fields.hole || card.fields.par || (card.fields.distance && distance)) pieces.push(`<div class="scorecard-main">${card.fields.hole ? `<span class="scorecard-hole">H${escapeHTML(hole.number)}</span>` : ""}<span class="scorecard-detail">${[card.fields.par ? `Par ${escapeHTML(hole.par)}` : "", card.fields.distance && distance ? `${escapeHTML(distance)} yd` : ""].filter(Boolean).join(" · ")}</span></div>`);
+        if (card.fields.shot || card.fields.score) pieces.push(`<div class="scorecard-bottom">${card.fields.shot ? `<span class="scorecard-shot">Shot ${escapeHTML(shot.number)}</span>` : "<span></span>"}${card.fields.score ? `<span class="scorecard-score">${formatRelative(relative)}</span>` : ""}</div>`);
+      }
+      dom.scorecardInner.innerHTML = pieces.join("");
+      dom.scorecardOverlay.className = `scorecard-overlay preset-${card.preset}`;
+      dom.scorecardOverlay.classList.toggle("hidden", !card.visible);
+      dom.scorecardOverlay.style.width = `${scorecardWidthFraction(card) * 100}%`;
+      dom.scorecardOverlay.style.color = card.text;
+      dom.scorecardOverlay.style.background = hexToRgba(card.background, card.opacity);
+      dom.scorecardOverlay.style.border = card.border ? `1px solid ${hexToRgba(card.text, .22)}` : "0";
+      dom.scorecardOverlay.style.borderRadius = `${card.radius}px`;
+      dom.scorecardOverlay.style.textAlign = card.align;
+      dom.scorecardOverlay.style.fontFamily = card.font === "serif" ? "Georgia, serif" : card.font === "mono" ? "var(--mono)" : "var(--sans)";
+      dom.scorecardOverlay.querySelectorAll(".scorecard-kicker, .scorecard-detail").forEach(element => { element.style.color = hexToRgba(card.text, element.classList.contains("scorecard-kicker") ? .65 : .76); });
+      const main = dom.scorecardOverlay.querySelector(".scorecard-main");
+      if (main) main.style.justifyContent = card.align === "center" ? "center" : card.align === "right" ? "flex-end" : "flex-start";
+      const kicker = dom.scorecardOverlay.querySelector(".scorecard-kicker");
+      if (kicker) kicker.style.justifyContent = card.align === "center" ? "center" : card.align === "right" ? "flex-end" : "flex-start";
+      const shotLabel = dom.scorecardOverlay.querySelector(".scorecard-shot");
+      if (shotLabel) shotLabel.style.textAlign = card.align;
+      positionScorecard(card);
+      dom.scorecardOverlay.style.pointerEvents = state.preview ? "none" : "auto";
+    }
+
+    function positionScorecard(card) {
+      const positions = {
+        tl: { left: "4%", top: "5%", transform: `scale(${card.scale})`, origin: "top left" },
+        tc: { left: "50%", top: "5%", transform: `translateX(-50%) scale(${card.scale})`, origin: "top center" },
+        tr: { right: "4%", top: "5%", transform: `scale(${card.scale})`, origin: "top right" },
+        ml: { left: "4%", top: "50%", transform: `translateY(-50%) scale(${card.scale})`, origin: "center left" },
+        mc: { left: "50%", top: "50%", transform: `translate(-50%,-50%) scale(${card.scale})`, origin: "center" },
+        mr: { right: "4%", top: "50%", transform: `translateY(-50%) scale(${card.scale})`, origin: "center right" },
+        bl: { left: "4%", bottom: "5%", transform: `scale(${card.scale})`, origin: "bottom left" },
+        bc: { left: "50%", bottom: "5%", transform: `translateX(-50%) scale(${card.scale})`, origin: "bottom center" },
+        br: { right: "4%", bottom: "5%", transform: `scale(${card.scale})`, origin: "bottom right" }
+      };
+      const custom = { left: `${card.x * 100}%`, top: `${card.y * 100}%`, transform: `translate(-50%,-50%) scale(${card.scale})`, origin: "center" };
+      const value = card.position === "custom" ? custom : (positions[card.position] || positions.tr);
+      ["left", "right", "top", "bottom"].forEach(prop => { dom.scorecardOverlay.style[prop] = "auto"; });
+      Object.entries(value).forEach(([key, val]) => {
+        if (key === "origin") dom.scorecardOverlay.style.transformOrigin = val;
+        else dom.scorecardOverlay.style[key] = val;
+      });
+    }
+
+    function renderAll() {
+      renderRound();
+      renderMedia();
+      renderEditor();
+      renderInspector();
+      dom.undoBtn.disabled = state.history.length === 0;
+      dom.redoBtn.disabled = state.redo.length === 0;
+      dom.previewBtn.querySelector("span").textContent = state.preview ? "Exit preview" : "Preview";
+      document.querySelectorAll(".inspector-tab").forEach(tab => {
+        const selected = tab.dataset.panel === state.panel;
+        tab.classList.toggle("active", selected);
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
+    }
+
+    function renderInspector() {
+      const hole = activeHole();
+      const shot = activeShot();
+      const asset = activeAsset();
+      if (!hole || !shot) {
+        dom.inspectorContent.innerHTML = `<div class="inspector-empty">Choose a hole to begin.</div>`;
+        return;
+      }
+      if (state.panel === "tracer") renderTracerInspector(hole, shot, asset);
+      if (state.panel === "scorecard") renderScorecardInspector(hole, shot);
+      if (state.panel === "export") renderExportInspector(hole, shot, asset);
+    }
+
+    function renderTracerInspector(hole, shot, asset) {
+      const nextStep = !shot.start ? "start" : !shot.end ? "end" : "curve";
+      dom.inspectorContent.innerHTML = `
+        <section class="inspector-section">
+          <h3 class="section-label"><span>Shot ${shot.number} tracer</span><span class="count-pill">Manual</span></h3>
+          <p class="section-note">Pause the video, mark the ball, then shape a smooth line. No automatic tracking needed.</p>
+          <div class="workflow-list">
+            <button class="workflow-action ${shot.start ? "done" : nextStep === "start" ? "next" : ""}" data-action="mark-start" ${asset ? "" : "disabled"}>
+              <span class="workflow-icon">${shot.start ? "✓" : "1"}</span><span class="workflow-copy"><strong>Ball start</strong><span>${shot.start ? `Marked at ${formatTime(shot.startTime)}` : "Find the frame after impact"}</span></span><span class="workflow-arrow">›</span>
+            </button>
+            <button class="workflow-action ${shot.end ? "done" : nextStep === "end" ? "next" : ""}" data-action="mark-end" ${shot.start ? "" : "disabled"}>
+              <span class="workflow-icon">${shot.end ? "✓" : "2"}</span><span class="workflow-copy"><strong>Ball end</strong><span>${shot.end ? `Marked at ${formatTime(shot.endTime)}` : "Scrub to the landing area"}</span></span><span class="workflow-arrow">›</span>
+            </button>
+            <button class="workflow-action ${shot.control ? "done" : nextStep === "curve" ? "next" : ""}" data-action="shape-curve" ${shot.end ? "" : "disabled"}>
+              <span class="workflow-icon">${shot.control ? "✓" : "3"}</span><span class="workflow-copy"><strong>Flight path</strong><span>${shot.control ? "Drag a handle to refine" : "Drag to bend the tracer"}</span></span><span class="workflow-arrow">›</span>
+            </button>
+          </div>
+        </section>
+        <section class="inspector-section">
+          <h3 class="section-label">Tracer style</h3>
+          <div class="preset-grid">
+            ${Object.keys(TRACER_PRESETS).map(name => `<button class="preset-card ${shot.tracer.preset === name ? "active" : ""}" data-tracer-preset="${name}"><span class="preset-preview"><svg class="tracer-sample" viewBox="0 0 48 26"><path d="M4 22Q17 1 44 7" fill="none" stroke="${TRACER_PRESETS[name].color}" stroke-width="${name === "minimal" ? 2 : name === "glow" ? 5 : 4}" stroke-linecap="round" ${name === "glow" ? 'style="filter:drop-shadow(0 0 4px #cfff4c)"' : ""}/></svg></span><strong>${name[0].toUpperCase() + name.slice(1)}</strong></button>`).join("")}
+          </div>
+          <details class="customize">
+            <summary>Customize tracer</summary>
+            <div class="customize-body">
+              <div class="control-row"><label for="tracerColor">Color</label><input class="color-field" id="tracerColor" type="color" value="${shot.tracer.color}" data-model="tracer-color"></div>
+              <div class="control-row"><label for="tracerWidth">Thickness</label><input class="range-field" id="tracerWidth" type="range" min="2" max="14" step="1" value="${shot.tracer.width}" data-model="tracer-width"></div>
+              <div class="control-row"><label for="tracerOpacity">Opacity</label><input class="range-field" id="tracerOpacity" type="range" min="0.25" max="1" step="0.05" value="${shot.tracer.opacity}" data-model="tracer-opacity"></div>
+              <div class="control-row"><span class="control-label">Glow</span><label class="switch"><input type="checkbox" aria-label="Add tracer glow" ${shot.tracer.glow ? "checked" : ""} data-model="tracer-glow"><span></span></label></div>
+              <div class="control-row"><label for="tracerSpeed">Animation</label><select class="select-field" id="tracerSpeed" data-model="tracer-speed"><option value="0.75" ${shot.tracer.speed === .75 ? "selected" : ""}>Relaxed</option><option value="1" ${shot.tracer.speed === 1 ? "selected" : ""}>Natural</option><option value="1.35" ${shot.tracer.speed === 1.35 ? "selected" : ""}>Fast</option></select></div>
+            </div>
+          </details>
+          <div class="button-row"><button class="quiet-btn" data-action="preview">Preview shot</button><button class="quiet-btn" data-action="reset-tracer" ${shot.start ? "" : "disabled"}>Reset</button></div>
+        </section>
+        <section class="inspector-section">
+          <h3 class="section-label">Clip</h3>
+          <p class="section-note">${asset ? `${escapeHTML(asset.name)} · ${formatTime(asset.duration)} · ${asset.orientation}` : "No video assigned to this shot."}</p>
+          <div class="button-row"><button class="quiet-btn" data-action="replace-video">Replace</button><button class="quiet-btn" data-action="unassign-video" ${asset ? "" : "disabled"}>Unassign</button><button class="quiet-btn" data-action="remove-shot" ${hole.shots.length > 1 ? "" : "disabled"}>Remove shot</button></div>
+        </section>`;
+    }
+
+    function renderScorecardInspector(hole, shot) {
+      const card = hole.scorecard;
+      const positions = ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"];
+      dom.inspectorContent.innerHTML = `
+        <section class="inspector-section">
+          <h3 class="section-label"><span>Hole information</span><span class="count-pill">Live</span></h3>
+          <div class="control-row"><span class="control-label">Show scorecard</span><label class="switch"><input type="checkbox" aria-label="Show scorecard overlay" ${card.visible ? "checked" : ""} data-model="card-visible"><span></span></label></div>
+          <div class="field-group">
+            <div class="field-stack"><label for="holeNumberField">Hole</label><input class="field" id="holeNumberField" data-model="hole-number" type="number" min="1" max="99" value="${escapeHTML(hole.number)}"></div>
+            <div class="field-stack"><label for="parField">Par</label><input class="field" id="parField" data-model="hole-par" type="number" min="1" max="9" value="${escapeHTML(hole.par)}"></div>
+            <div class="field-stack"><label for="distanceField">Hole distance</label><input class="field" id="distanceField" data-model="hole-distance" type="number" min="1" max="999" placeholder="yards" value="${escapeHTML(hole.distance)}"></div>
+            <div class="field-stack"><label for="strokesField">Final strokes</label><input class="field" id="strokesField" data-model="hole-strokes" type="number" min="1" max="20" placeholder="score" value="${escapeHTML(hole.strokes)}"></div>
+            <div class="field-stack"><label for="shotNumberField">Shot number</label><input class="field" id="shotNumberField" data-model="shot-number" type="number" min="1" max="20" value="${escapeHTML(shot.number)}"></div>
+            <div class="field-stack"><label for="shotDistanceField">Shot distance</label><input class="field" id="shotDistanceField" data-model="shot-distance" type="number" min="1" max="999" placeholder="${shot.number === 1 && hole.distance ? `${hole.distance} (hole)` : "yards"}" value="${escapeHTML(shot.distance)}"></div>
+          </div>
+          <p class="section-note" style="margin-top:10px">Shot 1 uses the hole distance until you enter a different value. Round score: <strong>${formatRelative(scoreRelative(hole))}</strong>.</p>
+        </section>
+        <section class="inspector-section">
+          <h3 class="section-label">Scorecard preset</h3>
+          <div class="preset-grid">
+            <button class="preset-card ${card.preset === "minimal" ? "active" : ""}" data-score-preset="minimal"><span class="preset-preview"><span class="score-sample minimal"></span></span><strong>Minimal</strong></button>
+            <button class="preset-card ${card.preset === "broadcast" ? "active" : ""}" data-score-preset="broadcast"><span class="preset-preview"><span class="score-sample"></span></span><strong>Broadcast</strong></button>
+            <button class="preset-card ${card.preset === "social" ? "active" : ""}" data-score-preset="social"><span class="preset-preview"><span class="score-sample social"></span></span><strong>Social</strong></button>
+          </div>
+        </section>
+        <section class="inspector-section">
+          <h3 class="section-label">Placement</h3>
+          <div class="control-row"><span class="control-label">Position</span><div class="position-grid">${positions.map(position => `<button class="position-cell ${card.position === position ? "active" : ""}" data-card-position="${position}" aria-label="Place scorecard ${position}"></button>`).join("")}</div></div>
+          <div class="control-row"><label for="cardScale">Size</label><input class="range-field" id="cardScale" data-model="card-scale" type="range" min="0.7" max="1.4" step="0.05" value="${card.scale}"></div>
+          <details class="customize">
+            <summary>Customize scorecard</summary>
+            <div class="customize-body">
+              <div class="control-row"><label for="cardFont">Font</label><select class="select-field" id="cardFont" data-model="card-font"><option value="system" ${card.font === "system" ? "selected" : ""}>Modern</option><option value="serif" ${card.font === "serif" ? "selected" : ""}>Classic</option><option value="mono" ${card.font === "mono" ? "selected" : ""}>Scoreboard</option></select></div>
+              <div class="control-row"><label for="cardText">Text color</label><input class="color-field" id="cardText" data-model="card-text" type="color" value="${card.text}"></div>
+              <div class="control-row"><label for="cardBackground">Background</label><input class="color-field" id="cardBackground" data-model="card-background" type="color" value="${card.background}"></div>
+              <div class="control-row"><label for="cardOpacity">Background opacity</label><input class="range-field" id="cardOpacity" data-model="card-opacity" type="range" min="0" max="1" step="0.05" value="${card.opacity}"></div>
+              <div class="control-row"><span class="control-label">Border</span><label class="switch"><input data-model="card-border" type="checkbox" aria-label="Show scorecard border" ${card.border ? "checked" : ""}><span></span></label></div>
+              <div class="control-row"><label for="cardRadius">Corners</label><input class="range-field" id="cardRadius" data-model="card-radius" type="range" min="0" max="24" step="1" value="${card.radius}"></div>
+              <div class="control-row"><label for="cardAlign">Alignment</label><select class="select-field" id="cardAlign" data-model="card-align"><option value="left" ${card.align === "left" ? "selected" : ""}>Left</option><option value="center" ${card.align === "center" ? "selected" : ""}>Center</option><option value="right" ${card.align === "right" ? "selected" : ""}>Right</option></select></div>
+              <div class="check-grid">
+                ${Object.entries({ hole: "Hole", par: "Par", distance: "Distance", shot: "Shot", score: "Score" }).map(([key, label]) => `<label class="check-item"><input type="checkbox" data-card-field="${key}" ${card.fields[key] ? "checked" : ""}>${label}</label>`).join("")}
+              </div>
+            </div>
+          </details>
+        </section>`;
+    }
+
+    function renderExportInspector(hole, shot, asset) {
+      const sourceDimensions = asset ? exportDimensions(asset) : null;
+      const ratioLabel = state.outputRatio === "source" ? (sourceDimensions ? `${sourceDimensions[0]} × ${sourceDimensions[1]}` : "Source") : state.outputRatio === "16:9" ? (state.quality === "high" ? "1920 × 1080" : "1280 × 720") : (state.quality === "high" ? "1080 × 1920" : "720 × 1280");
+      dom.inspectorContent.innerHTML = `
+        <section class="inspector-section">
+          <h3 class="section-label">Format</h3>
+          <div class="export-choice">
+            <button class="ratio-choice ${state.outputRatio === "source" ? "active" : ""}" data-output-ratio="source"><span class="ratio-shape ratio-source"></span>Source</button>
+            <button class="ratio-choice ${state.outputRatio === "16:9" ? "active" : ""}" data-output-ratio="16:9"><span class="ratio-shape ratio-wide"></span>16:9</button>
+            <button class="ratio-choice ${state.outputRatio === "9:16" ? "active" : ""}" data-output-ratio="9:16"><span class="ratio-shape ratio-tall"></span>9:16</button>
+          </div>
+        </section>
+        <section class="inspector-section">
+          <h3 class="section-label">Quality</h3>
+          <div class="quality-choice"><button class="${state.quality === "standard" ? "active" : ""}" data-quality="standard">Standard</button><button class="${state.quality === "high" ? "active" : ""}" data-quality="high">High</button></div>
+        </section>
+        <section class="inspector-section">
+          <h3 class="section-label">Export summary</h3>
+          <div class="export-card">
+            <div class="export-line"><span>Selection</span><strong>Hole ${hole.number} · Shot ${shot.number}</strong></div>
+            <div class="export-line"><span>Frame</span><strong>${ratioLabel}</strong></div>
+            <div class="export-line"><span>Clip</span><strong>${asset ? `${formatTime(activeClipRange().start)}–${formatTime(activeClipRange().end)}` : "No video"}</strong></div>
+            <div class="export-line"><span>Output</span><strong>WebM · 30 fps</strong></div>
+          </div>
+          <button class="primary-btn upload-button" data-action="export" ${asset?.playable ? "" : "disabled"}>Export current shot</button>
+          <div class="export-disclosure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 10v6m0-9v.2"/></svg><span>Browser export is rendered in real time and normally downloads as WebM. Original audio is kept when the browser supports local media capture; otherwise the file is video-only. Entire-round export is a later renderer step.</span></div>
+        </section>`;
+    }
+
+    function pushHistoryFrom(before, label) {
+      const after = projectSnapshot();
+      if (before && before !== after) {
+        state.history.push({ label, snapshot: before });
+        if (state.history.length > 60) state.history.shift();
+        state.redo = [];
+      }
+    }
+
+    function setTool(tool) {
+      const shot = activeShot();
+      if (!activeAsset()) return toast("Assign a playable video to this hole first.", "error");
+      if (tool === "mark-end" && !shot.start) return toast("Mark the ball start first.", "error");
+      if (tool === "curve" && !shot.end) return toast("Mark the ball end first.", "error");
+      dom.video.pause();
+      state.preview = false;
+      state.tool = state.tool === tool ? "idle" : tool;
+      renderAll();
+    }
+
+    function rawAssignAsset(assetId, holeId) {
+      const asset = getAsset(assetId);
+      const hole = state.holes.find(item => item.id === holeId);
+      if (!asset?.playable || !hole) return false;
+      const existing = hole.shots.find(shot => shot.videoId === assetId);
+      if (existing) {
+        hole.activeShotId = existing.id;
+      } else {
+        let shot = hole.shots.find(item => !item.videoId);
+        if (!shot) {
+          shot = createShot(Math.max(0, ...hole.shots.map(item => Number(item.number) || 0)) + 1, assetId);
+          hole.shots.push(shot);
+        } else {
+          shot.videoId = assetId;
+        }
+        shot.clipIn = 0;
+        shot.clipOut = asset.duration;
+        hole.activeShotId = shot.id;
+      }
+      state.activeHoleId = hole.id;
+      return true;
+    }
+
+    function assignAsset(assetId, holeId = state.activeHoleId) {
+      commit("assign video", () => rawAssignAsset(assetId, holeId));
+      state.mediaOpen = true;
+      toast(`Video assigned to Hole ${activeHole().number}`);
+    }
+
+    function reorderHole(sourceId, targetId) {
+      if (!sourceId || sourceId === targetId) return;
+      commit("reorder holes", () => {
+        const sourceIndex = state.holes.findIndex(hole => hole.id === sourceId);
+        const targetIndex = state.holes.findIndex(hole => hole.id === targetId);
+        if (sourceIndex < 0 || targetIndex < 0) return;
+        const [moved] = state.holes.splice(sourceIndex, 1);
+        const insertionIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        state.holes.splice(insertionIndex, 0, moved);
+      });
+    }
+
+    async function probeFile(file) {
+      const url = URL.createObjectURL(file);
+      return new Promise(resolve => {
+        const probe = document.createElement("video");
+        let settled = false;
+        const finish = playable => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          const width = probe.videoWidth || 0;
+          const height = probe.videoHeight || 0;
+          resolve({
+            id: uid("asset"), file, url, name: file.name, playable,
+            duration: Number.isFinite(probe.duration) ? probe.duration : 0,
+            width, height,
+            orientation: height > width ? "vertical" : width === height ? "square" : "horizontal"
+          });
+        };
+        probe.preload = "metadata";
+        probe.muted = true;
+        probe.onloadedmetadata = () => finish(Boolean(probe.videoWidth && probe.videoHeight && Number.isFinite(probe.duration)));
+        probe.onerror = () => finish(false);
+        const timer = setTimeout(() => finish(false), 12000);
+        probe.src = url;
+      });
+    }
+
+    async function addFiles(fileList, options = {}) {
+      const destinationHoleId = options.assignHoleId || state.activeHoleId;
+      const replacementShotId = options.replaceShotId || null;
+      const files = [...fileList].filter(file => /\.(mp4|mov|webm|m4v)$/i.test(file.name) || String(file.type).startsWith("video/"));
+      if (!files.length) return toast("Choose an MP4, MOV, WebM, or M4V video.", "error");
+      toast(`Reading ${files.length} video${files.length === 1 ? "" : "s"}…`);
+      const assets = await Promise.all(files.map(probeFile));
+      state.assets.push(...assets);
+      const playable = assets.filter(asset => asset.playable);
+      const failed = assets.length - playable.length;
+      if (replacementShotId && playable[0]) {
+        const targetShot = state.holes.flatMap(hole => hole.shots).find(shot => shot.id === replacementShotId);
+        if (targetShot) {
+          commit("replace video", () => {
+            targetShot.videoId = playable[0].id;
+            targetShot.clipIn = 0;
+            targetShot.clipOut = playable[0].duration;
+            targetShot.start = targetShot.end = targetShot.control = null;
+          });
+        } else {
+          state.mediaOpen = true;
+          renderAll();
+          toast("The original shot was removed, so the new clip was placed in the media inbox.", "error");
+        }
+      } else if (options.assignHoleId) {
+        commit("add videos", () => playable.forEach(asset => rawAssignAsset(asset.id, destinationHoleId)));
+      } else if (playable.length === 1 && files.length === 1) {
+        commit("add video", () => rawAssignAsset(playable[0].id, destinationHoleId));
+      } else {
+        state.mediaOpen = true;
+        renderAll();
+        if (playable.length) toast("Videos are in the media inbox. Drag them onto holes or assign them in order.");
+      }
+      if (failed) toast(`${failed} video${failed === 1 ? "" : "s"} could not be decoded. Try H.264 MP4 or WebM.`, "error");
+      dom.fileInput.value = "";
+    }
+
+    function applyInspectorModel(target) {
+      const model = target.dataset.model;
+      const hole = activeHole();
+      const shot = activeShot();
+      if (!model || !hole || !shot) return;
+      const value = target.type === "checkbox" ? target.checked : target.value;
+      const number = Number(value);
+      const setters = {
+        "tracer-color": () => { shot.tracer.color = value; shot.tracer.preset = "custom"; },
+        "tracer-width": () => { shot.tracer.width = number; shot.tracer.preset = "custom"; },
+        "tracer-opacity": () => { shot.tracer.opacity = number; shot.tracer.preset = "custom"; },
+        "tracer-glow": () => { shot.tracer.glow = value; shot.tracer.preset = "custom"; },
+        "tracer-speed": () => { shot.tracer.speed = number; shot.tracer.preset = "custom"; },
+        "hole-number": () => { hole.number = clamp(number || 1, 1, 99); },
+        "hole-par": () => { hole.par = clamp(number || 1, 1, 9); },
+        "hole-distance": () => { hole.distance = value === "" ? "" : clamp(number, 1, 999); },
+        "hole-strokes": () => { hole.strokes = value === "" ? "" : clamp(number, 1, 20); },
+        "shot-number": () => { shot.number = clamp(number || 1, 1, 20); },
+        "shot-distance": () => { shot.distance = value === "" ? "" : clamp(number, 1, 999); },
+        "card-visible": () => { hole.scorecard.visible = value; },
+        "card-scale": () => { hole.scorecard.scale = number; },
+        "card-font": () => { hole.scorecard.font = value; },
+        "card-text": () => { hole.scorecard.text = value; },
+        "card-background": () => { hole.scorecard.background = value; },
+        "card-opacity": () => { hole.scorecard.opacity = number; },
+        "card-border": () => { hole.scorecard.border = value; },
+        "card-radius": () => { hole.scorecard.radius = number; },
+        "card-align": () => { hole.scorecard.align = value; }
+      };
+      setters[model]?.();
+      renderOverlay();
+      renderScorecard();
+      renderRound();
+      dom.editorTitle.textContent = `Hole ${hole.number}`;
+      dom.editorMeta.textContent = `${activeAsset()?.name || "No video assigned"} · Par ${hole.par}${hole.distance ? ` · ${hole.distance} yd` : ""}`;
+    }
+
+    let controlBefore = null;
+
+    document.querySelectorAll(".inspector-tab").forEach(tab => tab.addEventListener("click", () => {
+      state.panel = tab.dataset.panel;
+      dom.rightPanel.classList.add("open");
+      renderAll();
+    }));
+    document.querySelector(".inspector-tabs").addEventListener("keydown", event => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      const tabs = [...document.querySelectorAll(".inspector-tab")];
+      const index = tabs.indexOf(document.activeElement);
+      if (index < 0) return;
+      event.preventDefault();
+      const next = tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+      next.click();
+      next.focus();
+    });
+
+    dom.inspectorContent.addEventListener("focusin", event => {
+      if (event.target.matches("[data-model], [data-card-field]")) controlBefore = projectSnapshot();
+    });
+
+    dom.inspectorContent.addEventListener("pointerdown", event => {
+      if (event.target.matches("input[type=range], input[type=color], input[type=checkbox]")) controlBefore = projectSnapshot();
+    });
+
+    dom.inspectorContent.addEventListener("input", event => {
+      if (event.target.matches("[data-model]")) applyInspectorModel(event.target);
+    });
+
+    dom.inspectorContent.addEventListener("change", event => {
+      const target = event.target;
+      if (target.matches("[data-model]")) {
+        if (!controlBefore) controlBefore = projectSnapshot();
+        applyInspectorModel(target);
+        pushHistoryFrom(controlBefore, "edit settings");
+        controlBefore = null;
+        renderAll();
+      }
+      if (target.matches("[data-card-field]")) {
+        const before = controlBefore || projectSnapshot();
+        activeHole().scorecard.fields[target.dataset.cardField] = target.checked;
+        pushHistoryFrom(before, "change scorecard fields");
+        controlBefore = null;
+        renderAll();
+      }
+    });
+
+    dom.inspectorContent.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-action]");
+      const tracerPreset = event.target.closest("[data-tracer-preset]");
+      const scorePreset = event.target.closest("[data-score-preset]");
+      const cardPosition = event.target.closest("[data-card-position]");
+      const ratioChoice = event.target.closest("[data-output-ratio]");
+      const qualityChoice = event.target.closest("[data-quality]");
+      if (tracerPreset) commit("change tracer preset", () => Object.assign(activeShot().tracer, deepCopy(TRACER_PRESETS[tracerPreset.dataset.tracerPreset])));
+      if (scorePreset) commit("change scorecard preset", () => {
+        const card = activeHole().scorecard;
+        card.preset = scorePreset.dataset.scorePreset;
+        if (card.preset === "minimal") Object.assign(card, { background: "#101310", opacity: .7, border: false, radius: 9, scale: .9 });
+        if (card.preset === "broadcast") Object.assign(card, { text: "#ffffff", background: "#121612", opacity: .88, border: true, radius: 12, scale: 1 });
+        if (card.preset === "social") Object.assign(card, { text: "#171b17", background: "#ffffff", opacity: .9, border: true, radius: 14, scale: 1.05 });
+      });
+      if (cardPosition) commit("move scorecard", () => { activeHole().scorecard.position = cardPosition.dataset.cardPosition; });
+      if (ratioChoice) commit("change output format", () => { state.outputRatio = ratioChoice.dataset.outputRatio; });
+      if (qualityChoice) commit("change export quality", () => { state.quality = qualityChoice.dataset.quality; });
+      if (!actionButton) return;
+      const action = actionButton.dataset.action;
+      if (action === "mark-start") setTool("mark-start");
+      if (action === "mark-end") setTool("mark-end");
+      if (action === "shape-curve") setTool("curve");
+      if (action === "preview") startPreview();
+      if (action === "reset-tracer") commit("reset tracer", () => {
+        const shot = activeShot();
+        shot.start = shot.end = shot.control = null;
+        shot.startTime = 0;
+        shot.endTime = 2.5;
+        state.tool = "idle";
+      });
+      if (action === "replace-video") chooseReplacement();
+      if (action === "unassign-video") unassignActiveVideo();
+      if (action === "remove-shot") removeActiveShot();
+      if (action === "export") exportCurrentShot();
+    });
+
+    function selectHole(holeId) {
+      if (!state.holes.some(hole => hole.id === holeId)) return;
+      dom.video.pause();
+      state.activeHoleId = holeId;
+      state.tool = "idle";
+      state.preview = false;
+      renderAll();
+    }
+
+    function addShot() {
+      const hole = activeHole();
+      const asset = activeAsset();
+      if (!asset) return toast("Assign a video before adding another shot.", "error");
+      commit("add shot", () => {
+        const number = Math.max(0, ...hole.shots.map(shot => Number(shot.number) || 0)) + 1;
+        const shot = createShot(number, asset.id);
+        shot.clipOut = asset.duration;
+        hole.shots.push(shot);
+        hole.activeShotId = shot.id;
+      });
+      toast("New shot added to this video");
+    }
+
+    function removeActiveShot() {
+      const hole = activeHole();
+      const shot = activeShot();
+      if (!hole || hole.shots.length <= 1) return;
+      if ((shot.start || shot.end) && !window.confirm(`Remove Shot ${shot.number} and its tracer?`)) return;
+      commit("remove shot", () => {
+        const index = hole.shots.findIndex(item => item.id === shot.id);
+        hole.shots.splice(index, 1);
+        hole.activeShotId = hole.shots[Math.max(0, index - 1)].id;
+      });
+    }
+
+    function chooseReplacement() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "video/mp4,video/quicktime,video/webm,video/x-m4v,.mp4,.mov,.webm,.m4v";
+      input.addEventListener("change", () => {
+        if (input.files?.length) addFiles(input.files, { replaceShotId: activeShot().id });
+      }, { once: true });
+      input.click();
+    }
+
+    function unassignActiveVideo() {
+      const shot = activeShot();
+      if (!shot?.videoId) return;
+      if ((shot.start || shot.end) && !window.confirm(`Unassign this video and reset Shot ${shot.number}'s tracer?`)) return;
+      commit("unassign video", () => {
+        shot.videoId = null;
+        shot.clipIn = 0;
+        shot.clipOut = null;
+        shot.start = shot.end = shot.control = null;
+        shot.startTime = 0;
+        shot.endTime = 2.5;
+      });
+    }
+
+    function moveSelectedHole(direction) {
+      const index = state.holes.findIndex(hole => hole.id === state.activeHoleId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= state.holes.length) return;
+      commit("reorder holes", () => {
+        [state.holes[index], state.holes[target]] = [state.holes[target], state.holes[index]];
+      });
+    }
+
+    dom.holeList.addEventListener("click", event => {
+      const openButton = event.target.closest("[data-open-hole]");
+      if (openButton) return selectHole(openButton.dataset.openHole);
+      if (event.target.matches("input, button")) return;
+      const row = event.target.closest("[data-hole-id]");
+      if (row) selectHole(row.dataset.holeId);
+    });
+
+    dom.holeList.addEventListener("change", event => {
+      const input = event.target.closest("[data-hole-field]");
+      if (!input) return;
+      const hole = state.holes.find(item => item.id === input.dataset.holeId);
+      if (!hole) return;
+      const value = input.value === "" ? "" : clamp(Number(input.value), 1, input.dataset.holeField === "distance" ? 999 : 20);
+      commit(`edit hole ${input.dataset.holeField}`, () => { hole[input.dataset.holeField] = value; });
+    });
+
+    dom.holeList.addEventListener("dragstart", event => {
+      const handle = event.target.closest("[data-drag-hole]");
+      if (!handle) return;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("application/golf-hole", handle.dataset.dragHole);
+    });
+
+    dom.holeList.addEventListener("dragover", event => {
+      const row = event.target.closest(".hole-row");
+      if (!row) return;
+      event.preventDefault();
+      row.classList.add("drop-target");
+      event.dataTransfer.dropEffect = event.dataTransfer.types.includes("Files") ? "copy" : "move";
+    });
+
+    dom.holeList.addEventListener("dragleave", event => {
+      const row = event.target.closest(".hole-row");
+      if (row && !row.contains(event.relatedTarget)) row.classList.remove("drop-target");
+    });
+
+    dom.holeList.addEventListener("drop", event => {
+      const row = event.target.closest(".hole-row");
+      if (!row) return;
+      event.preventDefault();
+      row.classList.remove("drop-target");
+      const targetId = row.dataset.holeId;
+      const sourceHole = event.dataTransfer.getData("application/golf-hole");
+      const assetId = event.dataTransfer.getData("application/golf-asset");
+      if (sourceHole) reorderHole(sourceHole, targetId);
+      else if (assetId) assignAsset(assetId, targetId);
+      else if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files, { assignHoleId: targetId });
+    });
+
+    dom.mediaCards.addEventListener("dragstart", event => {
+      const card = event.target.closest("[data-asset-id]");
+      if (!card) return;
+      event.dataTransfer.effectAllowed = "copy";
+      event.dataTransfer.setData("application/golf-asset", card.dataset.assetId);
+    });
+
+    dom.mediaCards.addEventListener("click", event => {
+      const button = event.target.closest("[data-assign-asset]");
+      if (button) assignAsset(button.dataset.assignAsset);
+    });
+
+    dom.mediaToggle.addEventListener("click", () => {
+      state.mediaOpen = !state.mediaOpen;
+      renderMedia();
+    });
+
+    document.getElementById("autoAssignBtn").addEventListener("click", () => {
+      const unassigned = state.assets.filter(asset => asset.playable && assetAssignment(asset.id) === "Unassigned");
+      if (!unassigned.length) return toast("Every playable video is already assigned.");
+      commit("assign videos in order", () => {
+        unassigned.forEach(asset => {
+          let target = state.holes.find(hole => !holeHasVideo(hole));
+          if (!target) {
+            target = createHole(Math.max(0, ...state.holes.map(hole => Number(hole.number) || 0)) + 1);
+            state.holes.push(target);
+          }
+          rawAssignAsset(asset.id, target.id);
+        });
+      });
+      toast(`${unassigned.length} video${unassigned.length === 1 ? "" : "s"} assigned in order`);
+    });
+
+    document.getElementById("addHoleBtn").addEventListener("click", () => {
+      commit("add hole", () => {
+        const hole = createHole(Math.max(0, ...state.holes.map(item => Number(item.number) || 0)) + 1);
+        state.holes.push(hole);
+        state.activeHoleId = hole.id;
+      });
+      requestAnimationFrame(() => dom.holeList.scrollTo({ top: dom.holeList.scrollHeight, behavior: "smooth" }));
+    });
+    document.getElementById("moveUpBtn").addEventListener("click", () => moveSelectedHole(-1));
+    document.getElementById("moveDownBtn").addEventListener("click", () => moveSelectedHole(1));
+    document.getElementById("deleteHoleBtn").addEventListener("click", () => {
+      const hole = activeHole();
+      if (state.holes.length <= 1) return toast("A round needs at least one hole.", "error");
+      const edited = holeHasVideo(hole) || hasScore(hole) || hole.shots.some(shot => shot.start);
+      if (edited && !window.confirm(`Delete Hole ${hole.number} and its edits? Uploaded files will remain in the media inbox.`)) return;
+      commit("delete hole", () => {
+        const index = state.holes.findIndex(item => item.id === hole.id);
+        state.holes.splice(index, 1);
+        state.activeHoleId = state.holes[Math.min(index, state.holes.length - 1)].id;
+      });
+    });
+
+    dom.shotSwitcher.addEventListener("click", event => {
+      const shotButton = event.target.closest("[data-shot-id]");
+      if (shotButton) {
+        dom.video.pause();
+        activeHole().activeShotId = shotButton.dataset.shotId;
+        state.tool = "idle";
+        state.preview = false;
+        renderAll();
+      }
+      if (event.target.closest("#addShotBtn")) addShot();
+    });
+
+    [document.getElementById("uploadBtn"), document.getElementById("emptyUploadBtn")].forEach(button => button.addEventListener("click", () => dom.fileInput.click()));
+    dom.fileInput.addEventListener("change", () => { if (dom.fileInput.files?.length) addFiles(dom.fileInput.files); });
+
+    [dom.emptyState, document.getElementById("emptyUploadBtn")].forEach(dropTarget => {
+      dropTarget.addEventListener("dragover", event => { event.preventDefault(); document.getElementById("emptyUploadBtn").classList.add("dragover"); });
+      dropTarget.addEventListener("dragleave", event => { if (!dropTarget.contains(event.relatedTarget)) document.getElementById("emptyUploadBtn").classList.remove("dragover"); });
+      dropTarget.addEventListener("drop", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById("emptyUploadBtn").classList.remove("dragover");
+        if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
+      });
+    });
+
+    let projectBefore = null;
+    dom.projectName.addEventListener("focus", () => { projectBefore = projectSnapshot(); });
+    dom.projectName.addEventListener("change", () => {
+      state.projectName = dom.projectName.value.trim() || "Untitled round";
+      dom.projectName.value = state.projectName;
+      pushHistoryFrom(projectBefore, "rename project");
+      projectBefore = null;
+      renderAll();
+    });
+
+    function togglePlayback() {
+      if (!activeAsset()) return;
+      if (dom.video.paused) {
+        const range = activeClipRange();
+        if (dom.video.currentTime < range.start || dom.video.currentTime >= range.end - .05) dom.video.currentTime = range.start;
+        dom.video.play().catch(() => toast("This browser could not play the selected codec.", "error"));
+      } else {
+        dom.video.pause();
+      }
+    }
+
+    function startPreview() {
+      if (!activeAsset()) return toast("Upload or assign a video to preview.", "error");
+      if (state.preview) {
+        state.preview = false;
+        dom.video.pause();
+        renderAll();
+        return;
+      }
+      const range = activeClipRange();
+      state.preview = true;
+      state.tool = "idle";
+      dom.video.currentTime = range.start;
+      renderAll();
+      dom.video.play().catch(() => toast("Preview could not start in this browser.", "error"));
+    }
+
+    function playbackLoop() {
+      cancelAnimationFrame(animationFrame);
+      const tick = () => {
+        if (dom.video.paused) return;
+        updateTracerProgress();
+        const range = activeClipRange();
+        if (dom.video.currentTime >= range.end - .015) {
+          dom.video.pause();
+          dom.video.currentTime = range.end;
+          if (state.preview) {
+            state.preview = false;
+            renderAll();
+          }
+          return;
+        }
+        animationFrame = requestAnimationFrame(tick);
+      };
+      animationFrame = requestAnimationFrame(tick);
+    }
+
+    dom.playBtn.addEventListener("click", togglePlayback);
+    dom.video.addEventListener("play", () => {
+      dom.playIcon.innerHTML = '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>';
+      dom.playBtn.setAttribute("aria-label", "Pause video");
+      playbackLoop();
+    });
+    dom.video.addEventListener("pause", () => {
+      cancelAnimationFrame(animationFrame);
+      dom.playIcon.innerHTML = '<path d="m8 5 11 7-11 7Z"/>';
+      dom.playBtn.setAttribute("aria-label", "Play video");
+      updateTracerProgress();
+    });
+    dom.video.addEventListener("loadedmetadata", () => {
+      dom.scrubber.max = dom.video.duration || activeAsset()?.duration || 1;
+      dom.timecode.textContent = `${formatTime(dom.video.currentTime)} / ${formatTime(dom.video.duration)}`;
+      requestAnimationFrame(updateStageAspect);
+    });
+    dom.video.addEventListener("timeupdate", () => {
+      if (!dom.scrubber.matches(":active")) dom.scrubber.value = dom.video.currentTime;
+      dom.timecode.textContent = `${formatTime(dom.video.currentTime)} / ${formatTime(dom.video.duration)}`;
+      updateTracerProgress();
+    });
+    dom.video.addEventListener("error", () => toast("This video codec is not supported here. Try an H.264 MP4 or WebM file.", "error"));
+    dom.scrubber.addEventListener("input", () => {
+      dom.video.currentTime = Number(dom.scrubber.value);
+      dom.timecode.textContent = `${formatTime(dom.video.currentTime)} / ${formatTime(dom.video.duration)}`;
+      updateTracerProgress();
+    });
+    document.getElementById("setInBtn").addEventListener("click", () => {
+      const shot = activeShot();
+      const current = dom.video.currentTime;
+      const end = activeClipRange().end;
+      if (current >= end - .1) return toast("The in point must be before the out point.", "error");
+      if (shot.start && current > shot.startTime) return toast("The in point cannot begin after the tracer starts.", "error");
+      commit("set clip in", () => { shot.clipIn = current; });
+    });
+    document.getElementById("setOutBtn").addEventListener("click", () => {
+      const shot = activeShot();
+      const current = dom.video.currentTime;
+      const start = activeClipRange().start;
+      if (current <= start + .1) return toast("The out point must be after the in point.", "error");
+      if (shot.end && current < shot.endTime) return toast("The out point cannot end before the tracer finishes.", "error");
+      commit("set clip out", () => { shot.clipOut = current; });
+    });
+
+    document.querySelectorAll("[data-quick]").forEach(button => button.addEventListener("click", () => {
+      if (button.dataset.quick === "start") setTool("mark-start");
+      if (button.dataset.quick === "end") setTool("mark-end");
+      if (button.dataset.quick === "curve") setTool("curve");
+    }));
+
+    let clickCandidate = null;
+    dom.stageOverlay.addEventListener("keydown", event => {
+      const handle = event.target.closest?.("[data-handle]");
+      if (!handle || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      event.preventDefault();
+      const shot = activeShot();
+      const type = handle.dataset.handle;
+      const before = projectSnapshot();
+      const step = event.shiftKey ? .001 : .006;
+      const point = type === "start" ? shot.start : type === "end" ? shot.end : (shot.control || (shot.start && shot.end ? defaultControl(shot.start, shot.end) : null));
+      if (!point) return;
+      if (event.key === "ArrowLeft") point.x -= step;
+      if (event.key === "ArrowRight") point.x += step;
+      if (event.key === "ArrowUp") point.y -= step;
+      if (event.key === "ArrowDown") point.y += step;
+      point.x = clamp(point.x, 0, 1);
+      point.y = clamp(point.y, 0, 1);
+      if (type === "control") shot.control = point;
+      pushHistoryFrom(before, "nudge tracer");
+      state.tool = "idle";
+      renderAll();
+    });
+
+    dom.videoStage.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || state.preview) return;
+      const handle = event.target.closest?.("[data-handle]");
+      const point = eventToVideoPoint(event);
+      if (handle && point) {
+        dom.video.pause();
+        state.dragging = { type: handle.dataset.handle, before: projectSnapshot(), pointerId: event.pointerId, moved: false, completeTool: state.tool === "curve" && handle.dataset.handle === "control" };
+        dom.videoStage.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+        return;
+      }
+      if (state.tool !== "idle") {
+        if (!point) return toast("Click inside the visible video frame, not the letterbox area.", "error");
+        const shot = activeShot();
+        const before = projectSnapshot();
+        if (state.tool === "mark-start") {
+          shot.start = point;
+          shot.startTime = dom.video.currentTime;
+          shot.end = null;
+          shot.control = null;
+          state.tool = "mark-end";
+          pushHistoryFrom(before, "mark ball start");
+          renderAll();
+          toast("Start marked. Scrub forward and mark the landing point.");
+        } else if (state.tool === "mark-end") {
+          if (dom.video.currentTime <= shot.startTime + .04) return toast("Scrub forward before marking the ball end.", "error");
+          shot.end = point;
+          shot.endTime = dom.video.currentTime;
+          shot.control = null;
+          state.tool = "curve";
+          pushHistoryFrom(before, "mark ball end");
+          renderAll();
+          toast("End marked. Drag the line to shape the flight.");
+        } else if (state.tool === "curve") {
+          shot.control = point;
+          state.dragging = { type: "control", before, pointerId: event.pointerId, moved: true, completeTool: true };
+          dom.videoStage.setPointerCapture?.(event.pointerId);
+          renderOverlay();
+        }
+        event.preventDefault();
+        return;
+      }
+      clickCandidate = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+    });
+
+    dom.scorecardOverlay.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || state.preview) return;
+      dom.video.pause();
+      state.dragging = { type: "scorecard", before: projectSnapshot(), pointerId: event.pointerId, moved: false };
+      dom.scorecardOverlay.setPointerCapture?.(event.pointerId);
+      event.stopPropagation();
+      event.preventDefault();
+    });
+
+    window.addEventListener("pointermove", event => {
+      if (!state.dragging || event.pointerId !== state.dragging.pointerId) {
+        if (clickCandidate && event.pointerId === clickCandidate.pointerId && Math.hypot(event.clientX - clickCandidate.x, event.clientY - clickCandidate.y) > 5) clickCandidate = null;
+        return;
+      }
+      if (state.dragging.type === "scorecard") {
+        const bounds = dom.videoStage.getBoundingClientRect();
+        const card = activeHole().scorecard;
+        card.position = "custom";
+        const halfWidth = (dom.scorecardOverlay.offsetWidth * card.scale) / (2 * bounds.width);
+        const halfHeight = (dom.scorecardOverlay.offsetHeight * card.scale) / (2 * bounds.height);
+        card.x = clamp((event.clientX - bounds.left) / bounds.width, halfWidth, 1 - halfWidth);
+        card.y = clamp((event.clientY - bounds.top) / bounds.height, halfHeight, 1 - halfHeight);
+        state.dragging.moved = true;
+        renderScorecard();
+        return;
+      }
+      const point = eventToVideoPoint(event);
+      if (!point) return;
+      const shot = activeShot();
+      if (state.dragging.type === "start") shot.start = point;
+      if (state.dragging.type === "end") shot.end = point;
+      if (state.dragging.type === "control") shot.control = point;
+      state.dragging.moved = true;
+      renderOverlay();
+    });
+
+    window.addEventListener("pointerup", event => {
+      if (state.dragging && event.pointerId === state.dragging.pointerId) {
+        const drag = state.dragging;
+        state.dragging = null;
+        if (drag.moved) pushHistoryFrom(drag.before, drag.type === "scorecard" ? "move scorecard" : "adjust tracer");
+        if (drag.completeTool) state.tool = "idle";
+        renderAll();
+        if (drag.completeTool) toast("Flight path ready");
+        clickCandidate = null;
+        return;
+      }
+      if (clickCandidate && event.pointerId === clickCandidate.pointerId) {
+        clickCandidate = null;
+        togglePlayback();
+      }
+    });
+
+    window.addEventListener("pointercancel", event => {
+      if (!state.dragging || event.pointerId !== state.dragging.pointerId) return;
+      const before = state.dragging.before;
+      state.dragging = null;
+      clickCandidate = null;
+      restoreSnapshot(before);
+      renderAll();
+    });
+
+    dom.undoBtn.addEventListener("click", undo);
+    dom.redoBtn.addEventListener("click", redo);
+    dom.previewBtn.addEventListener("click", startPreview);
+    document.getElementById("topExportBtn").addEventListener("click", () => {
+      state.panel = "export";
+      dom.rightPanel.classList.add("open");
+      renderAll();
+      document.querySelector('[data-panel="export"]').focus();
+    });
+
+    document.addEventListener("keydown", event => {
+      const formTarget = event.target.matches("input, select, textarea, [contenteditable=true]");
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !formTarget) {
+        event.preventDefault();
+        event.shiftKey ? redo() : undo();
+      } else if (event.key === "Escape" && state.tool !== "idle") {
+        state.tool = "idle";
+        renderAll();
+        toast("Placement canceled");
+      } else if (event.code === "Space" && !formTarget && !state.exportJob) {
+        event.preventDefault();
+        togglePlayback();
+      }
+    });
+
+    function roundedPath(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function drawQuadraticSegment(context, start, end, apex, progress, lineWidth, color, opacity, glow) {
+      if (progress <= 0) return;
+      const control = quadraticControl(start, end, apex);
+      const at = t => {
+        const inverse = 1 - t;
+        return {
+          x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
+          y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y
+        };
+      };
+      const lengths = [0];
+      let totalLength = 0;
+      let previous = start;
+      for (let index = 1; index <= 80; index++) {
+        const point = at(index / 80);
+        totalLength += Math.hypot(point.x - previous.x, point.y - previous.y);
+        lengths.push(totalLength);
+        previous = point;
+      }
+      const targetLength = totalLength * progress;
+      let segment = lengths.findIndex(length => length >= targetLength);
+      if (segment < 1) segment = 1;
+      const segmentStart = lengths[segment - 1];
+      const segmentSpan = Math.max(.0001, lengths[segment] - segmentStart);
+      const tLimit = clamp(((segment - 1) + (targetLength - segmentStart) / segmentSpan) / 80, 0, 1);
+      const steps = Math.max(10, Math.ceil(70 * tLimit));
+      const stroke = (width, alpha, blur) => {
+        context.save();
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        for (let index = 1; index <= steps; index++) {
+          const point = at(tLimit * (index / steps));
+          context.lineTo(point.x, point.y);
+        }
+        context.strokeStyle = color;
+        context.globalAlpha = alpha;
+        context.lineWidth = width;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+        context.shadowColor = color;
+        context.shadowBlur = blur;
+        context.stroke();
+        context.restore();
+      };
+      if (glow) stroke(lineWidth * 3.2, opacity * .28, lineWidth * 3);
+      stroke(lineWidth, opacity, glow ? lineWidth * 1.4 : 0);
+    }
+
+    function drawTracerCanvas(context, rect, shot, asset, currentTime, outputWidth) {
+      if (shot.videoId !== asset.id || !isTracerComplete(shot)) return;
+      const duration = Math.max(.08, shot.endTime - shot.startTime);
+      const progress = clamp(((currentTime - shot.startTime) / duration) * shot.tracer.speed, 0, 1);
+      const map = point => ({ x: rect.x + point.x * rect.width, y: rect.y + point.y * rect.height });
+      drawQuadraticSegment(
+        context,
+        map(shot.start),
+        map(shot.end),
+        map(shot.control),
+        progress,
+        shot.tracer.width * (outputWidth / 1000),
+        shot.tracer.color,
+        shot.tracer.opacity,
+        shot.tracer.glow
+      );
+    }
+
+    function drawScorecardCanvas(context, width, height, hole, shot, asset = activeAsset()) {
+      const card = hole.scorecard;
+      if (!card.visible) return;
+      const isMinimal = card.preset === "minimal";
+      const scale = card.scale;
+      const cardWidth = width * scorecardWidthFraction(card, asset) * scale;
+      const liveRatio = dom.scorecardOverlay.offsetWidth ? dom.scorecardOverlay.offsetHeight / dom.scorecardOverlay.offsetWidth : (isMinimal ? .32 : .48);
+      const cardHeight = cardWidth * liveRatio;
+      const marginX = width * .04;
+      const marginY = height * .05;
+      const positions = {
+        tl: [marginX, marginY], tc: [(width - cardWidth) / 2, marginY], tr: [width - cardWidth - marginX, marginY],
+        ml: [marginX, (height - cardHeight) / 2], mc: [(width - cardWidth) / 2, (height - cardHeight) / 2], mr: [width - cardWidth - marginX, (height - cardHeight) / 2],
+        bl: [marginX, height - cardHeight - marginY], bc: [(width - cardWidth) / 2, height - cardHeight - marginY], br: [width - cardWidth - marginX, height - cardHeight - marginY]
+      };
+      let [x, y] = positions[card.position] || positions.tr;
+      if (card.position === "custom") {
+        x = clamp(card.x * width - cardWidth / 2, 0, width - cardWidth);
+        y = clamp(card.y * height - cardHeight / 2, 0, height - cardHeight);
+      }
+      context.save();
+      roundedPath(context, x, y, cardWidth, cardHeight, card.radius * scale);
+      context.fillStyle = hexToRgba(card.background, card.opacity);
+      context.fill();
+      if (card.border) {
+        context.strokeStyle = hexToRgba(card.text, .22);
+        context.lineWidth = Math.max(1, width / 1280);
+        context.stroke();
+      }
+      if (!isMinimal) {
+        context.save();
+        roundedPath(context, x, y, cardWidth, Math.max(4, height * .006), Math.min(card.radius * scale, 5));
+        context.fillStyle = "#d7f35c";
+        context.fill();
+        context.restore();
+      }
+
+      const pad = cardWidth * .075;
+      const fontFamily = card.font === "serif" ? "Georgia" : card.font === "mono" ? "monospace" : "sans-serif";
+      context.fillStyle = card.text;
+      context.textBaseline = "middle";
+      context.textAlign = card.align === "center" ? "center" : card.align === "right" ? "right" : "left";
+      const textX = card.align === "center" ? x + cardWidth / 2 : card.align === "right" ? x + cardWidth - pad : x + pad;
+      const distance = displayDistance(hole, shot);
+      const relative = formatRelative(scoreRelative(hole));
+      if (isMinimal) {
+        context.font = `700 ${Math.max(13, cardHeight * .3)}px ${fontFamily}`;
+        const minimalText = [card.fields.hole ? `H${hole.number}` : "", card.fields.par ? `PAR ${hole.par}` : "", card.fields.distance && distance ? `${distance} YD` : "", card.fields.shot ? `SHOT ${shot.number}` : "", card.fields.score ? relative : ""].filter(Boolean).join("  ·  ");
+        context.fillText(minimalText, textX, y + cardHeight / 2, cardWidth - pad * 2);
+        context.restore();
+        return;
+      }
+      context.globalAlpha = .66;
+      context.font = `700 ${Math.max(9, cardHeight * .085)}px ${fontFamily}`;
+      const kicker = card.fields.hole ? `HOLE ${hole.number}` : "";
+      context.fillText(kicker, textX, y + cardHeight * .23, cardWidth - pad * 2);
+      context.globalAlpha = 1;
+      context.font = `800 ${Math.max(19, cardHeight * .23)}px ${fontFamily}`;
+      context.fillText(card.fields.hole ? `H${hole.number}` : "", textX, y + cardHeight * .47, cardWidth - pad * 2);
+      context.globalAlpha = .74;
+      context.font = `600 ${Math.max(9, cardHeight * .09)}px ${fontFamily}`;
+      const details = [card.fields.par ? `PAR ${hole.par}` : "", card.fields.distance && distance ? `${distance} YD` : ""].filter(Boolean).join("  ·  ");
+      context.fillText(details, textX, y + cardHeight * .64, cardWidth - pad * 2);
+      context.globalAlpha = 1;
+      context.font = `700 ${Math.max(9, cardHeight * .09)}px ${fontFamily}`;
+      const bottomTextX = card.align === "right" && card.fields.score ? x + cardWidth * .72 : textX;
+      context.fillText(card.fields.shot ? `SHOT ${shot.number}` : "", bottomTextX, y + cardHeight * .84, cardWidth - pad * 2);
+      if (card.fields.score) {
+        const scoreWidth = cardWidth * .18;
+        const scoreHeight = cardHeight * .22;
+        const scoreX = x + cardWidth - pad - scoreWidth;
+        const scoreY = y + cardHeight * .73;
+        roundedPath(context, scoreX, scoreY, scoreWidth, scoreHeight, scoreHeight * .28);
+        context.fillStyle = card.preset === "social" ? "#171b17" : "#d7f35c";
+        context.fill();
+        context.fillStyle = card.preset === "social" ? "#ffffff" : "#26320b";
+        context.textAlign = "center";
+        context.font = `800 ${Math.max(9, scoreHeight * .45)}px ${fontFamily}`;
+        context.fillText(relative, scoreX + scoreWidth / 2, scoreY + scoreHeight / 2 + 1);
+      }
+      context.restore();
+    }
+
+    function exportDimensions(asset) {
+      if (state.outputRatio === "16:9") return state.quality === "high" ? [1920, 1080] : [1280, 720];
+      if (state.outputRatio === "9:16") return state.quality === "high" ? [1080, 1920] : [720, 1280];
+      const maxEdge = state.quality === "high" ? 1920 : 1280;
+      const scale = Math.min(1, maxEdge / Math.max(asset.width, asset.height));
+      let width = Math.max(2, Math.round(asset.width * scale));
+      let height = Math.max(2, Math.round(asset.height * scale));
+      width -= width % 2;
+      height -= height % 2;
+      return [width, height];
+    }
+
+    function waitForVideo(video, eventName, job, timeout = 12000) {
+      return new Promise((resolve, reject) => {
+        const done = () => { cleanup(); resolve(); };
+        const fail = () => { cleanup(); reject(new Error("Video could not be decoded for export.")); };
+        const timer = setTimeout(() => { cleanup(); reject(new Error("Video preparation timed out. Try a shorter H.264 MP4 or WebM clip.")); }, timeout);
+        const cancelPoll = setInterval(() => { if (job.cancelled) { cleanup(); reject(new Error("Export canceled")); } }, 100);
+        const cleanup = () => {
+          clearTimeout(timer);
+          clearInterval(cancelPoll);
+          video.removeEventListener(eventName, done);
+          video.removeEventListener("error", fail);
+        };
+        video.addEventListener(eventName, done, { once: true });
+        video.addEventListener("error", fail, { once: true });
+      });
+    }
+
+    function setExportDialog(open) {
+      dom.exportModal.classList.toggle("hidden", !open);
+      document.querySelector(".app").inert = open;
+    }
+
+    async function exportCurrentShot() {
+      const hole = activeHole();
+      const shot = activeShot();
+      const asset = activeAsset();
+      if (!asset?.playable) return toast("Assign a playable video before exporting.", "error");
+      if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return toast("This browser does not support in-browser video export. Try current Chrome or Edge.", "error");
+      const range = activeClipRange();
+      if (range.end <= range.start + .08) return toast("Choose a longer clip range before exporting.", "error");
+      dom.video.pause();
+      state.preview = false;
+      state.tool = "idle";
+      setExportDialog(true);
+      dom.exportProgress.style.width = "0%";
+      dom.exportProgressTrack.setAttribute("aria-valuenow", "0");
+      dom.exportPercent.textContent = "0%";
+      dom.exportRemaining.textContent = "Preparing…";
+      dom.exportStatus.textContent = `Preparing Hole ${hole.number} · Shot ${shot.number}`;
+      dom.exportCloseBtn.disabled = true;
+      document.getElementById("cancelExportBtn").classList.remove("hidden");
+      requestAnimationFrame(() => document.getElementById("cancelExportBtn").focus());
+      const job = { recorder: null, video: null, stream: null, cancelled: false, cancelNotified: false, failure: "", raf: 0, canvas: null, chunks: [] };
+      state.exportJob = job;
+
+      try {
+        const [width, height] = exportDimensions(asset);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { alpha: false });
+        const exportVideo = document.createElement("video");
+        exportVideo.muted = true;
+        exportVideo.playsInline = true;
+        exportVideo.preload = "auto";
+        exportVideo.src = asset.url;
+        job.video = exportVideo;
+        job.canvas = canvas;
+        exportVideo.load();
+        if (exportVideo.readyState < 1) await waitForVideo(exportVideo, "loadedmetadata", job);
+        if (job.cancelled) throw new Error("Export canceled");
+        exportVideo.currentTime = range.start;
+        if (Math.abs(exportVideo.currentTime - range.start) > .02 || range.start > .02) await waitForVideo(exportVideo, "seeked", job);
+        if (exportVideo.readyState < 2) await waitForVideo(exportVideo, "loadeddata", job);
+        if (job.cancelled) throw new Error("Export canceled");
+
+        context.fillStyle = "#090b09";
+        context.fillRect(0, 0, width, height);
+        const firstRect = containRect(asset.width, asset.height, width, height);
+        context.drawImage(exportVideo, firstRect.x, firstRect.y, firstRect.width, firstRect.height);
+        drawTracerCanvas(context, firstRect, shot, asset, range.start, width);
+        drawScorecardCanvas(context, width, height, hole, shot, asset);
+
+        const stream = canvas.captureStream(30);
+        if (typeof exportVideo.captureStream === "function") {
+          const sourceStream = exportVideo.captureStream();
+          const audioTrack = sourceStream.getAudioTracks()[0];
+          if (audioTrack) stream.addTrack(audioTrack);
+          job.sourceStream = sourceStream;
+        }
+        job.stream = stream;
+        const mimeCandidates = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"];
+        const mimeType = mimeCandidates.find(type => !MediaRecorder.isTypeSupported || MediaRecorder.isTypeSupported(type)) || "";
+        const recorder = new MediaRecorder(stream, {
+          ...(mimeType ? { mimeType } : {}),
+          videoBitsPerSecond: state.quality === "high" ? 9000000 : 4800000
+        });
+        const chunks = job.chunks;
+        job.recorder = recorder;
+        const startedAt = performance.now();
+
+        recorder.addEventListener("dataavailable", event => { if (event.data?.size) chunks.push(event.data); });
+        recorder.addEventListener("error", () => {
+          job.cancelled = true;
+          job.failure = "The browser recorder stopped unexpectedly.";
+          if (recorder.state !== "inactive") recorder.stop();
+        });
+        recorder.addEventListener("stop", () => {
+          cancelAnimationFrame(job.raf);
+          exportVideo.pause();
+          stream.getTracks().forEach(track => track.stop());
+          job.sourceStream?.getTracks().forEach(track => track.stop());
+          if (state.exportJob === job) state.exportJob = null;
+          if (job.cancelled) {
+            setExportDialog(false);
+            if (!job.cancelNotified) toast(job.failure || "Export canceled", "error");
+            return;
+          }
+          const actualType = recorder.mimeType || mimeType || "video/webm";
+          const blob = new Blob(chunks, { type: actualType });
+          if (!blob.size) {
+            setExportDialog(false);
+            toast("The browser produced an empty export. Try Chrome or Edge.", "error");
+            return;
+          }
+          const extension = actualType.includes("mp4") ? "mp4" : "webm";
+          const safeName = (state.projectName || "golf-shot").replace(/[^a-z0-9-_]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "golf-shot";
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = `${safeName}-hole-${hole.number}-shot-${shot.number}.${extension}`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(downloadUrl), 30000);
+          dom.exportProgress.style.width = "100%";
+          dom.exportProgressTrack.setAttribute("aria-valuenow", "100");
+          dom.exportPercent.textContent = "100%";
+          dom.exportRemaining.textContent = "Complete";
+          dom.exportStatus.textContent = `Download ready · ${width} × ${height} · ${extension.toUpperCase()}`;
+          dom.exportCloseBtn.disabled = false;
+          document.getElementById("cancelExportBtn").classList.add("hidden");
+          toast("Export finished and downloaded");
+        });
+
+        const renderFrame = () => {
+          if (job.cancelled) {
+            if (recorder.state !== "inactive") recorder.stop();
+            return;
+          }
+          const current = exportVideo.currentTime;
+          context.fillStyle = "#090b09";
+          context.fillRect(0, 0, width, height);
+          const rect = containRect(asset.width, asset.height, width, height);
+          try { context.drawImage(exportVideo, rect.x, rect.y, rect.width, rect.height); } catch (_) { /* Decoder may not have produced its first frame yet. */ }
+          drawTracerCanvas(context, rect, shot, asset, current, width);
+          drawScorecardCanvas(context, width, height, hole, shot, asset);
+          const progress = clamp((current - range.start) / (range.end - range.start), 0, 1);
+          const percent = Math.round(progress * 100);
+          dom.exportProgress.style.width = `${percent}%`;
+          dom.exportProgressTrack.setAttribute("aria-valuenow", String(percent));
+          dom.exportPercent.textContent = `${percent}%`;
+          const elapsed = (performance.now() - startedAt) / 1000;
+          const remaining = progress > .02 ? Math.max(0, elapsed / progress - elapsed) : range.end - range.start;
+          dom.exportRemaining.textContent = `${Math.ceil(remaining)}s remaining`;
+          dom.exportStatus.textContent = `Rendering Hole ${hole.number} · ${width} × ${height}`;
+          if (current >= range.end - .018 || exportVideo.ended) {
+            exportVideo.pause();
+            context.fillStyle = "rgba(0,0,0,0)";
+            setTimeout(() => { if (recorder.state !== "inactive") recorder.stop(); }, 80);
+            return;
+          }
+          job.raf = requestAnimationFrame(renderFrame);
+        };
+
+        recorder.start(500);
+        await exportVideo.play();
+        renderFrame();
+      } catch (error) {
+        const message = error?.message || "Export could not start in this browser.";
+        job.failure = message === "Export canceled" ? "" : message;
+        job.cancelled = true;
+        job.video?.pause();
+        if (job.recorder?.state && job.recorder.state !== "inactive") {
+          job.recorder.stop();
+        } else {
+          job.stream?.getTracks().forEach(track => track.stop());
+          job.sourceStream?.getTracks().forEach(track => track.stop());
+          if (state.exportJob === job) state.exportJob = null;
+          setExportDialog(false);
+          if (!job.cancelNotified) toast(job.failure || "Export canceled", "error");
+        }
+      }
+    }
+
+    document.getElementById("cancelExportBtn").addEventListener("click", () => {
+      if (!state.exportJob) return;
+      const job = state.exportJob;
+      job.cancelled = true;
+      job.video?.pause();
+      if (job.recorder?.state && job.recorder.state !== "inactive") job.recorder.stop();
+      else {
+        job.stream?.getTracks().forEach(track => track.stop());
+        job.sourceStream?.getTracks().forEach(track => track.stop());
+        state.exportJob = null;
+        setExportDialog(false);
+        job.cancelNotified = true;
+        toast("Export canceled", "error");
+      }
+    });
+    dom.exportCloseBtn.addEventListener("click", () => {
+      if (!state.exportJob) {
+        setExportDialog(false);
+        document.getElementById("topExportBtn").focus();
+      }
+    });
+
+    window.addEventListener("beforeunload", () => state.assets.forEach(asset => URL.revokeObjectURL(asset.url)));
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => updateStageAspect()).observe(dom.stageShell);
+    else window.addEventListener("resize", updateStageAspect);
+    renderAll();
+  </script>
+</body>
+</html>
