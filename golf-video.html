@@ -119,11 +119,10 @@
     .primary-btn:hover { background: #def766; border-color: var(--accent-strong); }
     .danger-btn { color: var(--danger); background: var(--danger-soft); border-color: #efd0ca; }
 
-    /* Three-column workspace */
-    .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 286px minmax(470px, 1fr) 326px; }
-    .left-panel, .right-panel { min-height: 0; background: var(--panel); }
+    /* Two-column workspace */
+    .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 330px minmax(470px, 1fr); }
+    .left-panel { min-height: 0; background: var(--panel); }
     .left-panel { display: flex; flex-direction: column; border-right: 1px solid var(--line); }
-    .right-panel { display: flex; flex-direction: column; border-left: 1px solid var(--line); }
     .panel-top { flex: none; padding: 18px 16px 14px; }
     .eyebrow { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 780; letter-spacing: .12em; text-transform: uppercase; }
     .panel-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -186,35 +185,22 @@
     .media-add { width: 22px; height: 22px; border: 0; border-radius: 6px; background: #eff1ec; cursor: pointer; font-size: 15px; line-height: 1; }
     .media-add:hover { background: var(--accent); }
 
-    .holes-head {
-      flex: none;
-      display: grid;
-      grid-template-columns: 20px minmax(68px, 1fr) 55px 45px 21px;
-      gap: 5px;
-      padding: 10px 12px 7px;
-      color: var(--muted);
-      font-size: 8px;
-      font-weight: 780;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-    .hole-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 7px 8px; }
+    .round-list-label { flex: none; padding: 12px 14px 8px; color: var(--muted); font-size: 9px; font-weight: 780; letter-spacing: .09em; text-transform: uppercase; }
+    .hole-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 9px 10px; }
+    .hole-card { margin-bottom: 6px; overflow: hidden; border: 1px solid transparent; border-radius: 12px; transition: background .14s ease, border-color .14s ease, box-shadow .14s ease; }
+    .hole-card:hover { background: #f2f4ef; }
+    .hole-card.active { background: var(--paper); border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
+    .hole-card.drop-target { border-color: var(--accent-strong); background: #f6fadf; }
+    .hole-card.drop-target.drop-before { box-shadow: inset 0 3px 0 var(--accent-strong); }
+    .hole-card.drop-target.drop-after { box-shadow: inset 0 -3px 0 var(--accent-strong); }
     .hole-row {
       display: grid;
-      grid-template-columns: 20px minmax(68px, 1fr) 55px 45px 21px;
-      gap: 5px;
+      grid-template-columns: 20px minmax(0, 1fr) auto 22px;
+      gap: 7px;
       align-items: center;
-      min-height: 49px;
-      padding: 5px;
-      margin-bottom: 3px;
-      border: 1px solid transparent;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background .14s ease, border-color .14s ease;
+      min-height: 55px;
+      padding: 6px 8px 6px 6px;
     }
-    .hole-row:hover { background: #f2f4ef; }
-    .hole-row.active { background: var(--paper); border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
-    .hole-row.drop-target { border-color: var(--accent-strong); background: #f6fadf; }
     .drag-grip { border: 0; padding: 5px 1px; color: var(--faint); background: transparent; cursor: grab; font-size: 12px; letter-spacing: -2px; }
     .hole-main { min-width: 0; }
     button.hole-main { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: left; }
@@ -223,20 +209,35 @@
     .status-mark.partial { background: #d9a83b; }
     .status-mark.complete { background: var(--success); }
     .hole-sub { display: block; margin: 4px 0 0 13px; color: var(--muted); font-size: 8.5px; white-space: nowrap; }
-    .table-input {
-      width: 100%;
-      height: 28px;
-      border: 1px solid transparent;
-      border-radius: 7px;
-      background: transparent;
-      color: var(--ink-2);
-      font-size: 10px;
-      text-align: center;
-    }
-    .table-input:hover, .table-input:focus { border-color: var(--line); background: var(--paper); }
     .relative-score { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); font-size: 9px; font-weight: 760; }
     .relative-score.over { color: #9a493d; background: #f7e9e6; }
     .relative-score.under { color: #287053; background: #e7f2ec; }
+    .hole-chevron { width: 22px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 6px; color: var(--muted); background: transparent; cursor: pointer; transition: transform .16s ease, background .16s ease; }
+    .hole-card.expanded .hole-chevron { transform: rotate(180deg); }
+    .hole-chevron:hover { background: #ecefe9; }
+    .hole-details { padding: 10px 11px 12px 33px; border-top: 1px solid var(--line); background: #fafbf8; }
+    .hole-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .hole-field label, .shot-field label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 7.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .hole-field input, .shot-field input { width: 100%; height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--paper); font-size: 10px; }
+    .hole-shots-head { display: flex; align-items: center; justify-content: space-between; margin: 13px 0 6px; color: var(--muted); font-size: 8px; font-weight: 760; letter-spacing: .07em; text-transform: uppercase; }
+    .add-inline { border: 0; padding: 3px 5px; border-radius: 5px; color: var(--ink-2); background: transparent; cursor: pointer; font-size: 8px; font-weight: 730; text-transform: none; letter-spacing: 0; }
+    .add-inline:hover { background: var(--accent); color: var(--accent-ink); }
+    .hole-shot-card { margin-top: 5px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); }
+    .hole-shot-select { width: 100%; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 9px; border: 0; color: inherit; background: transparent; cursor: pointer; text-align: left; }
+    .hole-shot-card.active .hole-shot-select { background: #f7fadf; }
+    .shot-status { width: 7px; height: 7px; border-radius: 50%; background: #d5d9d2; }
+    .shot-status.partial { background: #d9a83b; }
+    .shot-status.complete { background: var(--success); }
+    .shot-title { display: block; font-size: 9.5px; font-weight: 730; }
+    .shot-sub { display: block; max-width: 190px; margin-top: 2px; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+    .shot-state { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 7.5px; font-weight: 700; }
+    .shot-chevron { display: inline-block; transition: transform .16s ease; }
+    .hole-shot-card.expanded .shot-chevron { transform: rotate(180deg); }
+    .hole-shot-fields { display: grid; grid-template-columns: 1fr 1.35fr; gap: 7px; padding: 8px 9px 10px 25px; border-top: 1px solid var(--line); }
+    .uses-hole { display: flex; align-items: center; min-height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: #f5f7f2; font-size: 8px; }
+    .shot-actions { grid-column: 1 / -1; display: flex; gap: 5px; padding-top: 2px; }
+    .shot-action { flex: 1; min-width: 0; height: 25px; padding: 0 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: #f8f9f6; cursor: pointer; font-size: 7.5px; font-weight: 690; }
+    .shot-action:hover { color: var(--ink-2); border-color: var(--line-strong); background: var(--paper); }
     .left-footer { flex: none; display: grid; grid-template-columns: 1fr auto auto auto; gap: 5px; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
     .small-btn { height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer; color: var(--ink-2); font-size: 10px; font-weight: 680; }
     .small-btn:hover { border-color: var(--line-strong); color: var(--ink); }
@@ -250,6 +251,7 @@
     .shot-switcher { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
     .shot-pill { height: 29px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: rgba(255,255,255,.58); cursor: pointer; color: var(--ink-2); font-size: 9px; font-weight: 720; }
     .shot-pill.active { color: var(--accent-ink); background: var(--accent); border-color: #c6dc55; }
+    .current-shot { display: inline-flex; align-items: center; cursor: default; }
     .add-shot { width: 29px; padding: 0; font-size: 15px; }
 
     .empty-state {
@@ -347,12 +349,12 @@
     .scorecard-bottom { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
     .scorecard-shot { font-size: 8px; font-weight: 710; text-transform: uppercase; letter-spacing: .08em; }
     .scorecard-score { min-width: 29px; padding: 4px 7px; border-radius: 7px; color: var(--accent-ink); background: var(--accent); font-size: 10px; font-weight: 820; text-align: center; }
-    .scorecard-overlay.preset-minimal { min-width: 132px; border: 0; border-radius: 9px; background: rgba(10,12,10,.7); box-shadow: none; }
+    .scorecard-overlay.preset-minimal { border: 0; border-radius: 9px; background: rgba(10,12,10,.7); box-shadow: none; }
     .scorecard-overlay.preset-minimal::before { display: none; }
     .scorecard-overlay.preset-minimal .scorecard-inner { padding: 9px 11px; }
     .scorecard-overlay.preset-minimal .scorecard-kicker, .scorecard-overlay.preset-minimal .scorecard-bottom { display: none; }
     .scorecard-overlay.preset-minimal .scorecard-hole { font-size: 16px; }
-    .scorecard-overlay.preset-social { min-width: 180px; color: var(--ink); border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.9); }
+    .scorecard-overlay.preset-social { color: var(--ink); border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.9); }
     .scorecard-overlay.preset-social .scorecard-kicker, .scorecard-overlay.preset-social .scorecard-detail { color: rgba(23,27,23,.62); }
     .scorecard-overlay.preset-social .scorecard-kicker strong { color: #537117; }
     .scorecard-overlay.preset-social .scorecard-bottom { border-color: rgba(23,27,23,.12); }
@@ -361,7 +363,7 @@
     .video-controls {
       flex: none;
       display: grid;
-      grid-template-columns: auto minmax(120px, 1fr) auto auto auto;
+      grid-template-columns: auto auto auto minmax(120px, 1fr);
       align-items: center;
       gap: 10px;
       min-height: 57px;
@@ -374,12 +376,13 @@
     }
     .play-btn { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: #1a1e1a; cursor: pointer; }
     .play-btn svg { width: 15px; height: 15px; }
-    .scrub-wrap { display: grid; grid-template-columns: minmax(80px, 1fr) 78px; align-items: center; gap: 9px; }
+    .scrub-wrap { display: grid; grid-template-columns: minmax(80px, 1fr) 122px; align-items: center; gap: 9px; }
     .scrubber { width: 100%; accent-color: #242a24; cursor: pointer; }
     .timecode { color: var(--muted); font-family: var(--mono); font-size: 9px; white-space: nowrap; }
-    .clip-control { height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: #f8f9f6; cursor: pointer; color: var(--ink-2); font-size: 9px; font-weight: 690; }
-    .clip-control:hover { border-color: var(--line-strong); }
-    .clip-range { color: var(--muted); font-size: 8px; white-space: nowrap; }
+    .timecode.seeking { color: #6d8126; }
+    .frame-btn { width: 32px; height: 30px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: #f8f9f6; cursor: pointer; color: var(--ink-2); }
+    .frame-btn:hover { border-color: var(--line-strong); background: var(--paper); }
+    .frame-btn svg { width: 14px; height: 14px; }
     .quick-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
     .quick-step { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.62); cursor: pointer; text-align: left; }
     .quick-step:hover { border-color: var(--line-strong); background: var(--paper); }
@@ -389,12 +392,22 @@
     .quick-step strong { display: block; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
     .quick-step span { display: block; margin-top: 2px; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* Inspector */
+    /* Settings window */
+    .settings-dialog { width: min(580px, calc(100vw - 36px)); height: min(760px, calc(100vh - 48px)); padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.34); border-radius: 20px; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-lg); }
+    .settings-dialog::backdrop { background: rgba(11,14,11,.48); backdrop-filter: blur(3px); }
+    .settings-shell { height: 100%; display: flex; flex-direction: column; }
+    .settings-head { flex: none; display: flex; align-items: flex-start; gap: 16px; padding: 18px 20px 12px; background: var(--paper); }
+    .settings-head h2 { margin: 0; font-size: 18px; letter-spacing: -.035em; }
+    .settings-head p { margin: 5px 0 0; color: var(--muted); font-size: 9.5px; }
+    .settings-close { width: 31px; height: 31px; margin-left: auto; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); cursor: pointer; }
+    .settings-preview { position: relative; flex: none; height: 154px; display: grid; place-items: center; padding: 10px 18px 18px; overflow: hidden; background: #121612; }
+    .settings-preview canvas { max-width: 100%; max-height: 126px; display: block; border-radius: 7px; background: #090b09; box-shadow: 0 7px 22px rgba(0,0,0,.3); }
+    .settings-preview-label { position: absolute; left: 14px; bottom: 7px; color: rgba(255,255,255,.55); font-size: 7px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
     .inspector-tabs { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 12px 0; border-bottom: 1px solid var(--line); }
     .inspector-tab { position: relative; height: 39px; border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 10px; font-weight: 720; }
     .inspector-tab.active { color: var(--ink); }
     .inspector-tab.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--ink); }
-    .inspector-content { flex: 1; min-height: 0; overflow-y: auto; padding: 15px 14px 24px; }
+    .inspector-content { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 22px 28px; }
     .inspector-empty { display: grid; place-items: center; height: 100%; padding: 30px; color: var(--muted); font-size: 11px; line-height: 1.6; text-align: center; }
     .inspector-section { padding-bottom: 17px; margin-bottom: 17px; border-bottom: 1px solid var(--line); }
     .inspector-section:last-child { margin: 0; border-bottom: 0; }
@@ -508,20 +521,15 @@
     @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
     @media (max-width: 1220px) {
-      .workspace { grid-template-columns: 250px minmax(450px, 1fr) 300px; }
+      .workspace { grid-template-columns: 310px minmax(450px, 1fr); }
       .brand { min-width: 210px; }
       .editor-inner { padding-left: 14px; padding-right: 14px; }
       .stage-shell { padding: 14px; }
-      .scorecard-overlay { transform: scale(.88); }
     }
     @media (max-width: 1020px) {
       body { overflow: auto; }
       .app { min-width: 760px; height: auto; min-height: 100%; }
-      .workspace { min-height: calc(100vh - 68px); grid-template-columns: 230px minmax(450px, 1fr); }
-      .right-panel { position: fixed; top: 68px; right: 0; bottom: 0; width: 310px; z-index: 30; box-shadow: -18px 0 45px rgba(20,25,20,.16); }
-      .right-panel:not(:focus-within) { transform: translateX(278px); transition: transform .2s ease; }
-      .right-panel:hover { transform: translateX(0); }
-      .right-panel.open { transform: translateX(0) !important; }
+      .workspace { min-height: calc(100vh - 68px); grid-template-columns: 290px minmax(450px, 1fr); }
       .project-name { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -550,6 +558,10 @@
         </button>
         <button class="icon-btn" id="redoBtn" title="Redo (Ctrl/⌘ Shift Z)" aria-label="Redo" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 8 4.5 4-4.5 4"/><path d="M19 12h-8.5A5.5 5.5 0 0 0 5 17.5"/></svg>
+        </button>
+        <button class="quiet-btn" id="settingsBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
+          <span>Settings</span>
         </button>
         <button class="quiet-btn" id="previewBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.8 12s3.3-6 9.2-6 9.2 6 9.2 6-3.3 6-9.2 6-9.2-6-9.2-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>
@@ -592,7 +604,7 @@
           </div>
         </section>
 
-        <div class="holes-head"><span></span><span>Hole</span><span>Yards</span><span>Score</span><span></span></div>
+        <div class="round-list-label">Holes &amp; scorecards</div>
         <div class="hole-list" id="holeList"></div>
         <div class="left-footer">
           <button class="small-btn" id="addHoleBtn">＋ Add hole</button>
@@ -639,6 +651,7 @@
                 <video id="video" preload="metadata" playsinline></video>
                 <svg class="stage-overlay" id="stageOverlay" viewBox="0 0 16 9" preserveAspectRatio="none" aria-label="Shot tracer editing surface">
                   <defs><filter id="tracerGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="9" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                  <g id="otherTracerPaths" aria-hidden="true"></g>
                   <path class="tracer-shadow" id="tracerShadow" d=""/>
                   <path class="tracer-line" id="tracerPath" d=""/>
                   <path class="tracer-guide" id="tracerGuide" d=""/>
@@ -656,11 +669,10 @@
               </div>
             </div>
             <div class="video-controls">
+              <button class="frame-btn" id="prevFrameBtn" aria-label="Previous frame" title="Previous frame (,)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m14.5 7-5 5 5 5"/><path d="M6 5v14"/></svg></button>
               <button class="play-btn" id="playBtn" aria-label="Play video"><svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="m8 5 11 7-11 7Z"/></svg></button>
-              <div class="scrub-wrap"><input class="scrubber" id="scrubber" type="range" min="0" max="1" step="0.001" value="0" aria-label="Video position"><span class="timecode" id="timecode">0:00 / 0:00</span></div>
-              <button class="clip-control" id="setInBtn">Set in</button>
-              <button class="clip-control" id="setOutBtn">Set out</button>
-              <span class="clip-range" id="clipRange">Full clip</span>
+              <button class="frame-btn" id="nextFrameBtn" aria-label="Next frame" title="Next frame (.)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m9.5 7 5 5-5 5"/><path d="M18 5v14"/></svg></button>
+              <div class="scrub-wrap"><input class="scrubber" id="scrubber" type="range" min="0" max="1" step="0.001" value="0" aria-label="Video position"><span class="timecode" id="timecode">0:00.000 / 0:00.000</span></div>
             </div>
             <div class="quick-flow">
               <button class="quick-step" id="quickStart" data-quick="start"><span class="step-number">1</span><span><strong>Mark ball start</strong><span>Pause just after impact</span></span></button>
@@ -671,16 +683,24 @@
         </div>
       </main>
 
-      <aside class="right-panel" aria-label="Editing controls">
-        <div class="inspector-tabs" role="tablist" aria-label="Editor tools">
-          <button class="inspector-tab active" data-panel="tracer" role="tab" aria-controls="inspectorContent">Tracer</button>
-          <button class="inspector-tab" data-panel="scorecard" role="tab" aria-controls="inspectorContent">Scorecard</button>
-          <button class="inspector-tab" data-panel="export" role="tab" aria-controls="inspectorContent">Export</button>
-        </div>
-        <div class="inspector-content" id="inspectorContent" role="tabpanel"></div>
-      </aside>
     </div>
   </div>
+
+  <dialog class="settings-dialog" id="settingsDialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-shell">
+      <header class="settings-head">
+        <div><h2 id="settingsTitle">Settings</h2><p>Fine-tune the selected shot and its output.</p></div>
+        <button class="settings-close" id="settingsCloseBtn" aria-label="Close settings">×</button>
+      </header>
+      <div class="inspector-tabs" role="tablist" aria-label="Settings sections">
+        <button class="inspector-tab active" data-panel="tracer" role="tab" aria-controls="inspectorContent">Tracer style</button>
+        <button class="inspector-tab" data-panel="scorecard" role="tab" aria-controls="inspectorContent">Scorecard</button>
+        <button class="inspector-tab" data-panel="export" role="tab" aria-controls="inspectorContent">Export</button>
+      </div>
+      <div class="settings-preview"><canvas id="settingsPreview" width="480" height="270" role="img" aria-label="Selected shot style preview"></canvas><span class="settings-preview-label">Style preview</span></div>
+      <div class="inspector-content" id="inspectorContent" role="tabpanel"></div>
+    </div>
+  </dialog>
 
   <div class="modal-backdrop hidden" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
     <div class="modal">
@@ -710,7 +730,7 @@
 
     function createShot(number = 1, videoId = null) {
       return {
-        id: uid("shot"), number, videoId, distance: "", clipIn: 0, clipOut: null,
+        id: uid("shot"), number, videoId, distance: "",
         startTime: 0, endTime: 2.5, start: null, end: null, control: null,
         tracer: { ...TRACER_PRESETS.classic }
       };
@@ -736,15 +756,23 @@
       holes: initialHoles,
       assets: [],
       activeHoleId: initialHoles[0].id,
+      expandedHoleId: initialHoles[0].id,
+      expandedShotId: initialHoles[0].activeShotId,
       panel: "tracer",
       tool: "idle",
       preview: false,
+      temporalInspect: false,
+      frameDuration: 1 / 30,
+      frameRateEstimated: false,
+      frameSeekPending: false,
+      pendingFrameTarget: null,
       outputRatio: "source",
       quality: "standard",
       mediaOpen: false,
       history: [],
       redo: [],
       dragging: null,
+      scorecardPreviewShotId: null,
       exportJob: null
     };
 
@@ -772,6 +800,7 @@
       video: document.getElementById("video"),
       tracerPath: document.getElementById("tracerPath"),
       tracerShadow: document.getElementById("tracerShadow"),
+      otherTracerPaths: document.getElementById("otherTracerPaths"),
       tracerGuide: document.getElementById("tracerGuide"),
       tracerHandles: document.getElementById("tracerHandles"),
       startHandle: document.getElementById("startHandle"),
@@ -788,11 +817,15 @@
       scorecardInner: document.getElementById("scorecardInner"),
       playBtn: document.getElementById("playBtn"),
       playIcon: document.getElementById("playIcon"),
+      prevFrameBtn: document.getElementById("prevFrameBtn"),
+      nextFrameBtn: document.getElementById("nextFrameBtn"),
       scrubber: document.getElementById("scrubber"),
       timecode: document.getElementById("timecode"),
-      clipRange: document.getElementById("clipRange"),
       inspectorContent: document.getElementById("inspectorContent"),
-      rightPanel: document.querySelector(".right-panel"),
+      settingsDialog: document.getElementById("settingsDialog"),
+      settingsBtn: document.getElementById("settingsBtn"),
+      settingsCloseBtn: document.getElementById("settingsCloseBtn"),
+      settingsPreview: document.getElementById("settingsPreview"),
       undoBtn: document.getElementById("undoBtn"),
       redoBtn: document.getElementById("redoBtn"),
       previewBtn: document.getElementById("previewBtn"),
@@ -809,6 +842,9 @@
     let loadedAssetId = null;
     let loadedShotId = null;
     let animationFrame = 0;
+    let videoFrameCallback = 0;
+    let lastFrameMediaTime = null;
+    let lastPresentedFrames = null;
 
     const activeHole = () => state.holes.find(hole => hole.id === state.activeHoleId) || state.holes[0];
     const activeShot = () => {
@@ -834,6 +870,13 @@
       const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
       const minutes = Math.floor(safe / 60);
       const secs = Math.floor(safe % 60).toString().padStart(2, "0");
+      return `${minutes}:${secs}`;
+    }
+
+    function formatEditorTime(seconds) {
+      const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+      const minutes = Math.floor(safe / 60);
+      const secs = (safe % 60).toFixed(3).padStart(6, "0");
       return `${minutes}:${secs}`;
     }
 
@@ -887,6 +930,7 @@
       state.quality = saved.quality;
       state.tool = "idle";
       state.preview = false;
+      state.temporalInspect = false;
       dom.projectName.value = state.projectName;
     }
 
@@ -900,6 +944,24 @@
         state.redo = [];
       }
       renderAll();
+    }
+
+    let deferredRoundRender = 0;
+    function renderAfterRoundFieldEdit() {
+      cancelAnimationFrame(deferredRoundRender);
+      deferredRoundRender = requestAnimationFrame(() => {
+        const focused = document.activeElement;
+        let selector = "";
+        if (dom.holeList.contains(focused)) {
+          if (focused.dataset.holeField) selector = `[data-hole-field="${focused.dataset.holeField}"][data-hole-id="${focused.dataset.holeId}"]`;
+          if (focused.dataset.shotField) selector = `[data-shot-field="${focused.dataset.shotField}"][data-shot-id="${focused.dataset.shotId}"]`;
+          if (focused.dataset.openShot) selector = `[data-open-shot="${focused.dataset.openShot}"]`;
+          if (focused.dataset.shotAction) selector = `[data-shot-action="${focused.dataset.shotAction}"][data-shot-id="${focused.dataset.shotId}"]`;
+          if (focused.dataset.addHoleShot) selector = `[data-add-hole-shot="${focused.dataset.addHoleShot}"]`;
+        }
+        renderAll();
+        if (selector) requestAnimationFrame(() => dom.holeList.querySelector(selector)?.focus());
+      });
     }
 
     function undo() {
@@ -977,13 +1039,39 @@
       return { x: 2 * apex.x - .5 * (start.x + end.x), y: 2 * apex.y - .5 * (start.y + end.y) };
     }
 
+    function flightProgressAt(shot, time) {
+      if (!shot?.start || !shot?.end) return 0;
+      const duration = Math.max(.001, shot.endTime - shot.startTime);
+      const timedProgress = clamp((time - shot.startTime) / duration, 0, 1);
+      const depthChange = clamp(shot.start.y - shot.end.y, 0, .8);
+      const perspectiveExponent = (1.75 + depthChange * .9) * clamp(shot.tracer.speed, .65, 1.5);
+      return 1 - Math.pow(1 - timedProgress, perspectiveExponent);
+    }
+
+    function flightVisibilityAt(shot, time) {
+      if (!shot?.start || !shot?.end || time < shot.startTime) return 0;
+      const holdUntil = shot.endTime + .65;
+      if (time <= holdUntil) return 1;
+      return clamp(1 - (time - holdUntil) / .55, 0, 1);
+    }
+
+    function shotsForAsset(hole = activeHole(), asset = activeAsset()) {
+      if (!hole || !asset) return [];
+      return hole.shots.filter(shot => shot.videoId === asset.id);
+    }
+
+    function completedShotsForAsset(hole = activeHole(), asset = activeAsset()) {
+      return shotsForAsset(hole, asset).filter(shot => shot.start && shot.end);
+    }
+
+    function displayShotAtTime(hole, asset, time, fallback = activeShot()) {
+      const candidates = completedShotsForAsset(hole, asset).sort((a, b) => a.startTime - b.startTime);
+      return [...candidates].reverse().find(shot => time >= shot.startTime) || candidates[0] || fallback;
+    }
+
     function activeClipRange() {
-      const shot = activeShot();
       const asset = activeAsset();
-      return {
-        start: Math.max(0, Number(shot?.clipIn) || 0),
-        end: Math.min(asset?.duration || 0, Number.isFinite(Number(shot?.clipOut)) && shot?.clipOut !== null ? Number(shot.clipOut) : (asset?.duration || 0))
-      };
+      return { start: 0, end: asset?.duration || 0 };
     }
 
     function hexToRgba(hex, alpha) {
@@ -1015,15 +1103,50 @@
         const complete = holeIsReady(hole);
         const partial = holeHasVideo(hole) || hasScore(hole) || hole.shots.some(shot => shot.start || shot.end);
         const relativeScore = scoreRelative(hole);
-        const assignedShots = hole.shots.filter(shot => getAsset(shot.videoId)).length;
+        const assignedShots = hole.shots.filter(shot => getAsset(shot.videoId)?.playable).length;
         const statusText = complete ? "Ready" : partial ? "In progress" : "Not started";
-        return `<div class="hole-row ${hole.id === state.activeHoleId ? "active" : ""}" data-hole-id="${hole.id}" role="group" aria-label="Hole ${hole.number}, ${statusText}">
-          <button class="drag-grip" draggable="true" data-drag-hole="${hole.id}" title="Drag to reorder" aria-label="Reorder hole ${hole.number}">••</button>
-          <button class="hole-main" data-open-hole="${hole.id}"><span class="hole-title"><span class="status-mark ${complete ? "complete" : partial ? "partial" : ""}"></span>Hole ${hole.number}</span><span class="hole-sub">${assignedShots ? `${assignedShots} clip${assignedShots === 1 ? "" : "s"}` : "Drop a clip"} · Par ${hole.par}</span></button>
-          <input class="table-input" type="number" min="1" max="999" value="${escapeHTML(hole.distance)}" placeholder="—" data-hole-field="distance" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} distance">
-          <input class="table-input" type="number" min="1" max="20" value="${escapeHTML(hole.strokes)}" placeholder="—" data-hole-field="strokes" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} strokes">
-          <span class="relative-score ${relativeScore > 0 ? "over" : relativeScore < 0 ? "under" : ""}" title="Relative to par">${formatRelative(relativeScore)}</span>
-        </div>`;
+        const expanded = state.expandedHoleId === hole.id;
+        const active = hole.id === state.activeHoleId;
+        const selectedShot = hole.shots.find(shot => shot.id === hole.activeShotId) || hole.shots[0];
+        const canAddShot = Boolean(getAsset(selectedShot?.videoId)?.playable);
+        const shots = hole.shots.map(shot => {
+          const asset = getAsset(shot.videoId);
+          const shotComplete = Boolean(asset?.playable && isTracerComplete(shot));
+          const shotPartial = Boolean(asset?.playable || shot.start || shot.end);
+          const shotExpanded = expanded && state.expandedShotId === shot.id;
+          const shotState = shotComplete ? "Tracer ready" : asset?.playable ? "Needs tracer" : "No video";
+          const distanceHint = Number(shot.number) === 1 && hole.distance ? `${hole.distance} (hole distance)` : "yards";
+          return `<div class="hole-shot-card ${active && hole.activeShotId === shot.id ? "active" : ""} ${shotExpanded ? "expanded" : ""}">
+            <button class="hole-shot-select" data-open-shot="${shot.id}" data-hole-id="${hole.id}" aria-expanded="${shotExpanded}" aria-controls="shot-details-${shot.id}">
+              <span class="shot-status ${shotComplete ? "complete" : shotPartial ? "partial" : ""}"></span>
+              <span><span class="shot-title">Shot ${escapeHTML(shot.number)}</span><span class="shot-sub">${asset ? escapeHTML(asset.name) : "Assign a clip from the media inbox"}</span></span>
+              <span class="shot-state">${shotState}<span class="shot-chevron" aria-hidden="true">⌄</span></span>
+            </button>
+            <div class="hole-shot-fields ${shotExpanded ? "" : "hidden"}" id="shot-details-${shot.id}">
+              <div class="shot-field"><label>Shot</label><input type="number" min="1" max="20" value="${escapeHTML(shot.number)}" data-shot-field="number" data-shot-id="${shot.id}" data-hole-id="${hole.id}" aria-label="Shot number"></div>
+              <div class="shot-field"><label>Distance</label><input type="number" min="1" max="999" value="${escapeHTML(shot.distance)}" placeholder="${escapeHTML(distanceHint)}" data-shot-field="distance" data-shot-id="${shot.id}" data-hole-id="${hole.id}" aria-label="Shot ${shot.number} distance in yards"></div>
+              <div class="shot-actions"><button class="shot-action" data-shot-action="replace" data-shot-id="${shot.id}" data-hole-id="${hole.id}">Replace</button><button class="shot-action" data-shot-action="unassign" data-shot-id="${shot.id}" data-hole-id="${hole.id}" ${asset ? "" : "disabled"}>Unassign</button><button class="shot-action" data-shot-action="remove" data-shot-id="${shot.id}" data-hole-id="${hole.id}" ${hole.shots.length > 1 ? "" : "disabled"}>Remove</button></div>
+            </div>
+          </div>`;
+        }).join("");
+        return `<section class="hole-card ${active ? "active" : ""} ${expanded ? "expanded" : ""}" data-hole-id="${hole.id}" aria-label="Hole ${hole.number}, ${statusText}">
+          <div class="hole-row">
+            <button class="drag-grip" draggable="true" data-drag-hole="${hole.id}" title="Drag to reorder" aria-label="Reorder hole ${hole.number}">••</button>
+            <button class="hole-main" data-toggle-hole="${hole.id}" aria-expanded="${expanded}" aria-controls="hole-details-${hole.id}" aria-label="Hole ${hole.number}, ${statusText}, Par ${hole.par}, ${hole.distance ? `${hole.distance} yards` : "distance not entered"}, ${hole.strokes ? `${hole.strokes} strokes` : "score not entered"}"><span class="hole-title"><span class="status-mark ${complete ? "complete" : partial ? "partial" : ""}"></span>Hole ${escapeHTML(hole.number)}</span><span class="hole-sub">${hole.distance ? `${escapeHTML(hole.distance)} yd` : "Distance —"} · Par ${escapeHTML(hole.par)} · ${hole.strokes ? `${escapeHTML(hole.strokes)} stroke${Number(hole.strokes) === 1 ? "" : "s"}` : assignedShots ? `${assignedShots} clip${assignedShots === 1 ? "" : "s"}` : "Drop a clip"}</span></button>
+            <span class="relative-score ${relativeScore > 0 ? "over" : relativeScore < 0 ? "under" : ""}" title="Relative to par">${formatRelative(relativeScore)}</span>
+            <button class="hole-chevron" data-toggle-hole="${hole.id}" aria-label="${expanded ? "Collapse" : "Expand"} Hole ${hole.number}" aria-expanded="${expanded}" aria-controls="hole-details-${hole.id}">⌄</button>
+          </div>
+          <div class="hole-details ${expanded ? "" : "hidden"}" id="hole-details-${hole.id}">
+            <div class="hole-detail-grid">
+              <div class="hole-field"><label>Hole</label><input type="number" min="1" max="99" value="${escapeHTML(hole.number)}" data-hole-field="number" data-hole-id="${hole.id}" aria-label="Hole number"></div>
+              <div class="hole-field"><label>Par</label><input type="number" min="1" max="9" value="${escapeHTML(hole.par)}" data-hole-field="par" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} par"></div>
+              <div class="hole-field"><label>Hole distance</label><input type="number" min="1" max="999" value="${escapeHTML(hole.distance)}" placeholder="yards" data-hole-field="distance" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} distance"></div>
+              <div class="hole-field"><label>Final strokes</label><input type="number" min="1" max="20" value="${escapeHTML(hole.strokes)}" placeholder="score" data-hole-field="strokes" data-hole-id="${hole.id}" aria-label="Hole ${hole.number} final strokes"></div>
+            </div>
+            <div class="hole-shots-head"><span>Shots</span><button class="add-inline" data-add-hole-shot="${hole.id}" ${canAddShot ? "" : "disabled"}>+ Add shot</button></div>
+            ${shots}
+          </div>
+        </section>`;
       }).join("");
     }
 
@@ -1069,19 +1192,24 @@
       if (loadedAssetId !== asset.id) {
         loadedAssetId = asset.id;
         dom.video.pause();
+        dom.prevFrameBtn.disabled = true;
+        dom.nextFrameBtn.disabled = true;
         dom.video.src = asset.url;
         dom.video.load();
       }
       if (shotChanged) {
-        const seekToClip = () => { dom.video.currentTime = clamp(activeClipRange().start, 0, asset.duration || 0); };
-        if (dom.video.readyState >= 1) seekToClip();
-        else dom.video.addEventListener("loadedmetadata", seekToClip, { once: true });
+        state.frameSeekPending = false;
+        state.pendingFrameTarget = null;
+        const seekToShot = () => { queueFrameSeek(clamp(activeShot()?.start ? activeShot().startTime : 0, 0, asset.duration || 0)); };
+        if (dom.video.readyState >= 1) seekToShot();
+        else dom.video.addEventListener("loadedmetadata", seekToShot, { once: true });
       }
       dom.scrubber.max = asset.duration || 1;
       const orientation = asset.orientation === "vertical" ? "Vertical" : asset.orientation === "square" ? "Square" : "Horizontal";
       dom.orientationBadge.textContent = orientation;
       const sourceRatio = `${asset.width}:${asset.height}`;
       dom.ratioBadge.textContent = state.outputRatio === "source" ? `Source · ${sourceRatio}` : state.outputRatio;
+      updateFrameButtons();
       requestAnimationFrame(updateStageAspect);
     }
 
@@ -1092,15 +1220,14 @@
       if (!hole || !shot) return;
       dom.editorTitle.textContent = `Hole ${hole.number}`;
       dom.editorMeta.textContent = `${asset ? asset.name : "No video assigned"} · Par ${hole.par}${hole.distance ? ` · ${hole.distance} yd` : ""}`;
-      dom.shotSwitcher.innerHTML = hole.shots.map(item => `<button class="shot-pill ${item.id === hole.activeShotId ? "active" : ""}" data-shot-id="${item.id}">Shot ${item.number}${item.videoId ? "" : " · empty"}</button>`).join("") + `<button class="shot-pill add-shot" id="addShotBtn" title="Add another tracer" ${asset ? "" : "disabled"}>+</button>`;
+      dom.shotSwitcher.innerHTML = `<span class="shot-pill active current-shot">Shot ${escapeHTML(shot.number)}${shot.videoId ? "" : " · empty"}</span><button class="shot-pill add-shot" id="addShotBtn" title="Add another tracer" ${asset ? "" : "disabled"}>+</button>`;
       dom.emptyState.classList.toggle("hidden", Boolean(asset?.playable));
       dom.videoWorkspace.classList.toggle("hidden", !asset?.playable);
       if (asset?.playable) {
         loadActiveVideo();
-        const range = activeClipRange();
-        dom.clipRange.textContent = `${formatTime(range.start)}–${formatTime(range.end)}`;
         renderOverlay();
-        renderScorecard();
+        const scoreShot = state.preview || !dom.video.paused || state.temporalInspect ? displayShotAtTime(hole, asset, dom.video.currentTime, shot) : shot;
+        renderScorecard(scoreShot);
         renderQuickFlow();
       }
     }
@@ -1119,12 +1246,39 @@
       });
     }
 
+    function svgPathForShot(shot) {
+      if (!shot?.start || !shot?.end) return "";
+      const start = videoPointToSvg(shot.start);
+      const end = videoPointToSvg(shot.end);
+      const apexNorm = shot.control || defaultControl(shot.start, shot.end);
+      const control = videoPointToSvg(quadraticControl(shot.start, shot.end, apexNorm));
+      return `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
+    }
+
+    function renderOtherTracerPaths() {
+      const hole = activeHole();
+      const shot = activeShot();
+      const asset = activeAsset();
+      const temporalView = !dom.video.paused || state.preview || state.temporalInspect;
+      if (!hole || !asset || !temporalView) {
+        dom.otherTracerPaths.innerHTML = "";
+        return;
+      }
+      dom.otherTracerPaths.innerHTML = completedShotsForAsset(hole, asset)
+        .filter(item => item.id !== shot?.id)
+        .map(item => {
+          const style = item.tracer;
+          return `<path class="tracer-line other-tracer" data-other-shot-id="${item.id}" d="${svgPathForShot(item)}" style="stroke:${style.color};stroke-width:${style.width};filter:${style.glow ? "url(#tracerGlow)" : "none"}"/>`;
+        }).join("");
+    }
+
     function renderOverlay() {
       const shot = activeShot();
       if (!shot || !dom.videoStage.clientWidth) return;
       const style = shot.tracer;
       const showEditing = !state.preview;
       dom.stageOverlay.setAttribute("viewBox", `0 0 ${Math.max(1, dom.videoStage.clientWidth)} ${Math.max(1, dom.videoStage.clientHeight)}`);
+      renderOtherTracerPaths();
       dom.videoStage.classList.toggle("tool-active", state.tool !== "idle");
       dom.placementTip.classList.toggle("hidden", state.tool === "idle");
       dom.placementText.textContent = state.tool === "mark-start" ? "Click the ball on this frame" : state.tool === "mark-end" ? "Click the approximate landing point" : "Drag anywhere to shape the flight path";
@@ -1133,6 +1287,7 @@
         dom.tracerShadow.setAttribute("d", "");
         dom.tracerGuide.setAttribute("d", "");
         dom.tracerHandles.style.display = "none";
+        updateTracerProgress();
         return;
       }
 
@@ -1149,6 +1304,7 @@
         dom.tracerShadow.setAttribute("d", "");
         dom.tracerGuide.setAttribute("d", "");
         dom.endHandle.style.display = dom.controlHandle.style.display = dom.endLabel.style.display = dom.controlLabel.style.display = "none";
+        updateTracerProgress();
         return;
       }
 
@@ -1179,25 +1335,45 @@
 
     function updateTracerProgress() {
       const shot = activeShot();
-      if (!shot?.start || !shot?.end || !dom.tracerPath.getAttribute("d")) return;
-      let length = 1000;
-      try { length = dom.tracerPath.getTotalLength(); } catch (_) { /* SVG may be hidden during a layout pass. */ }
-      let progress = 1;
-      if (!dom.video.paused || state.preview) {
-        const duration = Math.max(.08, shot.endTime - shot.startTime);
-        progress = clamp(((dom.video.currentTime - shot.startTime) / duration) * shot.tracer.speed, 0, 1);
-      }
-      [dom.tracerPath, dom.tracerShadow].forEach(path => {
+      const temporalView = !dom.video.paused || state.preview || state.temporalInspect;
+      const applyProgress = (path, item, opacityScale = 1) => {
+        if (!item?.start || !item?.end || !path?.getAttribute("d")) return;
+        const progress = temporalView ? flightProgressAt(item, dom.video.currentTime) : 1;
+        const visibility = temporalView ? flightVisibilityAt(item, dom.video.currentTime) : 1;
+        path.style.opacity = item.tracer.opacity * visibility * opacityScale;
+        path.style.visibility = progress <= 0 || visibility <= 0 ? "hidden" : "visible";
+        if (progress <= 0 || visibility <= 0) return;
+        const pathData = path.getAttribute("d");
+        let length = 1000;
+        if (path.dataset.lengthFor === pathData && Number.isFinite(Number(path.dataset.pathLength))) {
+          length = Number(path.dataset.pathLength);
+        } else {
+          try { length = path.getTotalLength(); } catch (_) { /* SVG may be hidden during a layout pass. */ }
+          path.dataset.lengthFor = pathData;
+          path.dataset.pathLength = String(length);
+        }
         path.style.strokeDasharray = `${length}`;
         path.style.strokeDashoffset = `${length * (1 - progress)}`;
-        path.style.visibility = progress <= 0 ? "hidden" : "visible";
+      };
+      applyProgress(dom.tracerPath, shot);
+      applyProgress(dom.tracerShadow, shot, .42);
+      const hole = activeHole();
+      const asset = activeAsset();
+      const shotMap = new Map(completedShotsForAsset(hole, asset).map(item => [item.id, item]));
+      dom.otherTracerPaths.querySelectorAll("[data-other-shot-id]").forEach(path => {
+        applyProgress(path, shotMap.get(path.dataset.otherShotId));
       });
+      if (temporalView && hole && asset) {
+        const displayShot = displayShotAtTime(hole, asset, dom.video.currentTime, shot);
+        if (displayShot && displayShot.id !== state.scorecardPreviewShotId) renderScorecard(displayShot);
+      }
     }
 
-    function renderScorecard() {
+    function renderScorecard(shotOverride = activeShot()) {
       const hole = activeHole();
-      const shot = activeShot();
+      const shot = shotOverride;
       if (!hole || !shot) return;
+      state.scorecardPreviewShotId = shot.id;
       const card = hole.scorecard;
       const distance = displayDistance(hole, shot);
       const relative = scoreRelative(hole);
@@ -1253,6 +1429,10 @@
     }
 
     function renderAll() {
+      if (!state.holes.some(hole => hole.id === state.activeHoleId)) state.activeHoleId = state.holes[0]?.id || null;
+      if (state.expandedHoleId && !state.holes.some(hole => hole.id === state.expandedHoleId)) state.expandedHoleId = state.activeHoleId;
+      const expandedHole = state.holes.find(hole => hole.id === state.expandedHoleId);
+      if (expandedHole && !expandedHole.shots.some(shot => shot.id === state.expandedShotId)) state.expandedShotId = expandedHole.activeShotId;
       renderRound();
       renderMedia();
       renderEditor();
@@ -1266,6 +1446,7 @@
         tab.setAttribute("aria-selected", String(selected));
         tab.tabIndex = selected ? 0 : -1;
       });
+      if (dom.settingsDialog.open) requestAnimationFrame(drawSettingsPreview);
     }
 
     function renderInspector() {
@@ -1282,25 +1463,10 @@
     }
 
     function renderTracerInspector(hole, shot, asset) {
-      const nextStep = !shot.start ? "start" : !shot.end ? "end" : "curve";
       dom.inspectorContent.innerHTML = `
         <section class="inspector-section">
-          <h3 class="section-label"><span>Shot ${shot.number} tracer</span><span class="count-pill">Manual</span></h3>
-          <p class="section-note">Pause the video, mark the ball, then shape a smooth line. No automatic tracking needed.</p>
-          <div class="workflow-list">
-            <button class="workflow-action ${shot.start ? "done" : nextStep === "start" ? "next" : ""}" data-action="mark-start" ${asset ? "" : "disabled"}>
-              <span class="workflow-icon">${shot.start ? "✓" : "1"}</span><span class="workflow-copy"><strong>Ball start</strong><span>${shot.start ? `Marked at ${formatTime(shot.startTime)}` : "Find the frame after impact"}</span></span><span class="workflow-arrow">›</span>
-            </button>
-            <button class="workflow-action ${shot.end ? "done" : nextStep === "end" ? "next" : ""}" data-action="mark-end" ${shot.start ? "" : "disabled"}>
-              <span class="workflow-icon">${shot.end ? "✓" : "2"}</span><span class="workflow-copy"><strong>Ball end</strong><span>${shot.end ? `Marked at ${formatTime(shot.endTime)}` : "Scrub to the landing area"}</span></span><span class="workflow-arrow">›</span>
-            </button>
-            <button class="workflow-action ${shot.control ? "done" : nextStep === "curve" ? "next" : ""}" data-action="shape-curve" ${shot.end ? "" : "disabled"}>
-              <span class="workflow-icon">${shot.control ? "✓" : "3"}</span><span class="workflow-copy"><strong>Flight path</strong><span>${shot.control ? "Drag a handle to refine" : "Drag to bend the tracer"}</span></span><span class="workflow-arrow">›</span>
-            </button>
-          </div>
-        </section>
-        <section class="inspector-section">
-          <h3 class="section-label">Tracer style</h3>
+          <h3 class="section-label"><span>Shot ${shot.number} tracer style</span><span class="count-pill">Manual</span></h3>
+          <p class="section-note">The three marking steps stay below the video. Use these settings only when you want to refine the finished look.</p>
           <div class="preset-grid">
             ${Object.keys(TRACER_PRESETS).map(name => `<button class="preset-card ${shot.tracer.preset === name ? "active" : ""}" data-tracer-preset="${name}"><span class="preset-preview"><svg class="tracer-sample" viewBox="0 0 48 26"><path d="M4 22Q17 1 44 7" fill="none" stroke="${TRACER_PRESETS[name].color}" stroke-width="${name === "minimal" ? 2 : name === "glow" ? 5 : 4}" stroke-linecap="round" ${name === "glow" ? 'style="filter:drop-shadow(0 0 4px #cfff4c)"' : ""}/></svg></span><strong>${name[0].toUpperCase() + name.slice(1)}</strong></button>`).join("")}
           </div>
@@ -1311,13 +1477,13 @@
               <div class="control-row"><label for="tracerWidth">Thickness</label><input class="range-field" id="tracerWidth" type="range" min="2" max="14" step="1" value="${shot.tracer.width}" data-model="tracer-width"></div>
               <div class="control-row"><label for="tracerOpacity">Opacity</label><input class="range-field" id="tracerOpacity" type="range" min="0.25" max="1" step="0.05" value="${shot.tracer.opacity}" data-model="tracer-opacity"></div>
               <div class="control-row"><span class="control-label">Glow</span><label class="switch"><input type="checkbox" aria-label="Add tracer glow" ${shot.tracer.glow ? "checked" : ""} data-model="tracer-glow"><span></span></label></div>
-              <div class="control-row"><label for="tracerSpeed">Animation</label><select class="select-field" id="tracerSpeed" data-model="tracer-speed"><option value="0.75" ${shot.tracer.speed === .75 ? "selected" : ""}>Relaxed</option><option value="1" ${shot.tracer.speed === 1 ? "selected" : ""}>Natural</option><option value="1.35" ${shot.tracer.speed === 1.35 ? "selected" : ""}>Fast</option></select></div>
+              <div class="control-row"><label for="tracerSpeed">Flight pace</label><select class="select-field" id="tracerSpeed" data-model="tracer-speed"><option value="0.75" ${shot.tracer.speed === .75 ? "selected" : ""}>Relaxed</option><option value="1" ${shot.tracer.speed === 1 ? "selected" : ""}>Natural</option><option value="1.35" ${shot.tracer.speed === 1.35 ? "selected" : ""}>Fast</option></select></div>
             </div>
           </details>
-          <div class="button-row"><button class="quiet-btn" data-action="preview">Preview shot</button><button class="quiet-btn" data-action="reset-tracer" ${shot.start ? "" : "disabled"}>Reset</button></div>
+          <div class="button-row"><button class="quiet-btn" data-action="preview">Preview video</button><button class="quiet-btn" data-action="reset-tracer" ${shot.start ? "" : "disabled"}>Reset</button></div>
         </section>
         <section class="inspector-section">
-          <h3 class="section-label">Clip</h3>
+          <h3 class="section-label">Video</h3>
           <p class="section-note">${asset ? `${escapeHTML(asset.name)} · ${formatTime(asset.duration)} · ${asset.orientation}` : "No video assigned to this shot."}</p>
           <div class="button-row"><button class="quiet-btn" data-action="replace-video">Replace</button><button class="quiet-btn" data-action="unassign-video" ${asset ? "" : "disabled"}>Unassign</button><button class="quiet-btn" data-action="remove-shot" ${hole.shots.length > 1 ? "" : "disabled"}>Remove shot</button></div>
         </section>`;
@@ -1328,20 +1494,9 @@
       const positions = ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"];
       dom.inspectorContent.innerHTML = `
         <section class="inspector-section">
-          <h3 class="section-label"><span>Hole information</span><span class="count-pill">Live</span></h3>
-          <div class="control-row"><span class="control-label">Show scorecard</span><label class="switch"><input type="checkbox" aria-label="Show scorecard overlay" ${card.visible ? "checked" : ""} data-model="card-visible"><span></span></label></div>
-          <div class="field-group">
-            <div class="field-stack"><label for="holeNumberField">Hole</label><input class="field" id="holeNumberField" data-model="hole-number" type="number" min="1" max="99" value="${escapeHTML(hole.number)}"></div>
-            <div class="field-stack"><label for="parField">Par</label><input class="field" id="parField" data-model="hole-par" type="number" min="1" max="9" value="${escapeHTML(hole.par)}"></div>
-            <div class="field-stack"><label for="distanceField">Hole distance</label><input class="field" id="distanceField" data-model="hole-distance" type="number" min="1" max="999" placeholder="yards" value="${escapeHTML(hole.distance)}"></div>
-            <div class="field-stack"><label for="strokesField">Final strokes</label><input class="field" id="strokesField" data-model="hole-strokes" type="number" min="1" max="20" placeholder="score" value="${escapeHTML(hole.strokes)}"></div>
-            <div class="field-stack"><label for="shotNumberField">Shot number</label><input class="field" id="shotNumberField" data-model="shot-number" type="number" min="1" max="20" value="${escapeHTML(shot.number)}"></div>
-            <div class="field-stack"><label for="shotDistanceField">Shot distance</label><input class="field" id="shotDistanceField" data-model="shot-distance" type="number" min="1" max="999" placeholder="${shot.number === 1 && hole.distance ? `${hole.distance} (hole)` : "yards"}" value="${escapeHTML(shot.distance)}"></div>
-          </div>
-          <p class="section-note" style="margin-top:10px">Shot 1 uses the hole distance until you enter a different value. Round score: <strong>${formatRelative(scoreRelative(hole))}</strong>.</p>
-        </section>
-        <section class="inspector-section">
           <h3 class="section-label">Scorecard preset</h3>
+          <div class="control-row"><span class="control-label">Show scorecard</span><label class="switch"><input type="checkbox" aria-label="Show scorecard overlay" ${card.visible ? "checked" : ""} data-model="card-visible"><span></span></label></div>
+          <p class="section-note">Hole, distance, shot, and score are edited in the open hole card on the left.</p>
           <div class="preset-grid">
             <button class="preset-card ${card.preset === "minimal" ? "active" : ""}" data-score-preset="minimal"><span class="preset-preview"><span class="score-sample minimal"></span></span><strong>Minimal</strong></button>
             <button class="preset-card ${card.preset === "broadcast" ? "active" : ""}" data-score-preset="broadcast"><span class="preset-preview"><span class="score-sample"></span></span><strong>Broadcast</strong></button>
@@ -1372,6 +1527,8 @@
 
     function renderExportInspector(hole, shot, asset) {
       const sourceDimensions = asset ? exportDimensions(asset) : null;
+      const videoShots = shotsForAsset(hole, asset);
+      const tracerCount = videoShots.filter(item => item.start && item.end).length;
       const ratioLabel = state.outputRatio === "source" ? (sourceDimensions ? `${sourceDimensions[0]} × ${sourceDimensions[1]}` : "Source") : state.outputRatio === "16:9" ? (state.quality === "high" ? "1920 × 1080" : "1280 × 720") : (state.quality === "high" ? "1080 × 1920" : "720 × 1280");
       dom.inspectorContent.innerHTML = `
         <section class="inspector-section">
@@ -1389,12 +1546,12 @@
         <section class="inspector-section">
           <h3 class="section-label">Export summary</h3>
           <div class="export-card">
-            <div class="export-line"><span>Selection</span><strong>Hole ${hole.number} · Shot ${shot.number}</strong></div>
+            <div class="export-line"><span>Selection</span><strong>Hole ${hole.number} · ${tracerCount} tracer${tracerCount === 1 ? "" : "s"}</strong></div>
             <div class="export-line"><span>Frame</span><strong>${ratioLabel}</strong></div>
-            <div class="export-line"><span>Clip</span><strong>${asset ? `${formatTime(activeClipRange().start)}–${formatTime(activeClipRange().end)}` : "No video"}</strong></div>
+            <div class="export-line"><span>Video</span><strong>${asset ? `Full video · ${formatTime(activeClipRange().end)}` : "No video"}</strong></div>
             <div class="export-line"><span>Output</span><strong>WebM · 30 fps</strong></div>
           </div>
-          <button class="primary-btn upload-button" data-action="export" ${asset?.playable ? "" : "disabled"}>Export current shot</button>
+          <button class="primary-btn upload-button" data-action="export" ${asset?.playable ? "" : "disabled"}>Export current video</button>
           <div class="export-disclosure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 10v6m0-9v.2"/></svg><span>Browser export is rendered in real time and normally downloads as WebM. Original audio is kept when the browser supports local media capture; otherwise the file is video-only. Entire-round export is a later renderer step.</span></div>
         </section>`;
     }
@@ -1415,6 +1572,7 @@
       if (tool === "curve" && !shot.end) return toast("Mark the ball end first.", "error");
       dom.video.pause();
       state.preview = false;
+      state.temporalInspect = false;
       state.tool = state.tool === tool ? "idle" : tool;
       renderAll();
     }
@@ -1434,11 +1592,11 @@
         } else {
           shot.videoId = assetId;
         }
-        shot.clipIn = 0;
-        shot.clipOut = asset.duration;
         hole.activeShotId = shot.id;
       }
       state.activeHoleId = hole.id;
+      state.expandedHoleId = hole.id;
+      state.expandedShotId = hole.activeShotId;
       return true;
     }
 
@@ -1448,14 +1606,14 @@
       toast(`Video assigned to Hole ${activeHole().number}`);
     }
 
-    function reorderHole(sourceId, targetId) {
+    function reorderHole(sourceId, targetId, placement = "before") {
       if (!sourceId || sourceId === targetId) return;
       commit("reorder holes", () => {
         const sourceIndex = state.holes.findIndex(hole => hole.id === sourceId);
-        const targetIndex = state.holes.findIndex(hole => hole.id === targetId);
-        if (sourceIndex < 0 || targetIndex < 0) return;
+        if (sourceIndex < 0 || !state.holes.some(hole => hole.id === targetId)) return;
         const [moved] = state.holes.splice(sourceIndex, 1);
-        const insertionIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        const targetIndex = state.holes.findIndex(hole => hole.id === targetId);
+        const insertionIndex = targetIndex + (placement === "after" ? 1 : 0);
         state.holes.splice(insertionIndex, 0, moved);
       });
     }
@@ -1502,8 +1660,6 @@
         if (targetShot) {
           commit("replace video", () => {
             targetShot.videoId = playable[0].id;
-            targetShot.clipIn = 0;
-            targetShot.clipOut = playable[0].duration;
             targetShot.start = targetShot.end = targetShot.control = null;
           });
         } else {
@@ -1556,16 +1712,43 @@
       setters[model]?.();
       renderOverlay();
       renderScorecard();
+      drawSettingsPreview();
       renderRound();
       dom.editorTitle.textContent = `Hole ${hole.number}`;
       dom.editorMeta.textContent = `${activeAsset()?.name || "No video assigned"} · Par ${hole.par}${hole.distance ? ` · ${hole.distance} yd` : ""}`;
     }
 
     let controlBefore = null;
+    let settingsOpener = null;
+
+    function openSettings(panel = state.panel, opener = document.activeElement) {
+      dom.video.pause();
+      state.preview = false;
+      state.tool = "idle";
+      state.panel = panel;
+      settingsOpener = opener instanceof HTMLElement ? opener : dom.settingsBtn;
+      renderAll();
+      if (!dom.settingsDialog.open) {
+        if (typeof dom.settingsDialog.showModal === "function") dom.settingsDialog.showModal();
+        else dom.settingsDialog.setAttribute("open", "");
+      }
+      requestAnimationFrame(() => {
+        drawSettingsPreview();
+        document.querySelector(`.inspector-tab[data-panel="${state.panel}"]`)?.focus();
+      });
+    }
+
+    function closeSettings() {
+      if (!dom.settingsDialog.open && !dom.settingsDialog.hasAttribute("open")) return;
+      if (typeof dom.settingsDialog.close === "function") dom.settingsDialog.close();
+      else {
+        dom.settingsDialog.removeAttribute("open");
+        settingsOpener?.focus?.();
+      }
+    }
 
     document.querySelectorAll(".inspector-tab").forEach(tab => tab.addEventListener("click", () => {
       state.panel = tab.dataset.panel;
-      dom.rightPanel.classList.add("open");
       renderAll();
     }));
     document.querySelector(".inspector-tabs").addEventListener("keydown", event => {
@@ -1598,14 +1781,18 @@
         applyInspectorModel(target);
         pushHistoryFrom(controlBefore, "edit settings");
         controlBefore = null;
-        renderAll();
+        dom.undoBtn.disabled = state.history.length === 0;
+        dom.redoBtn.disabled = state.redo.length === 0;
       }
       if (target.matches("[data-card-field]")) {
         const before = controlBefore || projectSnapshot();
         activeHole().scorecard.fields[target.dataset.cardField] = target.checked;
         pushHistoryFrom(before, "change scorecard fields");
         controlBefore = null;
-        renderAll();
+        renderScorecard();
+        drawSettingsPreview();
+        dom.undoBtn.disabled = state.history.length === 0;
+        dom.redoBtn.disabled = state.redo.length === 0;
       }
     });
 
@@ -1632,18 +1819,25 @@
       if (action === "mark-start") setTool("mark-start");
       if (action === "mark-end") setTool("mark-end");
       if (action === "shape-curve") setTool("curve");
-      if (action === "preview") startPreview();
+      if (action === "preview") {
+        closeSettings();
+        startPreview();
+      }
       if (action === "reset-tracer") commit("reset tracer", () => {
         const shot = activeShot();
         shot.start = shot.end = shot.control = null;
         shot.startTime = 0;
         shot.endTime = 2.5;
         state.tool = "idle";
+        state.temporalInspect = false;
       });
       if (action === "replace-video") chooseReplacement();
       if (action === "unassign-video") unassignActiveVideo();
       if (action === "remove-shot") removeActiveShot();
-      if (action === "export") exportCurrentShot();
+      if (action === "export") {
+        closeSettings();
+        exportCurrentShot();
+      }
     });
 
     function selectHole(holeId) {
@@ -1652,6 +1846,36 @@
       state.activeHoleId = holeId;
       state.tool = "idle";
       state.preview = false;
+      state.temporalInspect = false;
+      renderAll();
+    }
+
+    function toggleHole(holeId) {
+      const hole = state.holes.find(item => item.id === holeId);
+      if (!hole) return;
+      const closing = state.expandedHoleId === holeId;
+      dom.video.pause();
+      state.activeHoleId = holeId;
+      state.expandedHoleId = closing ? null : holeId;
+      state.expandedShotId = closing ? null : hole.activeShotId;
+      state.tool = "idle";
+      state.preview = false;
+      state.temporalInspect = false;
+      renderAll();
+    }
+
+    function selectShot(holeId, shotId) {
+      const hole = state.holes.find(item => item.id === holeId);
+      if (!hole?.shots.some(shot => shot.id === shotId)) return;
+      const closing = state.expandedHoleId === holeId && state.expandedShotId === shotId;
+      dom.video.pause();
+      state.activeHoleId = holeId;
+      hole.activeShotId = shotId;
+      state.expandedHoleId = holeId;
+      state.expandedShotId = closing ? null : shotId;
+      state.tool = "idle";
+      state.preview = false;
+      state.temporalInspect = false;
       renderAll();
     }
 
@@ -1662,9 +1886,10 @@
       commit("add shot", () => {
         const number = Math.max(0, ...hole.shots.map(shot => Number(shot.number) || 0)) + 1;
         const shot = createShot(number, asset.id);
-        shot.clipOut = asset.duration;
         hole.shots.push(shot);
         hole.activeShotId = shot.id;
+        state.expandedHoleId = hole.id;
+        state.expandedShotId = shot.id;
       });
       toast("New shot added to this video");
     }
@@ -1678,6 +1903,7 @@
         const index = hole.shots.findIndex(item => item.id === shot.id);
         hole.shots.splice(index, 1);
         hole.activeShotId = hole.shots[Math.max(0, index - 1)].id;
+        state.expandedShotId = hole.activeShotId;
       });
     }
 
@@ -1697,11 +1923,11 @@
       if ((shot.start || shot.end) && !window.confirm(`Unassign this video and reset Shot ${shot.number}'s tracer?`)) return;
       commit("unassign video", () => {
         shot.videoId = null;
-        shot.clipIn = 0;
-        shot.clipOut = null;
         shot.start = shot.end = shot.control = null;
         shot.startTime = 0;
         shot.endTime = 2.5;
+        state.frameSeekPending = false;
+        state.pendingFrameTarget = null;
       });
     }
 
@@ -1715,20 +1941,71 @@
     }
 
     dom.holeList.addEventListener("click", event => {
-      const openButton = event.target.closest("[data-open-hole]");
-      if (openButton) return selectHole(openButton.dataset.openHole);
-      if (event.target.matches("input, button")) return;
-      const row = event.target.closest("[data-hole-id]");
-      if (row) selectHole(row.dataset.holeId);
+      const holeToggle = event.target.closest("[data-toggle-hole]");
+      if (holeToggle) {
+        const holeId = holeToggle.dataset.toggleHole;
+        const selector = holeToggle.classList.contains("hole-chevron") ? `.hole-chevron[data-toggle-hole="${holeId}"]` : `.hole-main[data-toggle-hole="${holeId}"]`;
+        toggleHole(holeId);
+        requestAnimationFrame(() => dom.holeList.querySelector(selector)?.focus());
+        return;
+      }
+      const shotButton = event.target.closest("[data-open-shot]");
+      if (shotButton) {
+        const shotId = shotButton.dataset.openShot;
+        selectShot(shotButton.dataset.holeId, shotId);
+        requestAnimationFrame(() => dom.holeList.querySelector(`[data-open-shot="${shotId}"]`)?.focus());
+        return;
+      }
+      const shotAction = event.target.closest("[data-shot-action]");
+      if (shotAction) {
+        const hole = state.holes.find(item => item.id === shotAction.dataset.holeId);
+        if (!hole?.shots.some(shot => shot.id === shotAction.dataset.shotId)) return;
+        dom.video.pause();
+        state.activeHoleId = hole.id;
+        hole.activeShotId = shotAction.dataset.shotId;
+        state.expandedHoleId = hole.id;
+        state.expandedShotId = shotAction.dataset.shotId;
+        state.tool = "idle";
+        state.preview = false;
+        state.temporalInspect = false;
+        renderAll();
+        if (shotAction.dataset.shotAction === "replace") chooseReplacement();
+        if (shotAction.dataset.shotAction === "unassign") unassignActiveVideo();
+        if (shotAction.dataset.shotAction === "remove") removeActiveShot();
+        return;
+      }
+      const addButton = event.target.closest("[data-add-hole-shot]");
+      if (addButton) {
+        selectHole(addButton.dataset.addHoleShot);
+        return addShot();
+      }
     });
 
     dom.holeList.addEventListener("change", event => {
-      const input = event.target.closest("[data-hole-field]");
-      if (!input) return;
-      const hole = state.holes.find(item => item.id === input.dataset.holeId);
-      if (!hole) return;
-      const value = input.value === "" ? "" : clamp(Number(input.value), 1, input.dataset.holeField === "distance" ? 999 : 20);
-      commit(`edit hole ${input.dataset.holeField}`, () => { hole[input.dataset.holeField] = value; });
+      const holeInput = event.target.closest("[data-hole-field]");
+      if (holeInput) {
+        const hole = state.holes.find(item => item.id === holeInput.dataset.holeId);
+        if (!hole) return;
+        const field = holeInput.dataset.holeField;
+        const maximum = field === "distance" ? 999 : field === "number" ? 99 : field === "par" ? 9 : 20;
+        const value = holeInput.value === "" && ["distance", "strokes"].includes(field) ? "" : clamp(Number(holeInput.value) || 1, 1, maximum);
+        const before = projectSnapshot();
+        hole[field] = value;
+        pushHistoryFrom(before, `edit hole ${field}`);
+        renderAfterRoundFieldEdit();
+        return;
+      }
+      const shotInput = event.target.closest("[data-shot-field]");
+      if (!shotInput) return;
+      const hole = state.holes.find(item => item.id === shotInput.dataset.holeId);
+      const shot = hole?.shots.find(item => item.id === shotInput.dataset.shotId);
+      if (!shot) return;
+      const field = shotInput.dataset.shotField;
+      const value = shotInput.value === "" && field === "distance" ? "" : clamp(Number(shotInput.value) || 1, 1, field === "distance" ? 999 : 20);
+      const before = projectSnapshot();
+      shot[field] = value;
+      pushHistoryFrom(before, `edit shot ${field}`);
+      renderAfterRoundFieldEdit();
     });
 
     dom.holeList.addEventListener("dragstart", event => {
@@ -1739,27 +2016,33 @@
     });
 
     dom.holeList.addEventListener("dragover", event => {
-      const row = event.target.closest(".hole-row");
-      if (!row) return;
+      const card = event.target.closest(".hole-card");
+      if (!card) return;
       event.preventDefault();
-      row.classList.add("drop-target");
+      card.classList.add("drop-target");
+      const bounds = card.getBoundingClientRect();
+      const placement = event.clientY >= bounds.top + bounds.height / 2 ? "after" : "before";
+      card.dataset.dropPlacement = placement;
+      card.classList.toggle("drop-before", placement === "before");
+      card.classList.toggle("drop-after", placement === "after");
       event.dataTransfer.dropEffect = event.dataTransfer.types.includes("Files") ? "copy" : "move";
     });
 
     dom.holeList.addEventListener("dragleave", event => {
-      const row = event.target.closest(".hole-row");
-      if (row && !row.contains(event.relatedTarget)) row.classList.remove("drop-target");
+      const card = event.target.closest(".hole-card");
+      if (card && !card.contains(event.relatedTarget)) card.classList.remove("drop-target", "drop-before", "drop-after");
     });
 
     dom.holeList.addEventListener("drop", event => {
-      const row = event.target.closest(".hole-row");
-      if (!row) return;
+      const card = event.target.closest(".hole-card");
+      if (!card) return;
       event.preventDefault();
-      row.classList.remove("drop-target");
-      const targetId = row.dataset.holeId;
+      const placement = card.dataset.dropPlacement || "before";
+      card.classList.remove("drop-target", "drop-before", "drop-after");
+      const targetId = card.dataset.holeId;
       const sourceHole = event.dataTransfer.getData("application/golf-hole");
       const assetId = event.dataTransfer.getData("application/golf-asset");
-      if (sourceHole) reorderHole(sourceHole, targetId);
+      if (sourceHole) reorderHole(sourceHole, targetId, placement);
       else if (assetId) assignAsset(assetId, targetId);
       else if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files, { assignHoleId: targetId });
     });
@@ -1802,6 +2085,8 @@
         const hole = createHole(Math.max(0, ...state.holes.map(item => Number(item.number) || 0)) + 1);
         state.holes.push(hole);
         state.activeHoleId = hole.id;
+        state.expandedHoleId = hole.id;
+        state.expandedShotId = hole.activeShotId;
       });
       requestAnimationFrame(() => dom.holeList.scrollTo({ top: dom.holeList.scrollHeight, behavior: "smooth" }));
     });
@@ -1816,6 +2101,8 @@
         const index = state.holes.findIndex(item => item.id === hole.id);
         state.holes.splice(index, 1);
         state.activeHoleId = state.holes[Math.min(index, state.holes.length - 1)].id;
+        state.expandedHoleId = state.activeHoleId;
+        state.expandedShotId = activeHole().activeShotId;
       });
     });
 
@@ -1860,22 +2147,110 @@
       if (dom.video.paused) {
         const range = activeClipRange();
         if (dom.video.currentTime < range.start || dom.video.currentTime >= range.end - .05) dom.video.currentTime = range.start;
+        state.temporalInspect = true;
         dom.video.play().catch(() => toast("This browser could not play the selected codec.", "error"));
       } else {
         dom.video.pause();
       }
     }
 
+    function updateEditorTimecode() {
+      const current = state.frameSeekPending && Number.isFinite(state.pendingFrameTarget) ? state.pendingFrameTarget : dom.video.currentTime;
+      dom.timecode.textContent = `${state.frameSeekPending ? "… " : ""}${formatEditorTime(current)} / ${formatEditorTime(dom.video.duration)}`;
+      dom.timecode.classList.toggle("seeking", state.frameSeekPending);
+    }
+
+    function updateFrameButtons() {
+      const asset = activeAsset();
+      const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : asset?.duration || 0;
+      const current = state.frameSeekPending && Number.isFinite(state.pendingFrameTarget) ? state.pendingFrameTarget : dom.video.currentTime;
+      const ready = Boolean(asset?.playable && dom.video.readyState >= 2 && duration > 0);
+      dom.prevFrameBtn.disabled = !ready || current <= .0005;
+      dom.nextFrameBtn.disabled = !ready || current >= duration - .0005;
+      dom.scrubber.disabled = !ready;
+      const estimatedFps = Math.max(1, Math.round(1 / state.frameDuration));
+      const calibration = state.frameRateEstimated ? `${estimatedFps} fps` : `about ${estimatedFps} fps until playback calibrates it`;
+      dom.prevFrameBtn.title = `Previous frame · ${calibration} (,)`;
+      dom.nextFrameBtn.title = `Next frame · ${calibration} (.)`;
+      dom.prevFrameBtn.setAttribute("aria-label", `Previous frame, ${calibration}`);
+      dom.nextFrameBtn.setAttribute("aria-label", `Next frame, ${calibration}`);
+    }
+
+    function queueFrameSeek(target) {
+      const asset = activeAsset();
+      const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : asset?.duration || 0;
+      if (!asset?.playable || dom.video.readyState < 1 || !duration) return false;
+      const nextTarget = clamp(target, 0, duration);
+      if (!state.frameSeekPending && dom.video.readyState >= 2 && Math.abs(nextTarget - dom.video.currentTime) < .0005) {
+        state.pendingFrameTarget = null;
+        updateEditorTimecode();
+        updateFrameButtons();
+        updateTracerProgress();
+        return true;
+      }
+      state.frameSeekPending = true;
+      state.pendingFrameTarget = nextTarget;
+      dom.video.currentTime = state.pendingFrameTarget;
+      dom.scrubber.value = state.pendingFrameTarget;
+      updateEditorTimecode();
+      updateFrameButtons();
+      return true;
+    }
+
+    function stepFrame(direction) {
+      const asset = activeAsset();
+      if (!asset?.playable) return;
+      state.temporalInspect = true;
+      exitPreviewForEditing();
+      dom.video.pause();
+      renderOverlay();
+      const current = state.frameSeekPending && Number.isFinite(state.pendingFrameTarget) ? state.pendingFrameTarget : dom.video.currentTime;
+      queueFrameSeek(current + direction * state.frameDuration);
+    }
+
+    function exitPreviewForEditing() {
+      if (!state.preview) return;
+      state.preview = false;
+      dom.previewBtn.querySelector("span").textContent = "Preview";
+      renderOverlay();
+      renderScorecard();
+    }
+
+    function sampleFrameRate() {
+      if (typeof dom.video.requestVideoFrameCallback !== "function") return;
+      if (videoFrameCallback && typeof dom.video.cancelVideoFrameCallback === "function") dom.video.cancelVideoFrameCallback(videoFrameCallback);
+      lastFrameMediaTime = null;
+      lastPresentedFrames = null;
+      const sample = (_now, metadata) => {
+        if (lastFrameMediaTime !== null) {
+          const presentedDelta = Number.isFinite(metadata.presentedFrames) && Number.isFinite(lastPresentedFrames) ? Math.max(1, metadata.presentedFrames - lastPresentedFrames) : 1;
+          const measured = (metadata.mediaTime - lastFrameMediaTime) / presentedDelta;
+          if (measured >= 1 / 300 && measured <= 1 / 10) {
+            state.frameDuration = state.frameDuration * .75 + measured * .25;
+            state.frameRateEstimated = true;
+          }
+        }
+        lastFrameMediaTime = metadata.mediaTime;
+        lastPresentedFrames = Number.isFinite(metadata.presentedFrames) ? metadata.presentedFrames : null;
+        if (!dom.video.paused) videoFrameCallback = dom.video.requestVideoFrameCallback(sample);
+      };
+      videoFrameCallback = dom.video.requestVideoFrameCallback(sample);
+    }
+
     function startPreview() {
       if (!activeAsset()) return toast("Upload or assign a video to preview.", "error");
       if (state.preview) {
         state.preview = false;
+        state.temporalInspect = false;
         dom.video.pause();
         renderAll();
         return;
       }
       const range = activeClipRange();
       state.preview = true;
+      state.temporalInspect = true;
+      state.frameSeekPending = false;
+      state.pendingFrameTarget = null;
       state.tool = "idle";
       dom.video.currentTime = range.start;
       renderAll();
@@ -1893,6 +2268,7 @@
           dom.video.currentTime = range.end;
           if (state.preview) {
             state.preview = false;
+            state.temporalInspect = false;
             renderAll();
           }
           return;
@@ -1903,9 +2279,14 @@
     }
 
     dom.playBtn.addEventListener("click", togglePlayback);
+    dom.prevFrameBtn.addEventListener("click", () => stepFrame(-1));
+    dom.nextFrameBtn.addEventListener("click", () => stepFrame(1));
     dom.video.addEventListener("play", () => {
+      state.temporalInspect = true;
       dom.playIcon.innerHTML = '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>';
       dom.playBtn.setAttribute("aria-label", "Pause video");
+      renderOverlay();
+      sampleFrameRate();
       playbackLoop();
     });
     dom.video.addEventListener("pause", () => {
@@ -1915,36 +2296,53 @@
       updateTracerProgress();
     });
     dom.video.addEventListener("loadedmetadata", () => {
+      state.frameDuration = 1 / 30;
+      state.frameRateEstimated = false;
+      state.frameSeekPending = false;
+      state.pendingFrameTarget = null;
       dom.scrubber.max = dom.video.duration || activeAsset()?.duration || 1;
-      dom.timecode.textContent = `${formatTime(dom.video.currentTime)} / ${formatTime(dom.video.duration)}`;
+      updateEditorTimecode();
+      updateFrameButtons();
       requestAnimationFrame(updateStageAspect);
     });
     dom.video.addEventListener("timeupdate", () => {
+      if (state.frameSeekPending) {
+        updateEditorTimecode();
+        return;
+      }
       if (!dom.scrubber.matches(":active")) dom.scrubber.value = dom.video.currentTime;
-      dom.timecode.textContent = `${formatTime(dom.video.currentTime)} / ${formatTime(dom.video.duration)}`;
+      updateEditorTimecode();
+      updateFrameButtons();
       updateTracerProgress();
     });
-    dom.video.addEventListener("error", () => toast("This video codec is not supported here. Try an H.264 MP4 or WebM file.", "error"));
+    function completeFrameSeek() {
+      if (!state.frameSeekPending) return;
+      state.frameSeekPending = false;
+      state.pendingFrameTarget = null;
+      dom.scrubber.value = dom.video.currentTime;
+      updateEditorTimecode();
+      updateFrameButtons();
+      updateTracerProgress();
+    }
+    dom.video.addEventListener("seeked", completeFrameSeek);
+    dom.video.addEventListener("loadeddata", () => {
+      const target = state.pendingFrameTarget;
+      if (state.frameSeekPending && Number.isFinite(target) && Math.abs(dom.video.currentTime - target) <= Math.max(.02, state.frameDuration)) completeFrameSeek();
+      updateFrameButtons();
+      drawSettingsPreview();
+    });
+    dom.video.addEventListener("error", () => {
+      state.frameSeekPending = false;
+      state.pendingFrameTarget = null;
+      updateFrameButtons();
+      toast("This video codec is not supported here. Try an H.264 MP4 or WebM file.", "error");
+    });
     dom.scrubber.addEventListener("input", () => {
-      dom.video.currentTime = Number(dom.scrubber.value);
-      dom.timecode.textContent = `${formatTime(dom.video.currentTime)} / ${formatTime(dom.video.duration)}`;
-      updateTracerProgress();
-    });
-    document.getElementById("setInBtn").addEventListener("click", () => {
-      const shot = activeShot();
-      const current = dom.video.currentTime;
-      const end = activeClipRange().end;
-      if (current >= end - .1) return toast("The in point must be before the out point.", "error");
-      if (shot.start && current > shot.startTime) return toast("The in point cannot begin after the tracer starts.", "error");
-      commit("set clip in", () => { shot.clipIn = current; });
-    });
-    document.getElementById("setOutBtn").addEventListener("click", () => {
-      const shot = activeShot();
-      const current = dom.video.currentTime;
-      const start = activeClipRange().start;
-      if (current <= start + .1) return toast("The out point must be after the in point.", "error");
-      if (shot.end && current < shot.endTime) return toast("The out point cannot end before the tracer finishes.", "error");
-      commit("set clip out", () => { shot.clipOut = current; });
+      state.temporalInspect = true;
+      exitPreviewForEditing();
+      dom.video.pause();
+      renderOverlay();
+      queueFrameSeek(Number(dom.scrubber.value));
     });
 
     document.querySelectorAll("[data-quick]").forEach(button => button.addEventListener("click", () => {
@@ -1964,6 +2362,7 @@
       const step = event.shiftKey ? .001 : .006;
       const point = type === "start" ? shot.start : type === "end" ? shot.end : (shot.control || (shot.start && shot.end ? defaultControl(shot.start, shot.end) : null));
       if (!point) return;
+      state.temporalInspect = false;
       if (event.key === "ArrowLeft") point.x -= step;
       if (event.key === "ArrowRight") point.x += step;
       if (event.key === "ArrowUp") point.y -= step;
@@ -1972,17 +2371,23 @@
       point.y = clamp(point.y, 0, 1);
       if (type === "control") shot.control = point;
       pushHistoryFrom(before, "nudge tracer");
-      state.tool = "idle";
+      if (type === "control" && state.tool === "curve") state.tool = "idle";
       renderAll();
     });
 
     dom.videoStage.addEventListener("pointerdown", event => {
       if (event.button !== 0 || state.preview) return;
+      if (state.frameSeekPending) return toast("Wait for this frame to finish loading before placing a point.", "error");
       const handle = event.target.closest?.("[data-handle]");
       const point = eventToVideoPoint(event);
       if (handle && point) {
         dom.video.pause();
-        state.dragging = { type: handle.dataset.handle, before: projectSnapshot(), pointerId: event.pointerId, moved: false, completeTool: state.tool === "curve" && handle.dataset.handle === "control" };
+        state.temporalInspect = false;
+        const shot = activeShot();
+        const before = projectSnapshot();
+        const acceptsDefaultCurve = handle.dataset.handle === "control" && !shot.control && shot.start && shot.end;
+        if (acceptsDefaultCurve) shot.control = defaultControl(shot.start, shot.end);
+        state.dragging = { type: handle.dataset.handle, before, pointerId: event.pointerId, moved: Boolean(acceptsDefaultCurve), completeTool: state.tool === "curve" && handle.dataset.handle === "control" };
         dom.videoStage.setPointerCapture?.(event.pointerId);
         event.preventDefault();
         return;
@@ -2010,6 +2415,7 @@
           renderAll();
           toast("End marked. Drag the line to shape the flight.");
         } else if (state.tool === "curve") {
+          state.temporalInspect = false;
           shot.control = point;
           state.dragging = { type: "control", before, pointerId: event.pointerId, moved: true, completeTool: true };
           dom.videoStage.setPointerCapture?.(event.pointerId);
@@ -2086,15 +2492,21 @@
     dom.undoBtn.addEventListener("click", undo);
     dom.redoBtn.addEventListener("click", redo);
     dom.previewBtn.addEventListener("click", startPreview);
-    document.getElementById("topExportBtn").addEventListener("click", () => {
-      state.panel = "export";
-      dom.rightPanel.classList.add("open");
-      renderAll();
-      document.querySelector('[data-panel="export"]').focus();
+    dom.settingsBtn.addEventListener("click", () => openSettings(state.panel, dom.settingsBtn));
+    dom.settingsCloseBtn.addEventListener("click", closeSettings);
+    dom.settingsDialog.addEventListener("click", event => {
+      if (event.target === dom.settingsDialog) closeSettings();
     });
+    dom.settingsDialog.addEventListener("close", () => {
+      const opener = settingsOpener;
+      settingsOpener = null;
+      opener?.focus?.();
+    });
+    document.getElementById("topExportBtn").addEventListener("click", event => openSettings("export", event.currentTarget));
 
     document.addEventListener("keydown", event => {
       const formTarget = event.target.matches("input, select, textarea, [contenteditable=true]");
+      const interactiveTarget = event.target.matches("button, input, select, textarea, summary, a[href], [role=button], [contenteditable=true]");
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !formTarget) {
         event.preventDefault();
         event.shiftKey ? redo() : undo();
@@ -2102,9 +2514,15 @@
         state.tool = "idle";
         renderAll();
         toast("Placement canceled");
-      } else if (event.code === "Space" && !formTarget && !state.exportJob) {
+      } else if (event.code === "Space" && !interactiveTarget && !state.exportJob && !dom.settingsDialog.open) {
         event.preventDefault();
         togglePlayback();
+      } else if (!formTarget && !state.exportJob && !dom.settingsDialog.open && event.key === ",") {
+        event.preventDefault();
+        stepFrame(-1);
+      } else if (!formTarget && !state.exportJob && !dom.settingsDialog.open && event.key === ".") {
+        event.preventDefault();
+        stepFrame(1);
       }
     });
 
@@ -2168,21 +2586,27 @@
     }
 
     function drawTracerCanvas(context, rect, shot, asset, currentTime, outputWidth) {
-      if (shot.videoId !== asset.id || !isTracerComplete(shot)) return;
-      const duration = Math.max(.08, shot.endTime - shot.startTime);
-      const progress = clamp(((currentTime - shot.startTime) / duration) * shot.tracer.speed, 0, 1);
+      if (shot.videoId !== asset.id || !shot.start || !shot.end) return;
+      const visibility = flightVisibilityAt(shot, currentTime);
+      if (visibility <= 0) return;
+      const progress = flightProgressAt(shot, currentTime);
+      const apex = shot.control || defaultControl(shot.start, shot.end);
       const map = point => ({ x: rect.x + point.x * rect.width, y: rect.y + point.y * rect.height });
       drawQuadraticSegment(
         context,
         map(shot.start),
         map(shot.end),
-        map(shot.control),
+        map(apex),
         progress,
         shot.tracer.width * (outputWidth / 1000),
         shot.tracer.color,
-        shot.tracer.opacity,
+        shot.tracer.opacity * visibility,
         shot.tracer.glow
       );
+    }
+
+    function drawTracersCanvas(context, rect, hole, asset, currentTime, outputWidth) {
+      shotsForAsset(hole, asset).forEach(shot => drawTracerCanvas(context, rect, shot, asset, currentTime, outputWidth));
     }
 
     function drawScorecardCanvas(context, width, height, hole, shot, asset = activeAsset()) {
@@ -2268,6 +2692,39 @@
       context.restore();
     }
 
+    function drawSettingsPreview() {
+      if (!dom.settingsPreview || !dom.settingsDialog.open) return;
+      const canvas = dom.settingsPreview;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      const hole = activeHole();
+      const shot = activeShot();
+      const asset = activeAsset();
+      const aspect = outputAspect(asset);
+      let width = 480;
+      let height = Math.round(width / aspect);
+      if (height > 270) {
+        height = 270;
+        width = Math.round(height * aspect);
+      }
+      canvas.width = Math.max(2, width);
+      canvas.height = Math.max(2, height);
+      context.fillStyle = "#090b09";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      if (!asset?.playable || dom.video.readyState < 2) {
+        context.fillStyle = "rgba(255,255,255,.66)";
+        context.font = "600 12px sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(asset?.playable ? "Load a frame to preview" : "Assign a video to preview", canvas.width / 2, canvas.height / 2);
+        return;
+      }
+      const rect = containRect(asset.width, asset.height, canvas.width, canvas.height);
+      try { context.drawImage(dom.video, rect.x, rect.y, rect.width, rect.height); } catch (_) { /* A frame may still be decoding. */ }
+      if (shot) drawTracerCanvas(context, rect, shot, asset, shot.endTime, canvas.width);
+      if (hole && shot) drawScorecardCanvas(context, canvas.width, canvas.height, hole, shot, asset);
+    }
+
     function exportDimensions(asset) {
       if (state.outputRatio === "16:9") return state.quality === "high" ? [1920, 1080] : [1280, 720];
       if (state.outputRatio === "9:16") return state.quality === "high" ? [1080, 1920] : [720, 1280];
@@ -2306,10 +2763,12 @@
       const hole = activeHole();
       const shot = activeShot();
       const asset = activeAsset();
+      const videoShots = shotsForAsset(hole, asset);
+      const tracerCount = videoShots.filter(item => item.start && item.end).length;
       if (!asset?.playable) return toast("Assign a playable video before exporting.", "error");
       if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return toast("This browser does not support in-browser video export. Try current Chrome or Edge.", "error");
       const range = activeClipRange();
-      if (range.end <= range.start + .08) return toast("Choose a longer clip range before exporting.", "error");
+      if (range.end <= range.start + .08) return toast("Choose a longer video before exporting.", "error");
       dom.video.pause();
       state.preview = false;
       state.tool = "idle";
@@ -2318,7 +2777,7 @@
       dom.exportProgressTrack.setAttribute("aria-valuenow", "0");
       dom.exportPercent.textContent = "0%";
       dom.exportRemaining.textContent = "Preparing…";
-      dom.exportStatus.textContent = `Preparing Hole ${hole.number} · Shot ${shot.number}`;
+      dom.exportStatus.textContent = `Preparing Hole ${hole.number} · ${tracerCount} tracer${tracerCount === 1 ? "" : "s"}`;
       dom.exportCloseBtn.disabled = true;
       document.getElementById("cancelExportBtn").classList.remove("hidden");
       requestAnimationFrame(() => document.getElementById("cancelExportBtn").focus());
@@ -2350,8 +2809,8 @@
         context.fillRect(0, 0, width, height);
         const firstRect = containRect(asset.width, asset.height, width, height);
         context.drawImage(exportVideo, firstRect.x, firstRect.y, firstRect.width, firstRect.height);
-        drawTracerCanvas(context, firstRect, shot, asset, range.start, width);
-        drawScorecardCanvas(context, width, height, hole, shot, asset);
+        drawTracersCanvas(context, firstRect, hole, asset, range.start, width);
+        drawScorecardCanvas(context, width, height, hole, displayShotAtTime(hole, asset, range.start, shot), asset);
 
         const stream = canvas.captureStream(30);
         if (typeof exportVideo.captureStream === "function") {
@@ -2400,7 +2859,7 @@
           const downloadUrl = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = downloadUrl;
-          link.download = `${safeName}-hole-${hole.number}-shot-${shot.number}.${extension}`;
+          link.download = `${safeName}-hole-${hole.number}-${videoShots.length > 1 ? "video" : `shot-${shot.number}`}.${extension}`;
           document.body.appendChild(link);
           link.click();
           link.remove();
@@ -2425,8 +2884,8 @@
           context.fillRect(0, 0, width, height);
           const rect = containRect(asset.width, asset.height, width, height);
           try { context.drawImage(exportVideo, rect.x, rect.y, rect.width, rect.height); } catch (_) { /* Decoder may not have produced its first frame yet. */ }
-          drawTracerCanvas(context, rect, shot, asset, current, width);
-          drawScorecardCanvas(context, width, height, hole, shot, asset);
+          drawTracersCanvas(context, rect, hole, asset, current, width);
+          drawScorecardCanvas(context, width, height, hole, displayShotAtTime(hole, asset, current, shot), asset);
           const progress = clamp((current - range.start) / (range.end - range.start), 0, 1);
           const percent = Math.round(progress * 100);
           dom.exportProgress.style.width = `${percent}%`;
