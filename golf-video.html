@@ -311,8 +311,8 @@
     .video-stage.tool-active { cursor: crosshair; }
     .video-stage video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; background: #090b09; }
     .stage-overlay { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 4; }
-    .tracer-shadow { fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: .42; }
-    .tracer-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .tracer-shadow, .tracer-line { stroke: none; }
+    .tracer-shadow { opacity: .22; }
     .tracer-guide { fill: none; stroke: rgba(255,255,255,.62); stroke-width: 1.5; stroke-dasharray: 5 7; }
     .tracer-handle { cursor: grab; vector-effect: non-scaling-stroke; }
     .tracer-handle:active { cursor: grabbing; }
@@ -1039,13 +1039,95 @@
       return { x: 2 * apex.x - .5 * (start.x + end.x), y: 2 * apex.y - .5 * (start.y + end.y) };
     }
 
+    function quadraticPointAt(start, end, apex, t) {
+      const control = quadraticControl(start, end, apex);
+      const inverse = 1 - t;
+      return {
+        x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
+        y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y
+      };
+    }
+
+    function quadraticTangentAt(start, end, apex, t) {
+      const control = quadraticControl(start, end, apex);
+      return {
+        x: 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x),
+        y: 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y)
+      };
+    }
+
+    function quadraticTAtProgress(start, end, apex, progress) {
+      const bounded = clamp(progress, 0, 1);
+      if (bounded <= 0 || bounded >= 1) return bounded;
+      const divisions = 80;
+      const lengths = [0];
+      let totalLength = 0;
+      let previous = start;
+      for (let index = 1; index <= divisions; index++) {
+        const point = quadraticPointAt(start, end, apex, index / divisions);
+        totalLength += Math.hypot(point.x - previous.x, point.y - previous.y);
+        lengths.push(totalLength);
+        previous = point;
+      }
+      const targetLength = totalLength * bounded;
+      let segment = lengths.findIndex(length => length >= targetLength);
+      if (segment < 1) segment = 1;
+      const segmentStart = lengths[segment - 1];
+      const segmentSpan = Math.max(.0001, lengths[segment] - segmentStart);
+      return clamp(((segment - 1) + (targetLength - segmentStart) / segmentSpan) / divisions, 0, 1);
+    }
+
+    function tracerWidthScaleAt(t) {
+      const bounded = clamp(t, 0, 1);
+      const smoothDepth = bounded * bounded * (3 - 2 * bounded);
+      return 1.08 + (.64 - 1.08) * smoothDepth;
+    }
+
+    function tracerRibbonGeometry(start, end, apex, progress, lineWidth) {
+      const tLimit = quadraticTAtProgress(start, end, apex, progress);
+      if (tLimit <= 0 || lineWidth <= 0) return null;
+      const steps = Math.max(7, Math.ceil(54 * tLimit));
+      const left = [];
+      const right = [];
+      let startCapControl = null;
+      let endCapControl = null;
+      for (let index = 0; index <= steps; index++) {
+        const t = tLimit * (index / steps);
+        const point = quadraticPointAt(start, end, apex, t);
+        let tangent = quadraticTangentAt(start, end, apex, t);
+        let tangentLength = Math.hypot(tangent.x, tangent.y);
+        if (tangentLength < .0001) {
+          tangent = { x: end.x - start.x, y: end.y - start.y };
+          tangentLength = Math.hypot(tangent.x, tangent.y) || 1;
+        }
+        const unitX = tangent.x / tangentLength;
+        const unitY = tangent.y / tangentLength;
+        const halfWidth = lineWidth * tracerWidthScaleAt(t) / 2;
+        left.push({ x: point.x - unitY * halfWidth, y: point.y + unitX * halfWidth });
+        right.push({ x: point.x + unitY * halfWidth, y: point.y - unitX * halfWidth });
+        if (index === 0) startCapControl = { x: point.x - unitX * halfWidth * 1.35, y: point.y - unitY * halfWidth * 1.35 };
+        if (index === steps) endCapControl = { x: point.x + unitX * halfWidth * 1.35, y: point.y + unitY * halfWidth * 1.35 };
+      }
+      return { left, right, startCapControl, endCapControl };
+    }
+
+    function svgRibbonPath(geometry) {
+      if (!geometry) return "";
+      const point = value => `${value.x.toFixed(2)} ${value.y.toFixed(2)}`;
+      const left = geometry.left;
+      const right = geometry.right;
+      return `M ${point(left[0])} ${left.slice(1).map(value => `L ${point(value)}`).join(" ")} Q ${point(geometry.endCapControl)} ${point(right[right.length - 1])} ${[...right].reverse().slice(1).map(value => `L ${point(value)}`).join(" ")} Q ${point(geometry.startCapControl)} ${point(left[0])} Z`;
+    }
+
     function flightProgressAt(shot, time) {
       if (!shot?.start || !shot?.end) return 0;
       const duration = Math.max(.001, shot.endTime - shot.startTime);
       const timedProgress = clamp((time - shot.startTime) / duration, 0, 1);
       const depthChange = clamp(shot.start.y - shot.end.y, 0, .8);
-      const perspectiveExponent = (1.75 + depthChange * .9) * clamp(shot.tracer.speed, .65, 1.5);
-      return 1 - Math.pow(1 - timedProgress, perspectiveExponent);
+      const pace = clamp(Number(shot.tracer?.speed) || 1, .65, 1.5);
+      const launchCompression = clamp((.15 - depthChange * .055) / pace, .06, .27);
+      const denominator = timedProgress + launchCompression * (1 - timedProgress);
+      return denominator > 0 ? timedProgress / denominator : 0;
     }
 
     function flightVisibilityAt(shot, time) {
@@ -1246,13 +1328,13 @@
       });
     }
 
-    function svgPathForShot(shot) {
+    function svgRibbonPathForShot(shot, progress = 1, widthScale = 1) {
       if (!shot?.start || !shot?.end) return "";
       const start = videoPointToSvg(shot.start);
       const end = videoPointToSvg(shot.end);
       const apexNorm = shot.control || defaultControl(shot.start, shot.end);
-      const control = videoPointToSvg(quadraticControl(shot.start, shot.end, apexNorm));
-      return `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
+      const apex = videoPointToSvg(apexNorm);
+      return svgRibbonPath(tracerRibbonGeometry(start, end, apex, progress, shot.tracer.width * widthScale));
     }
 
     function renderOtherTracerPaths() {
@@ -1268,7 +1350,8 @@
         .filter(item => item.id !== shot?.id)
         .map(item => {
           const style = item.tracer;
-          return `<path class="tracer-line other-tracer" data-other-shot-id="${item.id}" d="${svgPathForShot(item)}" style="stroke:${style.color};stroke-width:${style.width};filter:${style.glow ? "url(#tracerGlow)" : "none"}"/>`;
+          const shadow = style.glow ? `<path class="tracer-shadow other-tracer-shadow" data-other-shadow-shot-id="${item.id}" d="" style="fill:${style.color};filter:url(#tracerGlow)"/>` : "";
+          return `${shadow}<path class="tracer-line other-tracer" data-other-shot-id="${item.id}" d="" style="fill:${style.color};filter:${style.glow ? "url(#tracerGlow)" : "none"}"/>`;
         }).join("");
     }
 
@@ -1292,7 +1375,6 @@
       }
 
       const start = videoPointToSvg(shot.start);
-      const lineWidth = style.width;
       [dom.startHandle, dom.startLabel].forEach(element => { element.setAttribute("x", start.x); element.setAttribute("cx", start.x); element.setAttribute("y", start.y); element.setAttribute("cy", start.y); });
       dom.startLabel.setAttribute("y", start.y + 8);
       dom.tracerHandles.style.display = showEditing ? "block" : "none";
@@ -1311,18 +1393,12 @@
       const end = videoPointToSvg(shot.end);
       const apexNorm = shot.control || defaultControl(shot.start, shot.end);
       const apex = videoPointToSvg(apexNorm);
-      const controlNorm = quadraticControl(shot.start, shot.end, apexNorm);
-      const control = videoPointToSvg(controlNorm);
-      const d = `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
-      dom.tracerPath.setAttribute("d", d);
-      dom.tracerShadow.setAttribute("d", d);
       dom.tracerGuide.setAttribute("d", `M ${start.x} ${start.y} L ${apex.x} ${apex.y} L ${end.x} ${end.y}`);
-      dom.tracerPath.style.stroke = style.color;
-      dom.tracerPath.style.strokeWidth = lineWidth;
+      dom.tracerPath.style.fill = style.color;
       dom.tracerPath.style.opacity = style.opacity;
       dom.tracerPath.style.filter = style.glow ? "url(#tracerGlow)" : "none";
-      dom.tracerShadow.style.stroke = style.color;
-      dom.tracerShadow.style.strokeWidth = lineWidth * (style.glow ? 3.6 : 1.8);
+      dom.tracerShadow.style.fill = style.color;
+      dom.tracerShadow.style.filter = style.glow ? "url(#tracerGlow)" : "none";
       dom.tracerShadow.style.display = style.glow ? "block" : "none";
       dom.tracerGuide.style.display = showEditing ? "block" : "none";
 
@@ -1336,32 +1412,40 @@
     function updateTracerProgress() {
       const shot = activeShot();
       const temporalView = !dom.video.paused || state.preview || state.temporalInspect;
-      const applyProgress = (path, item, opacityScale = 1) => {
-        if (!item?.start || !item?.end || !path?.getAttribute("d")) return;
+      const applyProgress = (path, item, widthScale = 1, opacityScale = 1) => {
+        if (!item?.start || !item?.end) {
+          path?.setAttribute("d", "");
+          return;
+        }
         const progress = temporalView ? flightProgressAt(item, dom.video.currentTime) : 1;
         const visibility = temporalView ? flightVisibilityAt(item, dom.video.currentTime) : 1;
         path.style.opacity = item.tracer.opacity * visibility * opacityScale;
         path.style.visibility = progress <= 0 || visibility <= 0 ? "hidden" : "visible";
-        if (progress <= 0 || visibility <= 0) return;
-        const pathData = path.getAttribute("d");
-        let length = 1000;
-        if (path.dataset.lengthFor === pathData && Number.isFinite(Number(path.dataset.pathLength))) {
-          length = Number(path.dataset.pathLength);
-        } else {
-          try { length = path.getTotalLength(); } catch (_) { /* SVG may be hidden during a layout pass. */ }
-          path.dataset.lengthFor = pathData;
-          path.dataset.pathLength = String(length);
+        if (progress <= 0 || visibility <= 0) {
+          path.setAttribute("d", "");
+          return;
         }
-        path.style.strokeDasharray = `${length}`;
-        path.style.strokeDashoffset = `${length * (1 - progress)}`;
+        path.style.fill = item.tracer.color;
+        path.style.strokeDasharray = "none";
+        path.style.strokeDashoffset = "0";
+        path.setAttribute("d", svgRibbonPathForShot(item, progress, widthScale));
       };
       applyProgress(dom.tracerPath, shot);
-      applyProgress(dom.tracerShadow, shot, .42);
+      if (shot?.tracer.glow) {
+        dom.tracerShadow.style.display = "block";
+        applyProgress(dom.tracerShadow, shot, 3.2, .20);
+      } else {
+        dom.tracerShadow.style.display = "none";
+        dom.tracerShadow.setAttribute("d", "");
+      }
       const hole = activeHole();
       const asset = activeAsset();
       const shotMap = new Map(completedShotsForAsset(hole, asset).map(item => [item.id, item]));
       dom.otherTracerPaths.querySelectorAll("[data-other-shot-id]").forEach(path => {
         applyProgress(path, shotMap.get(path.dataset.otherShotId));
+      });
+      dom.otherTracerPaths.querySelectorAll("[data-other-shadow-shot-id]").forEach(path => {
+        applyProgress(path, shotMap.get(path.dataset.otherShadowShotId), 3.2, .20);
       });
       if (temporalView && hole && asset) {
         const displayShot = displayShotAtTime(hole, asset, dom.video.currentTime, shot);
@@ -2537,52 +2621,35 @@
       context.closePath();
     }
 
-    function drawQuadraticSegment(context, start, end, apex, progress, lineWidth, color, opacity, glow) {
+    function traceCanvasRibbon(context, geometry) {
+      if (!geometry) return;
+      const left = geometry.left;
+      const right = geometry.right;
+      context.beginPath();
+      context.moveTo(left[0].x, left[0].y);
+      left.slice(1).forEach(point => context.lineTo(point.x, point.y));
+      context.quadraticCurveTo(geometry.endCapControl.x, geometry.endCapControl.y, right[right.length - 1].x, right[right.length - 1].y);
+      [...right].reverse().slice(1).forEach(point => context.lineTo(point.x, point.y));
+      context.quadraticCurveTo(geometry.startCapControl.x, geometry.startCapControl.y, left[0].x, left[0].y);
+      context.closePath();
+    }
+
+    function drawQuadraticRibbon(context, start, end, apex, progress, lineWidth, color, opacity, glow) {
       if (progress <= 0) return;
-      const control = quadraticControl(start, end, apex);
-      const at = t => {
-        const inverse = 1 - t;
-        return {
-          x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
-          y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y
-        };
-      };
-      const lengths = [0];
-      let totalLength = 0;
-      let previous = start;
-      for (let index = 1; index <= 80; index++) {
-        const point = at(index / 80);
-        totalLength += Math.hypot(point.x - previous.x, point.y - previous.y);
-        lengths.push(totalLength);
-        previous = point;
-      }
-      const targetLength = totalLength * progress;
-      let segment = lengths.findIndex(length => length >= targetLength);
-      if (segment < 1) segment = 1;
-      const segmentStart = lengths[segment - 1];
-      const segmentSpan = Math.max(.0001, lengths[segment] - segmentStart);
-      const tLimit = clamp(((segment - 1) + (targetLength - segmentStart) / segmentSpan) / 80, 0, 1);
-      const steps = Math.max(10, Math.ceil(70 * tLimit));
-      const stroke = (width, alpha, blur) => {
+      const fill = (widthScale, alpha, blur) => {
+        const geometry = tracerRibbonGeometry(start, end, apex, progress, lineWidth * widthScale);
+        if (!geometry) return;
         context.save();
-        context.beginPath();
-        context.moveTo(start.x, start.y);
-        for (let index = 1; index <= steps; index++) {
-          const point = at(tLimit * (index / steps));
-          context.lineTo(point.x, point.y);
-        }
-        context.strokeStyle = color;
+        traceCanvasRibbon(context, geometry);
+        context.fillStyle = color;
         context.globalAlpha = alpha;
-        context.lineWidth = width;
-        context.lineCap = "round";
-        context.lineJoin = "round";
         context.shadowColor = color;
         context.shadowBlur = blur;
-        context.stroke();
+        context.fill();
         context.restore();
       };
-      if (glow) stroke(lineWidth * 3.2, opacity * .28, lineWidth * 3);
-      stroke(lineWidth, opacity, glow ? lineWidth * 1.4 : 0);
+      if (glow) fill(3.2, opacity * .20, lineWidth * 3);
+      fill(1, opacity, glow ? lineWidth * 1.4 : 0);
     }
 
     function drawTracerCanvas(context, rect, shot, asset, currentTime, outputWidth) {
@@ -2592,7 +2659,7 @@
       const progress = flightProgressAt(shot, currentTime);
       const apex = shot.control || defaultControl(shot.start, shot.end);
       const map = point => ({ x: rect.x + point.x * rect.width, y: rect.y + point.y * rect.height });
-      drawQuadraticSegment(
+      drawQuadraticRibbon(
         context,
         map(shot.start),
         map(shot.end),
