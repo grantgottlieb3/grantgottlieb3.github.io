@@ -98,8 +98,6 @@
       text-overflow: ellipsis;
     }
     .project-name:hover, .project-name:focus { background: var(--paper); border-color: var(--line); }
-    .session-status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
-    .session-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
     .top-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; }
     .icon-btn, .quiet-btn, .primary-btn, .danger-btn {
       min-height: 36px;
@@ -120,7 +118,8 @@
     .danger-btn { color: var(--danger); background: var(--danger-soft); border-color: #efd0ca; }
 
     /* Two-column workspace */
-    .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 330px minmax(470px, 1fr); }
+    .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 330px minmax(470px, 1fr) 42px; transition: grid-template-columns .2s ease; }
+    .workspace.video-editor-open { grid-template-columns: 330px minmax(420px, 1fr) 292px; }
     .left-panel { min-height: 0; background: var(--panel); }
     .left-panel { display: flex; flex-direction: column; border-right: 1px solid var(--line); }
     .panel-top { flex: none; padding: 18px 16px 14px; }
@@ -219,6 +218,9 @@
     .hole-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .hole-field label, .shot-field label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 7.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
     .hole-field input, .shot-field input { width: 100%; height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--paper); font-size: 10px; }
+    .hole-field input[type="number"], .shot-field input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    .hole-field input[type="number"]::-webkit-inner-spin-button, .hole-field input[type="number"]::-webkit-outer-spin-button,
+    .shot-field input[type="number"]::-webkit-inner-spin-button, .shot-field input[type="number"]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
     .hole-shots-head { display: flex; align-items: center; justify-content: space-between; margin: 13px 0 6px; color: var(--muted); font-size: 8px; font-weight: 760; letter-spacing: .07em; text-transform: uppercase; }
     .add-inline { border: 0; padding: 3px 5px; border-radius: 5px; color: var(--ink-2); background: transparent; cursor: pointer; font-size: 8px; font-weight: 730; text-transform: none; letter-spacing: 0; }
     .add-inline:hover { background: var(--accent); color: var(--accent-ink); }
@@ -317,9 +319,6 @@
     .tracer-handle { cursor: grab; vector-effect: non-scaling-stroke; }
     .tracer-handle:active { cursor: grabbing; }
     .handle-label { fill: #fff; font-family: var(--sans); font-size: 24px; font-weight: 760; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(0,0,0,.42); stroke-width: 4px; }
-    .stage-badge { position: absolute; top: 10px; z-index: 8; display: flex; align-items: center; gap: 6px; height: 27px; padding: 0 9px; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; color: rgba(255,255,255,.82); background: rgba(12,15,12,.66); backdrop-filter: blur(8px); font-size: 8px; font-weight: 740; letter-spacing: .04em; text-transform: uppercase; pointer-events: none; }
-    .orientation-badge { left: 10px; }
-    .ratio-badge { right: 10px; }
     .placement-tip { position: absolute; left: 50%; bottom: 14px; z-index: 9; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; color: var(--ink); background: rgba(255,255,255,.94); box-shadow: 0 8px 25px rgba(0,0,0,.2); font-size: 9px; font-weight: 690; white-space: nowrap; pointer-events: none; }
     .placement-tip .esc { padding: 2px 5px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--muted); font-size: 7px; }
 
@@ -391,6 +390,47 @@
     .step-number { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 7px; color: var(--ink-2); background: #e3e7df; font-size: 8px; font-weight: 800; }
     .quick-step strong { display: block; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
     .quick-step span { display: block; margin-top: 2px; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Collapsible video editor */
+    .video-editor-panel { min-width: 0; min-height: 0; display: grid; grid-template-columns: 42px 250px; overflow: hidden; border-left: 1px solid var(--line); background: var(--panel); }
+    .video-editor-tab { height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 11px; padding: 16px 0; border: 0; border-right: 1px solid var(--line); color: var(--ink-2); background: #f6f7f3; cursor: pointer; }
+    .video-editor-tab:hover { background: var(--paper); }
+    .video-editor-tab svg { width: 17px; height: 17px; flex: none; transition: transform .18s ease; }
+    .video-editor-tab span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 9px; font-weight: 760; letter-spacing: .08em; text-transform: uppercase; }
+    .workspace.video-editor-open .video-editor-tab svg { transform: rotate(180deg); }
+    .video-editor-content { width: 250px; min-width: 250px; min-height: 0; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: opacity .15s ease; }
+    .workspace.video-editor-open .video-editor-content { opacity: 1; visibility: visible; }
+    .video-editor-head { flex: none; padding: 18px 16px 13px; border-bottom: 1px solid var(--line); background: var(--paper); }
+    .video-editor-head h2 { margin: 0; font-size: 15px; letter-spacing: -.025em; }
+    .video-editor-head p { margin: 5px 0 0; color: var(--muted); font-size: 8.5px; line-height: 1.4; }
+    .video-editor-body { flex: 1; min-height: 0; overflow-y: auto; padding: 13px 12px 20px; }
+    .video-panel-section { padding: 12px; margin-bottom: 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+    .video-panel-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 9px; font-size: 9px; font-weight: 780; letter-spacing: .05em; text-transform: uppercase; }
+    .video-panel-note { margin: -3px 0 10px; color: var(--muted); font-size: 8px; line-height: 1.45; }
+    .video-panel-actions { display: grid; gap: 6px; }
+    .video-panel-actions .quiet-btn, .video-panel-actions .primary-btn { width: 100%; }
+    .project-preview-meta { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 10px; color: var(--muted); font-size: 8px; }
+    details.video-panel-section { padding: 0; }
+    details.video-panel-section > summary { padding: 12px; cursor: pointer; list-style: none; font-size: 9px; font-weight: 780; letter-spacing: .04em; text-transform: uppercase; }
+    details.video-panel-section > summary::-webkit-details-marker { display: none; }
+    details.video-panel-section > summary::after { content: "+"; float: right; color: var(--muted); font-size: 13px; line-height: .7; }
+    details.video-panel-section[open] > summary::after { content: "−"; }
+    .video-panel-details { padding: 0 12px 12px; }
+    .source-name { display: block; overflow: hidden; margin-bottom: 9px; font-size: 9px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+    .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 11px; }
+    .source-stat { padding: 8px; border-radius: 8px; background: #f2f4ef; }
+    .source-stat span { display: block; color: var(--muted); font-size: 7px; text-transform: uppercase; letter-spacing: .05em; }
+    .source-stat strong { display: block; margin-top: 3px; overflow: hidden; font-size: 8.5px; text-overflow: ellipsis; white-space: nowrap; }
+    .trim-control + .trim-control { margin-top: 12px; }
+    .trim-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; color: var(--ink-2); font-size: 8px; font-weight: 680; }
+    .trim-label output { color: var(--muted); font-family: var(--mono); font-size: 8px; }
+    .trim-slider { width: 100%; accent-color: #667f24; cursor: pointer; }
+    .trim-summary { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); color: var(--muted); font-size: 8px; }
+    .trim-summary strong { color: var(--ink-2); }
+    .trim-reset { width: 100%; height: 29px; margin-top: 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink-2); background: #f7f8f5; cursor: pointer; font-size: 8px; font-weight: 700; }
+    .trim-reset:hover { background: var(--paper); border-color: var(--line-strong); }
+    .video-panel-empty { padding: 18px 10px; color: var(--muted); font-size: 9px; line-height: 1.5; text-align: center; }
+    .future-tools { display: flex; align-items: center; gap: 7px; padding: 9px 10px; border: 1px dashed var(--line-strong); border-radius: 9px; color: var(--muted); font-size: 8px; }
 
     /* Settings window */
     .settings-dialog { width: min(580px, calc(100vw - 36px)); height: min(760px, calc(100vh - 48px)); padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.34); border-radius: 20px; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-lg); }
@@ -521,15 +561,23 @@
     @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
     @media (max-width: 1220px) {
-      .workspace { grid-template-columns: 310px minmax(450px, 1fr); }
+      .workspace { grid-template-columns: 310px minmax(450px, 1fr) 42px; }
+      .workspace.video-editor-open { grid-template-columns: 310px minmax(420px, 1fr) 292px; }
       .brand { min-width: 210px; }
       .editor-inner { padding-left: 14px; padding-right: 14px; }
       .stage-shell { padding: 14px; }
     }
+    @media (max-width: 1120px) {
+      .workspace.video-editor-open { grid-template-columns: 310px minmax(450px, 1fr) 42px; }
+      .video-editor-panel { position: relative; }
+      .workspace.video-editor-open .video-editor-panel { overflow: visible; z-index: 30; }
+      .video-editor-content { position: absolute; top: 0; right: 42px; bottom: 0; background: var(--panel); box-shadow: -18px 0 36px rgba(24,29,20,.13); }
+    }
     @media (max-width: 1020px) {
       body { overflow: auto; }
       .app { min-width: 760px; height: auto; min-height: 100%; }
-      .workspace { min-height: calc(100vh - 68px); grid-template-columns: 290px minmax(450px, 1fr); }
+      .workspace { min-height: calc(100vh - 68px); grid-template-columns: 290px minmax(450px, 1fr) 42px; }
+      .workspace.video-editor-open { grid-template-columns: 290px minmax(450px, 1fr) 42px; }
       .project-name { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -551,7 +599,6 @@
         <div class="brand-copy"><span class="brand-name">Flightline</span><span class="brand-sub">Golf shot studio</span></div>
       </div>
       <input class="project-name" id="projectName" value="Untitled round" aria-label="Project name" spellcheck="false">
-      <div class="session-status" title="Video files remain available while this tab is open">Session only</div>
       <div class="top-actions">
         <button class="icon-btn" id="undoBtn" title="Undo (Ctrl/⌘ Z)" aria-label="Undo" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 8 4.5 12 9 16"/><path d="M5 12h8.5a5.5 5.5 0 0 1 5.5 5.5"/></svg>
@@ -565,7 +612,7 @@
         </button>
         <button class="quiet-btn" id="previewBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.8 12s3.3-6 9.2-6 9.2 6 9.2 6-3.3 6-9.2 6-9.2-6-9.2-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>
-          <span>Preview</span>
+          <span>Preview project</span>
         </button>
         <button class="primary-btn" id="topExportBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 20h14"/></svg>
@@ -662,8 +709,6 @@
                     <text class="handle-label" id="startLabel">S</text><text class="handle-label" id="controlLabel">↕</text><text class="handle-label" id="endLabel">E</text>
                   </g>
                 </svg>
-                <div class="stage-badge orientation-badge" id="orientationBadge">Horizontal</div>
-                <div class="stage-badge ratio-badge" id="ratioBadge">Source · 16:9</div>
                 <div class="scorecard-overlay preset-broadcast" id="scorecardOverlay"><div class="scorecard-inner" id="scorecardInner"></div></div>
                 <div class="placement-tip hidden" id="placementTip"><span id="placementText">Click the ball on this frame</span><span class="esc">ESC</span></div>
               </div>
@@ -682,6 +727,17 @@
           </section>
         </div>
       </main>
+
+      <aside class="video-editor-panel" id="videoEditorPanel" aria-label="Video editing controls">
+        <button class="video-editor-tab" id="videoEditorToggle" aria-expanded="false" aria-controls="videoEditorContent" title="Open video editor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6 9 12l6 6"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+          <span>Video editor</span>
+        </button>
+        <div class="video-editor-content" id="videoEditorContent" aria-hidden="true">
+          <header class="video-editor-head"><h2>Video editor</h2><p>Trim clips, review the full project, and manage the video canvas.</p></header>
+          <div class="video-editor-body" id="videoEditorBody"></div>
+        </div>
+      </aside>
 
     </div>
   </div>
@@ -740,7 +796,7 @@
       const firstShot = createShot(1);
       return {
         id: uid("hole"), number, par: 4, distance: "", strokes: "",
-        shots: [firstShot], activeShotId: firstShot.id,
+        shots: [firstShot], activeShotId: firstShot.id, clipRanges: {},
         scorecard: {
           visible: true, preset: "broadcast", position: "tr", x: .82, y: .18, scale: 1,
           font: "system", text: "#ffffff", background: "#121612", opacity: .88,
@@ -761,6 +817,9 @@
       panel: "tracer",
       tool: "idle",
       preview: false,
+      previewScope: null,
+      projectPreview: null,
+      previewRunId: 0,
       temporalInspect: false,
       frameDuration: 1 / 30,
       frameRateEstimated: false,
@@ -769,6 +828,8 @@
       outputRatio: "source",
       quality: "standard",
       mediaOpen: false,
+      videoEditorOpen: false,
+      videoEditorSections: { trim: true, source: false },
       history: [],
       redo: [],
       dragging: null,
@@ -777,6 +838,7 @@
     };
 
     const dom = {
+      workspace: document.querySelector(".workspace"),
       projectName: document.getElementById("projectName"),
       holeCount: document.getElementById("holeCount"),
       totalStrokes: document.getElementById("totalStrokes"),
@@ -809,8 +871,6 @@
       startLabel: document.getElementById("startLabel"),
       endLabel: document.getElementById("endLabel"),
       controlLabel: document.getElementById("controlLabel"),
-      orientationBadge: document.getElementById("orientationBadge"),
-      ratioBadge: document.getElementById("ratioBadge"),
       placementTip: document.getElementById("placementTip"),
       placementText: document.getElementById("placementText"),
       scorecardOverlay: document.getElementById("scorecardOverlay"),
@@ -829,6 +889,10 @@
       undoBtn: document.getElementById("undoBtn"),
       redoBtn: document.getElementById("redoBtn"),
       previewBtn: document.getElementById("previewBtn"),
+      videoEditorPanel: document.getElementById("videoEditorPanel"),
+      videoEditorToggle: document.getElementById("videoEditorToggle"),
+      videoEditorContent: document.getElementById("videoEditorContent"),
+      videoEditorBody: document.getElementById("videoEditorBody"),
       exportModal: document.getElementById("exportModal"),
       exportProgress: document.getElementById("exportProgress"),
       exportProgressTrack: document.getElementById("exportProgressTrack"),
@@ -909,6 +973,15 @@
 
     function deepCopy(value) { return JSON.parse(JSON.stringify(value)); }
 
+    function clearPreviewState() {
+      state.projectPreview?.cancelTransition?.();
+      state.preview = false;
+      state.previewScope = null;
+      state.projectPreview = null;
+      state.previewRunId += 1;
+      state.temporalInspect = false;
+    }
+
     function projectSnapshot() {
       return JSON.stringify({
         projectName: state.projectName,
@@ -921,20 +994,24 @@
     }
 
     function restoreSnapshot(snapshot) {
+      dom.video?.pause();
       const saved = JSON.parse(snapshot);
       state.projectName = saved.projectName;
-      state.holes = saved.holes;
+      state.holes = saved.holes.map(hole => ({ ...hole, clipRanges: hole.clipRanges || {} }));
       state.activeHoleId = saved.activeHoleId;
       state.panel = saved.panel;
       state.outputRatio = saved.outputRatio;
       state.quality = saved.quality;
       state.tool = "idle";
-      state.preview = false;
-      state.temporalInspect = false;
+      clearPreviewState();
       dom.projectName.value = state.projectName;
     }
 
     function commit(label, mutator) {
+      if (state.preview) {
+        dom.video.pause();
+        clearPreviewState();
+      }
       const before = projectSnapshot();
       mutator();
       const after = projectSnapshot();
@@ -1032,15 +1109,62 @@
       const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
       const dx = end.x - start.x;
       const bend = Math.max(.055, Math.min(.14, Math.abs(end.y - start.y) * .13));
-      return { x: clamp(mid.x + (dx >= 0 ? -bend : bend), .03, .97), y: clamp(mid.y - .045, .03, .97) };
+      const lift = Math.max(.055, Math.min(.15, Math.abs(end.y - start.y) * .18));
+      return constrainFlightApex(start, end, { x: mid.x + (dx >= 0 ? -bend : bend), y: Math.min(start.y, end.y) - lift });
     }
 
-    function quadraticControl(start, end, apex) {
-      return { x: 2 * apex.x - .5 * (start.x + end.x), y: 2 * apex.y - .5 * (start.y + end.y) };
+    function constrainFlightApex(start, end, apex) {
+      const boundary = .011;
+      if (start.y <= boundary && end.y <= boundary && Math.abs(start.y - end.y) <= .0001) return { x: clamp(apex.x, 0, 1), y: start.y };
+      if (start.y <= boundary && start.y <= end.y) return { x: start.x, y: start.y };
+      if (end.y <= boundary && end.y < start.y) return { x: end.x, y: end.y };
+      const ceiling = Math.max(0, Math.min(start.y, end.y) - .01);
+      return { x: clamp(apex.x, 0, 1), y: clamp(Math.min(apex.y, ceiling), 0, 1) };
     }
 
-    function quadraticPointAt(start, end, apex, t) {
-      const control = quadraticControl(start, end, apex);
+    function flightApexForShot(shot) {
+      if (!shot?.start || !shot?.end) return null;
+      return constrainFlightApex(shot.start, shot.end, shot.control || defaultControl(shot.start, shot.end));
+    }
+
+    function flightCurveParameters(start, end, apex) {
+      const rise = Math.max(0, start.y - apex.y);
+      const fall = Math.max(0, end.y - apex.y);
+      const riseRoot = Math.sqrt(rise);
+      const fallRoot = Math.sqrt(fall);
+      const totalRoot = riseRoot + fallRoot;
+      if (totalRoot <= .0001) {
+        return {
+          peakT: .5,
+          control: { x: 2 * apex.x - .5 * (start.x + end.x), y: apex.y }
+        };
+      }
+      if (riseRoot <= .0001) {
+        return {
+          peakT: 0,
+          control: { x: start.x + (end.x - start.x) * .5, y: start.y }
+        };
+      }
+      if (fallRoot <= .0001) {
+        return {
+          peakT: 1,
+          control: { x: end.x - (end.x - start.x) * .5, y: end.y }
+        };
+      }
+      const peakT = riseRoot / totalRoot;
+      const inverse = 1 - peakT;
+      const denominator = Math.max(.0001, 2 * inverse * peakT);
+      return {
+        peakT,
+        control: {
+          x: (apex.x - inverse * inverse * start.x - peakT * peakT * end.x) / denominator,
+          y: (apex.y - inverse * inverse * start.y - peakT * peakT * end.y) / denominator
+        }
+      };
+    }
+
+    function flightCurvePointAt(start, end, apex, t, parameters = flightCurveParameters(start, end, apex)) {
+      const control = parameters.control;
       const inverse = 1 - t;
       return {
         x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
@@ -1048,15 +1172,15 @@
       };
     }
 
-    function quadraticTangentAt(start, end, apex, t) {
-      const control = quadraticControl(start, end, apex);
+    function flightCurveTangentAt(start, end, apex, t, parameters = flightCurveParameters(start, end, apex)) {
+      const control = parameters.control;
       return {
         x: 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x),
         y: 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y)
       };
     }
 
-    function quadraticTAtProgress(start, end, apex, progress) {
+    function flightCurveTAtProgress(start, end, apex, progress, parameters = flightCurveParameters(start, end, apex)) {
       const bounded = clamp(progress, 0, 1);
       if (bounded <= 0 || bounded >= 1) return bounded;
       const divisions = 80;
@@ -1064,7 +1188,7 @@
       let totalLength = 0;
       let previous = start;
       for (let index = 1; index <= divisions; index++) {
-        const point = quadraticPointAt(start, end, apex, index / divisions);
+        const point = flightCurvePointAt(start, end, apex, index / divisions, parameters);
         totalLength += Math.hypot(point.x - previous.x, point.y - previous.y);
         lengths.push(totalLength);
         previous = point;
@@ -1084,7 +1208,8 @@
     }
 
     function tracerRibbonGeometry(start, end, apex, progress, lineWidth) {
-      const tLimit = quadraticTAtProgress(start, end, apex, progress);
+      const parameters = flightCurveParameters(start, end, apex);
+      const tLimit = flightCurveTAtProgress(start, end, apex, progress, parameters);
       if (tLimit <= 0 || lineWidth <= 0) return null;
       const steps = Math.max(7, Math.ceil(54 * tLimit));
       const left = [];
@@ -1093,8 +1218,8 @@
       let endCapControl = null;
       for (let index = 0; index <= steps; index++) {
         const t = tLimit * (index / steps);
-        const point = quadraticPointAt(start, end, apex, t);
-        let tangent = quadraticTangentAt(start, end, apex, t);
+        const point = flightCurvePointAt(start, end, apex, t, parameters);
+        let tangent = flightCurveTangentAt(start, end, apex, t, parameters);
         let tangentLength = Math.hypot(tangent.x, tangent.y);
         if (tangentLength < .0001) {
           tangent = { x: end.x - start.x, y: end.y - start.y };
@@ -1151,9 +1276,49 @@
       return [...candidates].reverse().find(shot => time >= shot.startTime) || candidates[0] || fallback;
     }
 
+    function clipRangeFor(hole, asset) {
+      const duration = Math.max(0, Number(asset?.duration) || 0);
+      if (!hole || !asset || !duration) return { start: 0, end: duration };
+      const saved = hole.clipRanges?.[asset.id] || {};
+      const minimum = Math.min(.1, duration);
+      let start = clamp(Number.isFinite(Number(saved.start)) ? Number(saved.start) : 0, 0, duration);
+      let end = clamp(Number.isFinite(Number(saved.end)) ? Number(saved.end) : duration, 0, duration);
+      if (end - start < minimum) {
+        if (start + minimum <= duration) end = start + minimum;
+        else start = Math.max(0, end - minimum);
+      }
+      return { start, end };
+    }
+
+    function setClipRange(hole, asset, start, end) {
+      if (!hole || !asset) return;
+      if (!hole.clipRanges) hole.clipRanges = {};
+      const duration = Math.max(0, Number(asset.duration) || 0);
+      const minimum = Math.min(.1, duration);
+      let nextStart = clamp(Number(start) || 0, 0, duration);
+      let nextEnd = clamp(Number.isFinite(Number(end)) ? Number(end) : duration, 0, duration);
+      if (nextEnd - nextStart < minimum) {
+        if (nextStart + minimum <= duration) nextEnd = nextStart + minimum;
+        else nextStart = Math.max(0, nextEnd - minimum);
+      }
+      hole.clipRanges[asset.id] = { start: nextStart, end: nextEnd };
+    }
+
     function activeClipRange() {
-      const asset = activeAsset();
-      return { start: 0, end: asset?.duration || 0 };
+      return clipRangeFor(activeHole(), activeAsset());
+    }
+
+    function projectPreviewItems() {
+      return state.holes.flatMap(hole => {
+        const seen = new Set();
+        return hole.shots.flatMap(shot => {
+          const asset = getAsset(shot.videoId);
+          if (!asset?.playable || seen.has(asset.id)) return [];
+          seen.add(asset.id);
+          const range = clipRangeFor(hole, asset);
+          return range.end > range.start + .08 ? [{ holeId: hole.id, shotId: shot.id, assetId: asset.id, start: range.start, end: range.end }] : [];
+        });
+      });
     }
 
     function hexToRgba(hex, alpha) {
@@ -1248,6 +1413,68 @@
       }).join("");
     }
 
+    function renderVideoEditor() {
+      const hole = activeHole();
+      const asset = activeAsset();
+      const items = projectPreviewItems();
+      const totalDuration = items.reduce((total, item) => total + item.end - item.start, 0);
+      const holeCount = new Set(items.map(item => item.holeId)).size;
+      const projectRunning = state.preview && state.previewScope === "project";
+      const clipRunning = state.preview && state.previewScope === "clip";
+      dom.workspace.classList.toggle("video-editor-open", state.videoEditorOpen);
+      dom.videoEditorToggle.setAttribute("aria-expanded", String(state.videoEditorOpen));
+      dom.videoEditorToggle.title = state.videoEditorOpen ? "Close video editor" : "Open video editor";
+      dom.videoEditorContent.setAttribute("aria-hidden", String(!state.videoEditorOpen));
+
+      const projectSection = `<section class="video-panel-section">
+        <h3 class="video-panel-title"><span>Project playback</span><span class="count-pill">${items.length}</span></h3>
+        <p class="video-panel-note">Watch every trimmed video in round order with its tracers and scorecard.</p>
+        <div class="project-preview-meta"><span>${items.length} video${items.length === 1 ? "" : "s"} · ${holeCount} hole${holeCount === 1 ? "" : "s"}</span><strong>${formatTime(totalDuration)}</strong></div>
+        <div class="video-panel-actions">
+          <button class="quiet-btn" data-video-action="preview-clip" ${asset?.playable ? "" : "disabled"}>${clipRunning ? "Stop current preview" : "Preview this video"}</button>
+          <button class="primary-btn" data-video-action="preview-project" ${items.length ? "" : "disabled"}>${projectRunning ? "Stop project preview" : "Watch full project"}</button>
+        </div>
+      </section>`;
+
+      if (!asset?.playable) {
+        dom.videoEditorBody.innerHTML = `${projectSection}<div class="video-panel-empty">Select a hole with a playable video to trim it or review its source details.</div><div class="future-tools"><span>＋</span><span>Audio and additional editing tools can be added here next.</span></div>`;
+        return;
+      }
+
+      const range = clipRangeFor(hole, asset);
+      const orientation = asset.orientation === "vertical" ? "Vertical" : asset.orientation === "square" ? "Square" : "Horizontal";
+      const outputLabel = state.outputRatio === "source" ? "Source" : state.outputRatio;
+      dom.videoEditorBody.innerHTML = `${projectSection}
+        <details class="video-panel-section" data-video-section="trim" ${state.videoEditorSections.trim ? "open" : ""}>
+          <summary>Trim video</summary>
+          <div class="video-panel-details">
+            <span class="source-name" title="${escapeHTML(asset.name)}">${escapeHTML(asset.name)}</span>
+            <div class="trim-control"><label class="trim-label" for="trimStart"><span>Start</span><output id="trimStartOutput">${formatEditorTime(range.start)}</output></label><input class="trim-slider" id="trimStart" type="range" min="0" max="${asset.duration}" step="0.001" value="${range.start}" data-trim-field="start" data-hole-id="${hole.id}" data-asset-id="${asset.id}" aria-label="Trim start" aria-valuetext="${formatEditorTime(range.start)}"></div>
+            <div class="trim-control"><label class="trim-label" for="trimEnd"><span>End</span><output id="trimEndOutput">${formatEditorTime(range.end)}</output></label><input class="trim-slider" id="trimEnd" type="range" min="0" max="${asset.duration}" step="0.001" value="${range.end}" data-trim-field="end" data-hole-id="${hole.id}" data-asset-id="${asset.id}" aria-label="Trim end" aria-valuetext="${formatEditorTime(range.end)}"></div>
+            <div class="trim-summary"><span>Trimmed duration</span><strong id="trimDurationOutput">${formatEditorTime(range.end - range.start)}</strong></div>
+            <button class="trim-reset" data-video-action="reset-trim">Reset to full video</button>
+          </div>
+        </details>
+        <details class="video-panel-section" data-video-section="source" ${state.videoEditorSections.source ? "open" : ""}>
+          <summary>Source &amp; canvas</summary>
+          <div class="video-panel-details">
+            <div class="source-grid">
+              <div class="source-stat"><span>Orientation</span><strong>${orientation}</strong></div>
+              <div class="source-stat"><span>Source</span><strong>${asset.width} × ${asset.height}</strong></div>
+              <div class="source-stat"><span>Duration</span><strong>${formatTime(asset.duration)}</strong></div>
+              <div class="source-stat"><span>Output</span><strong>${outputLabel}</strong></div>
+            </div>
+            <div class="export-choice" role="group" aria-label="Output aspect ratio">
+              <button class="ratio-choice ${state.outputRatio === "source" ? "active" : ""}" data-video-ratio="source" aria-pressed="${state.outputRatio === "source"}"><span class="ratio-shape ratio-source"></span>Source</button>
+              <button class="ratio-choice ${state.outputRatio === "16:9" ? "active" : ""}" data-video-ratio="16:9" aria-pressed="${state.outputRatio === "16:9"}"><span class="ratio-shape ratio-wide"></span>16:9</button>
+              <button class="ratio-choice ${state.outputRatio === "9:16" ? "active" : ""}" data-video-ratio="9:16" aria-pressed="${state.outputRatio === "9:16"}"><span class="ratio-shape ratio-tall"></span>9:16</button>
+            </div>
+            <div class="video-panel-actions"><button class="quiet-btn" data-video-action="replace-video">Replace video</button><button class="quiet-btn" data-video-action="unassign-video">Unassign</button><button class="quiet-btn" data-video-action="remove-shot" ${hole.shots.length > 1 ? "" : "disabled"}>Remove shot</button></div>
+          </div>
+        </details>
+        <div class="future-tools"><span>＋</span><span>Audio and additional editing tools can be added here next.</span></div>`;
+    }
+
     function updateStageAspect() {
       const asset = activeAsset();
       if (!asset || dom.videoWorkspace.classList.contains("hidden")) return;
@@ -1279,18 +1506,21 @@
         dom.video.src = asset.url;
         dom.video.load();
       }
-      if (shotChanged) {
+      if (shotChanged && state.previewScope !== "project") {
         state.frameSeekPending = false;
         state.pendingFrameTarget = null;
-        const seekToShot = () => { queueFrameSeek(clamp(activeShot()?.start ? activeShot().startTime : 0, 0, asset.duration || 0)); };
+        const requestedAssetId = asset.id;
+        const requestedShotId = shotId;
+        const seekToShot = () => {
+          if (state.previewScope === "project" || activeAsset()?.id !== requestedAssetId || activeShot()?.id !== requestedShotId) return;
+          const range = activeClipRange();
+          const target = clamp(activeShot()?.start ? activeShot().startTime : range.start, range.start, range.end);
+          queueFrameSeek(target);
+        };
         if (dom.video.readyState >= 1) seekToShot();
         else dom.video.addEventListener("loadedmetadata", seekToShot, { once: true });
       }
       dom.scrubber.max = asset.duration || 1;
-      const orientation = asset.orientation === "vertical" ? "Vertical" : asset.orientation === "square" ? "Square" : "Horizontal";
-      dom.orientationBadge.textContent = orientation;
-      const sourceRatio = `${asset.width}:${asset.height}`;
-      dom.ratioBadge.textContent = state.outputRatio === "source" ? `Source · ${sourceRatio}` : state.outputRatio;
       updateFrameButtons();
       requestAnimationFrame(updateStageAspect);
     }
@@ -1332,7 +1562,7 @@
       if (!shot?.start || !shot?.end) return "";
       const start = videoPointToSvg(shot.start);
       const end = videoPointToSvg(shot.end);
-      const apexNorm = shot.control || defaultControl(shot.start, shot.end);
+      const apexNorm = flightApexForShot(shot);
       const apex = videoPointToSvg(apexNorm);
       return svgRibbonPath(tracerRibbonGeometry(start, end, apex, progress, shot.tracer.width * widthScale));
     }
@@ -1391,7 +1621,7 @@
       }
 
       const end = videoPointToSvg(shot.end);
-      const apexNorm = shot.control || defaultControl(shot.start, shot.end);
+      const apexNorm = flightApexForShot(shot);
       const apex = videoPointToSvg(apexNorm);
       dom.tracerGuide.setAttribute("d", `M ${start.x} ${start.y} L ${apex.x} ${apex.y} L ${end.x} ${end.y}`);
       dom.tracerPath.style.fill = style.color;
@@ -1520,10 +1750,11 @@
       renderRound();
       renderMedia();
       renderEditor();
+      renderVideoEditor();
       renderInspector();
       dom.undoBtn.disabled = state.history.length === 0;
       dom.redoBtn.disabled = state.redo.length === 0;
-      dom.previewBtn.querySelector("span").textContent = state.preview ? "Exit preview" : "Preview";
+      dom.previewBtn.querySelector("span").textContent = state.previewScope === "project" ? "Stop project" : "Preview project";
       document.querySelectorAll(".inspector-tab").forEach(tab => {
         const selected = tab.dataset.panel === state.panel;
         tab.classList.toggle("active", selected);
@@ -1565,11 +1796,6 @@
             </div>
           </details>
           <div class="button-row"><button class="quiet-btn" data-action="preview">Preview video</button><button class="quiet-btn" data-action="reset-tracer" ${shot.start ? "" : "disabled"}>Reset</button></div>
-        </section>
-        <section class="inspector-section">
-          <h3 class="section-label">Video</h3>
-          <p class="section-note">${asset ? `${escapeHTML(asset.name)} · ${formatTime(asset.duration)} · ${asset.orientation}` : "No video assigned to this shot."}</p>
-          <div class="button-row"><button class="quiet-btn" data-action="replace-video">Replace</button><button class="quiet-btn" data-action="unassign-video" ${asset ? "" : "disabled"}>Unassign</button><button class="quiet-btn" data-action="remove-shot" ${hole.shots.length > 1 ? "" : "disabled"}>Remove shot</button></div>
         </section>`;
     }
 
@@ -1614,15 +1840,8 @@
       const videoShots = shotsForAsset(hole, asset);
       const tracerCount = videoShots.filter(item => item.start && item.end).length;
       const ratioLabel = state.outputRatio === "source" ? (sourceDimensions ? `${sourceDimensions[0]} × ${sourceDimensions[1]}` : "Source") : state.outputRatio === "16:9" ? (state.quality === "high" ? "1920 × 1080" : "1280 × 720") : (state.quality === "high" ? "1080 × 1920" : "720 × 1280");
+      const clipRange = activeClipRange();
       dom.inspectorContent.innerHTML = `
-        <section class="inspector-section">
-          <h3 class="section-label">Format</h3>
-          <div class="export-choice">
-            <button class="ratio-choice ${state.outputRatio === "source" ? "active" : ""}" data-output-ratio="source"><span class="ratio-shape ratio-source"></span>Source</button>
-            <button class="ratio-choice ${state.outputRatio === "16:9" ? "active" : ""}" data-output-ratio="16:9"><span class="ratio-shape ratio-wide"></span>16:9</button>
-            <button class="ratio-choice ${state.outputRatio === "9:16" ? "active" : ""}" data-output-ratio="9:16"><span class="ratio-shape ratio-tall"></span>9:16</button>
-          </div>
-        </section>
         <section class="inspector-section">
           <h3 class="section-label">Quality</h3>
           <div class="quality-choice"><button class="${state.quality === "standard" ? "active" : ""}" data-quality="standard">Standard</button><button class="${state.quality === "high" ? "active" : ""}" data-quality="high">High</button></div>
@@ -1632,7 +1851,7 @@
           <div class="export-card">
             <div class="export-line"><span>Selection</span><strong>Hole ${hole.number} · ${tracerCount} tracer${tracerCount === 1 ? "" : "s"}</strong></div>
             <div class="export-line"><span>Frame</span><strong>${ratioLabel}</strong></div>
-            <div class="export-line"><span>Video</span><strong>${asset ? `Full video · ${formatTime(activeClipRange().end)}` : "No video"}</strong></div>
+            <div class="export-line"><span>Video</span><strong>${asset ? `Trimmed · ${formatTime(clipRange.end - clipRange.start)}` : "No video"}</strong></div>
             <div class="export-line"><span>Output</span><strong>WebM · 30 fps</strong></div>
           </div>
           <button class="primary-btn upload-button" data-action="export" ${asset?.playable ? "" : "disabled"}>Export current video</button>
@@ -1655,8 +1874,7 @@
       if (tool === "mark-end" && !shot.start) return toast("Mark the ball start first.", "error");
       if (tool === "curve" && !shot.end) return toast("Mark the ball end first.", "error");
       dom.video.pause();
-      state.preview = false;
-      state.temporalInspect = false;
+      clearPreviewState();
       state.tool = state.tool === tool ? "idle" : tool;
       renderAll();
     }
@@ -1806,8 +2024,11 @@
     let settingsOpener = null;
 
     function openSettings(panel = state.panel, opener = document.activeElement) {
-      dom.video.pause();
-      state.preview = false;
+      if (state.previewScope === "project") stopPreview({ restoreProject: true });
+      else {
+        dom.video.pause();
+        clearPreviewState();
+      }
       state.tool = "idle";
       state.panel = panel;
       settingsOpener = opener instanceof HTMLElement ? opener : dom.settingsBtn;
@@ -1905,7 +2126,7 @@
       if (action === "shape-curve") setTool("curve");
       if (action === "preview") {
         closeSettings();
-        startPreview();
+        startClipPreview();
       }
       if (action === "reset-tracer") commit("reset tracer", () => {
         const shot = activeShot();
@@ -1929,8 +2150,7 @@
       dom.video.pause();
       state.activeHoleId = holeId;
       state.tool = "idle";
-      state.preview = false;
-      state.temporalInspect = false;
+      clearPreviewState();
       renderAll();
     }
 
@@ -1943,8 +2163,7 @@
       state.expandedHoleId = closing ? null : holeId;
       state.expandedShotId = closing ? null : hole.activeShotId;
       state.tool = "idle";
-      state.preview = false;
-      state.temporalInspect = false;
+      clearPreviewState();
       renderAll();
     }
 
@@ -1958,8 +2177,7 @@
       state.expandedHoleId = holeId;
       state.expandedShotId = closing ? null : shotId;
       state.tool = "idle";
-      state.preview = false;
-      state.temporalInspect = false;
+      clearPreviewState();
       renderAll();
     }
 
@@ -1992,11 +2210,18 @@
     }
 
     function chooseReplacement() {
+      if (state.preview) {
+        dom.video.pause();
+        clearPreviewState();
+        renderAll();
+      }
+      const replacementShotId = activeShot()?.id;
+      if (!replacementShotId) return;
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "video/mp4,video/quicktime,video/webm,video/x-m4v,.mp4,.mov,.webm,.m4v";
       input.addEventListener("change", () => {
-        if (input.files?.length) addFiles(input.files, { replaceShotId: activeShot().id });
+        if (input.files?.length) addFiles(input.files, { replaceShotId: replacementShotId });
       }, { once: true });
       input.click();
     }
@@ -2050,8 +2275,7 @@
         state.expandedHoleId = hole.id;
         state.expandedShotId = shotAction.dataset.shotId;
         state.tool = "idle";
-        state.preview = false;
-        state.temporalInspect = false;
+        clearPreviewState();
         renderAll();
         if (shotAction.dataset.shotAction === "replace") chooseReplacement();
         if (shotAction.dataset.shotAction === "unassign") unassignActiveVideo();
@@ -2196,7 +2420,7 @@
         dom.video.pause();
         activeHole().activeShotId = shotButton.dataset.shotId;
         state.tool = "idle";
-        state.preview = false;
+        clearPreviewState();
         renderAll();
       }
       if (event.target.closest("#addShotBtn")) addShot();
@@ -2224,6 +2448,118 @@
       pushHistoryFrom(projectBefore, "rename project");
       projectBefore = null;
       renderAll();
+    });
+
+    let trimBefore = null;
+
+    function applyTrimControl(target) {
+      const hole = state.holes.find(item => item.id === target.dataset.holeId);
+      const asset = getAsset(target.dataset.assetId);
+      if (!hole || !asset?.playable) return;
+      if (state.preview) {
+        dom.video.pause();
+        clearPreviewState();
+        dom.previewBtn.querySelector("span").textContent = "Preview project";
+        const clipButton = dom.videoEditorBody.querySelector('[data-video-action="preview-clip"]');
+        const projectButton = dom.videoEditorBody.querySelector('[data-video-action="preview-project"]');
+        if (clipButton) clipButton.textContent = "Preview this video";
+        if (projectButton) projectButton.textContent = "Watch full project";
+      }
+      const range = clipRangeFor(hole, asset);
+      const minimum = Math.min(.1, asset.duration);
+      let start = range.start;
+      let end = range.end;
+      if (target.dataset.trimField === "start") start = clamp(Number(target.value), 0, Math.max(0, end - minimum));
+      if (target.dataset.trimField === "end") end = clamp(Number(target.value), Math.min(asset.duration, start + minimum), asset.duration);
+      setClipRange(hole, asset, start, end);
+      const updated = clipRangeFor(hole, asset);
+      const startSlider = dom.videoEditorBody.querySelector('[data-trim-field="start"]');
+      const endSlider = dom.videoEditorBody.querySelector('[data-trim-field="end"]');
+      if (startSlider) startSlider.value = updated.start;
+      if (endSlider) endSlider.value = updated.end;
+      if (startSlider) startSlider.setAttribute("aria-valuetext", formatEditorTime(updated.start));
+      if (endSlider) endSlider.setAttribute("aria-valuetext", formatEditorTime(updated.end));
+      const startOutput = document.getElementById("trimStartOutput");
+      const endOutput = document.getElementById("trimEndOutput");
+      const durationOutput = document.getElementById("trimDurationOutput");
+      if (startOutput) startOutput.textContent = formatEditorTime(updated.start);
+      if (endOutput) endOutput.textContent = formatEditorTime(updated.end);
+      if (durationOutput) durationOutput.textContent = formatEditorTime(updated.end - updated.start);
+      state.temporalInspect = true;
+      dom.video.pause();
+      queueFrameSeek(target.dataset.trimField === "start" ? updated.start : updated.end);
+    }
+
+    function restoreVideoEditorFocus(selector) {
+      requestAnimationFrame(() => dom.videoEditorBody.querySelector(selector)?.focus({ preventScroll: true }));
+    }
+
+    dom.videoEditorToggle.addEventListener("click", () => {
+      state.videoEditorOpen = !state.videoEditorOpen;
+      renderVideoEditor();
+      requestAnimationFrame(updateStageAspect);
+    });
+
+    dom.videoEditorBody.addEventListener("focusin", event => {
+      if (event.target.matches("[data-trim-field]") && !trimBefore) trimBefore = projectSnapshot();
+    });
+    dom.videoEditorBody.addEventListener("toggle", event => {
+      const section = event.target.closest?.("[data-video-section]")?.dataset.videoSection;
+      if (section) state.videoEditorSections[section] = event.target.open;
+    }, true);
+    dom.videoEditorBody.addEventListener("pointerdown", event => {
+      if (event.target.matches("[data-trim-field]")) trimBefore = projectSnapshot();
+    });
+    dom.videoEditorBody.addEventListener("input", event => {
+      if (!event.target.matches("[data-trim-field]")) return;
+      if (!trimBefore) trimBefore = projectSnapshot();
+      applyTrimControl(event.target);
+    });
+    dom.videoEditorBody.addEventListener("change", event => {
+      if (!event.target.matches("[data-trim-field]")) return;
+      if (!trimBefore) trimBefore = projectSnapshot();
+      applyTrimControl(event.target);
+      pushHistoryFrom(trimBefore, "trim video");
+      trimBefore = null;
+      const trimField = event.target.dataset.trimField;
+      renderAll();
+      restoreVideoEditorFocus(`[data-trim-field="${trimField}"]`);
+    });
+    dom.videoEditorBody.addEventListener("click", event => {
+      const action = event.target.closest("[data-video-action]")?.dataset.videoAction;
+      const ratio = event.target.closest("[data-video-ratio]")?.dataset.videoRatio;
+      if (ratio) {
+        commit("change output format", () => { state.outputRatio = ratio; });
+        requestAnimationFrame(updateStageAspect);
+        restoreVideoEditorFocus(`[data-video-ratio="${ratio}"]`);
+        return;
+      }
+      if (action === "preview-clip") {
+        startClipPreview();
+        restoreVideoEditorFocus('[data-video-action="preview-clip"]');
+        return;
+      }
+      if (action === "preview-project") {
+        toggleProjectPreview();
+        restoreVideoEditorFocus('[data-video-action="preview-project"]');
+        return;
+      }
+      if (action === "reset-trim") {
+        const hole = activeHole();
+        const asset = activeAsset();
+        if (!hole || !asset) return;
+        dom.video.pause();
+        clearPreviewState();
+        commit("reset video trim", () => {
+          if (hole.clipRanges) delete hole.clipRanges[asset.id];
+        });
+        requestAnimationFrame(() => queueFrameSeek(0));
+        restoreVideoEditorFocus('[data-video-action="reset-trim"]');
+        return;
+      }
+      if (action === "replace-video") return chooseReplacement();
+      if (action === "unassign-video") return unassignActiveVideo();
+      if (action === "remove-shot") return removeActiveShot();
     });
 
     function togglePlayback() {
@@ -2284,8 +2620,8 @@
     function stepFrame(direction) {
       const asset = activeAsset();
       if (!asset?.playable) return;
-      state.temporalInspect = true;
       exitPreviewForEditing();
+      state.temporalInspect = true;
       dom.video.pause();
       renderOverlay();
       const current = state.frameSeekPending && Number.isFinite(state.pendingFrameTarget) ? state.pendingFrameTarget : dom.video.currentTime;
@@ -2294,10 +2630,11 @@
 
     function exitPreviewForEditing() {
       if (!state.preview) return;
-      state.preview = false;
-      dom.previewBtn.querySelector("span").textContent = "Preview";
+      clearPreviewState();
+      dom.previewBtn.querySelector("span").textContent = "Preview project";
       renderOverlay();
       renderScorecard();
+      renderVideoEditor();
     }
 
     function sampleFrameRate() {
@@ -2321,24 +2658,195 @@
       videoFrameCallback = dom.video.requestVideoFrameCallback(sample);
     }
 
-    function startPreview() {
-      if (!activeAsset()) return toast("Upload or assign a video to preview.", "error");
-      if (state.preview) {
-        state.preview = false;
-        state.temporalInspect = false;
-        dom.video.pause();
-        renderAll();
-        return;
+    function restoreProjectOrigin(session) {
+      const saved = session?.returnSelection;
+      if (!saved) return renderAll();
+      Object.entries(saved.activeShotIds || {}).forEach(([holeId, shotId]) => {
+        const savedHole = state.holes.find(item => item.id === holeId);
+        if (savedHole?.shots.some(shot => shot.id === shotId)) savedHole.activeShotId = shotId;
+      });
+      const hole = state.holes.find(item => item.id === saved.holeId);
+      if (hole) {
+        state.activeHoleId = hole.id;
+        if (hole.shots.some(shot => shot.id === saved.shotId)) {
+          hole.activeShotId = saved.shotId;
+          loadedShotId = saved.shotId;
+        }
       }
+      state.expandedHoleId = state.holes.some(item => item.id === saved.expandedHoleId) ? saved.expandedHoleId : state.activeHoleId;
+      const restoredExpandedHole = state.holes.find(item => item.id === state.expandedHoleId);
+      state.expandedShotId = restoredExpandedHole?.shots.some(shot => shot.id === saved.expandedShotId) ? saved.expandedShotId : restoredExpandedHole?.activeShotId || null;
+      renderAll();
+      if (!saved.assetId || !activeAsset()?.playable) return;
+      const restoreGeneration = state.previewRunId;
+      const restoreTime = () => {
+        if (state.previewRunId !== restoreGeneration || state.activeHoleId !== saved.holeId || activeShot()?.id !== saved.shotId || activeAsset()?.id !== saved.assetId) return;
+        queueFrameSeek(clamp(saved.time, 0, activeAsset()?.duration || 0));
+      };
+      if (dom.video.readyState >= 1 && activeAsset()?.id === saved.assetId) restoreTime();
+      else dom.video.addEventListener("loadedmetadata", restoreTime, { once: true });
+    }
+
+    function stopPreview({ restoreProject = false, announce = "" } = {}) {
+      const session = state.projectPreview;
+      session?.cancelTransition?.();
+      dom.video.pause();
+      clearPreviewState();
+      if (restoreProject && session) restoreProjectOrigin(session);
+      else renderAll();
+      if (announce) toast(announce);
+    }
+
+    function startClipPreview() {
+      if (state.previewScope === "clip") return stopPreview();
+      if (state.preview) stopPreview({ restoreProject: false });
+      const asset = activeAsset();
+      if (!asset?.playable) return toast("Upload or assign a video to preview.", "error");
       const range = activeClipRange();
+      state.previewRunId += 1;
+      const runId = state.previewRunId;
       state.preview = true;
+      state.previewScope = "clip";
       state.temporalInspect = true;
       state.frameSeekPending = false;
       state.pendingFrameTarget = null;
       state.tool = "idle";
-      dom.video.currentTime = range.start;
       renderAll();
-      dom.video.play().catch(() => toast("Preview could not start in this browser.", "error"));
+      const isCurrent = () => state.previewScope === "clip" && state.previewRunId === runId && activeAsset()?.id === asset.id;
+      const beginPlayback = () => {
+        if (!isCurrent()) return;
+        if (Math.abs(dom.video.currentTime - range.start) > .025) {
+          dom.video.addEventListener("seeked", beginPlayback, { once: true });
+          dom.video.currentTime = range.start;
+          return;
+        }
+        state.frameSeekPending = false;
+        state.pendingFrameTarget = null;
+        dom.scrubber.value = range.start;
+        updateEditorTimecode();
+        dom.video.play().catch(() => {
+          if (isCurrent()) stopPreview({ announce: "Preview could not start in this browser." });
+        });
+      };
+      const seekThenPlay = () => {
+        if (!isCurrent()) return;
+        if (Math.abs(dom.video.currentTime - range.start) <= .008) return beginPlayback();
+        const onSeeked = () => { if (isCurrent()) beginPlayback(); };
+        dom.video.addEventListener("seeked", onSeeked, { once: true });
+        dom.video.currentTime = range.start;
+      };
+      if (dom.video.readyState >= 2) seekThenPlay();
+      else dom.video.addEventListener("loadeddata", seekThenPlay, { once: true });
+    }
+
+    function playProjectItem(index) {
+      const session = state.projectPreview;
+      if (!session || state.previewScope !== "project" || session.runId !== state.previewRunId) return;
+      session.index = index;
+      session.transitioning = true;
+      const transitionId = ++session.transitionId;
+      const item = session.items[index];
+      const hole = state.holes.find(candidate => candidate.id === item?.holeId);
+      const asset = getAsset(item?.assetId);
+      if (!item || !hole || !asset?.playable) {
+        session.transitioning = false;
+        if (index + 1 < session.items.length) return playProjectItem(index + 1);
+        return stopPreview({ restoreProject: true, announce: "Project preview complete" });
+      }
+      state.activeHoleId = hole.id;
+      hole.activeShotId = hole.shots.some(shot => shot.id === item.shotId) ? item.shotId : hole.shots.find(shot => shot.videoId === asset.id)?.id || hole.activeShotId;
+      state.expandedHoleId = hole.id;
+      state.expandedShotId = hole.activeShotId;
+      state.tool = "idle";
+      state.frameSeekPending = false;
+      state.pendingFrameTarget = null;
+      renderAll();
+
+      const runId = session.runId;
+      let seekStarted = false;
+      let timer = 0;
+      const isCurrent = () => {
+        const current = state.projectPreview;
+        return Boolean(current && current.runId === runId && current.transitionId === transitionId && current.index === index && state.previewScope === "project" && activeAsset()?.id === item.assetId);
+      };
+      const cleanup = () => {
+        clearTimeout(timer);
+        dom.video.removeEventListener("loadeddata", seekThenPlay);
+        dom.video.removeEventListener("seeked", beginPlayback);
+        dom.video.removeEventListener("error", failTransition);
+        if (session.cancelTransition === cleanup) session.cancelTransition = null;
+      };
+      const failTransition = () => {
+        if (!isCurrent()) return cleanup();
+        cleanup();
+        stopPreview({ restoreProject: true, announce: "Project preview could not continue in this browser." });
+      };
+      const beginPlayback = () => {
+        if (!isCurrent()) return cleanup();
+        if (Math.abs(dom.video.currentTime - item.start) > .025) {
+          dom.video.addEventListener("seeked", beginPlayback, { once: true });
+          dom.video.currentTime = item.start;
+          return;
+        }
+        cleanup();
+        const current = state.projectPreview;
+        state.frameSeekPending = false;
+        state.pendingFrameTarget = null;
+        dom.scrubber.value = item.start;
+        updateEditorTimecode();
+        dom.video.play().then(() => {
+          if (isCurrent()) current.transitioning = false;
+        }).catch(failTransition);
+      };
+      const seekThenPlay = () => {
+        if (seekStarted) return;
+        if (!isCurrent()) return cleanup();
+        seekStarted = true;
+        if (Math.abs(dom.video.currentTime - item.start) <= .008) return beginPlayback();
+        dom.video.addEventListener("seeked", beginPlayback, { once: true });
+        dom.video.currentTime = item.start;
+      };
+      timer = setTimeout(failTransition, 12000);
+      session.cancelTransition = cleanup;
+      dom.video.addEventListener("error", failTransition, { once: true });
+      if (loadedAssetId === item.assetId && dom.video.readyState >= 2) seekThenPlay();
+      else dom.video.addEventListener("loadeddata", seekThenPlay, { once: true });
+    }
+
+    function advanceProjectPreview() {
+      const session = state.projectPreview;
+      if (!session || state.previewScope !== "project" || session.transitioning) return;
+      const nextIndex = session.index + 1;
+      dom.video.pause();
+      if (nextIndex < session.items.length) return playProjectItem(nextIndex);
+      stopPreview({ restoreProject: true, announce: "Project preview complete" });
+    }
+
+    function startProjectPreview() {
+      const items = projectPreviewItems();
+      if (!items.length) return toast("Assign at least one playable video to preview the project.", "error");
+      if (state.preview) stopPreview({ restoreProject: state.previewScope === "project" });
+      const returnSelection = {
+        holeId: activeHole()?.id || null,
+        shotId: activeShot()?.id || null,
+        assetId: activeAsset()?.id || null,
+        time: Number.isFinite(dom.video.currentTime) ? dom.video.currentTime : 0,
+        expandedHoleId: state.expandedHoleId,
+        expandedShotId: state.expandedShotId,
+        activeShotIds: state.holes.reduce((saved, hole) => { saved[hole.id] = hole.activeShotId; return saved; }, {})
+      };
+      state.previewRunId += 1;
+      state.preview = true;
+      state.previewScope = "project";
+      state.temporalInspect = true;
+      state.tool = "idle";
+      state.projectPreview = { items, index: -1, runId: state.previewRunId, transitionId: 0, transitioning: false, returnSelection };
+      playProjectItem(0);
+    }
+
+    function toggleProjectPreview() {
+      if (state.previewScope === "project") return stopPreview({ restoreProject: true });
+      startProjectPreview();
     }
 
     function playbackLoop() {
@@ -2346,15 +2854,13 @@
       const tick = () => {
         if (dom.video.paused) return;
         updateTracerProgress();
-        const range = activeClipRange();
+        const projectItem = state.previewScope === "project" ? state.projectPreview?.items[state.projectPreview.index] : null;
+        const range = projectItem && projectItem.assetId === activeAsset()?.id ? projectItem : activeClipRange();
         if (dom.video.currentTime >= range.end - .015) {
           dom.video.pause();
-          dom.video.currentTime = range.end;
-          if (state.preview) {
-            state.preview = false;
-            state.temporalInspect = false;
-            renderAll();
-          }
+          if (Math.abs(dom.video.currentTime - range.end) > .025) dom.video.currentTime = range.end;
+          if (state.previewScope === "project") advanceProjectPreview();
+          else if (state.previewScope === "clip") stopPreview();
           return;
         }
         animationFrame = requestAnimationFrame(tick);
@@ -2378,6 +2884,15 @@
       dom.playIcon.innerHTML = '<path d="m8 5 11 7-11 7Z"/>';
       dom.playBtn.setAttribute("aria-label", "Play video");
       updateTracerProgress();
+    });
+    dom.video.addEventListener("ended", () => {
+      if (state.previewScope === "project") {
+        const session = state.projectPreview;
+        const item = session?.items[session.index];
+        if (session && !session.transitioning && item?.assetId === activeAsset()?.id && dom.video.currentTime >= item.end - .03) advanceProjectPreview();
+      } else if (state.previewScope === "clip" && dom.video.currentTime >= activeClipRange().end - .03) {
+        stopPreview();
+      }
     });
     dom.video.addEventListener("loadedmetadata", () => {
       state.frameDuration = 1 / 30;
@@ -2419,11 +2934,13 @@
       state.frameSeekPending = false;
       state.pendingFrameTarget = null;
       updateFrameButtons();
+      if (state.previewScope === "project") return stopPreview({ restoreProject: true, announce: "Project preview stopped because a video could not be decoded." });
+      if (state.previewScope === "clip") return stopPreview({ announce: "Preview stopped because this video could not be decoded." });
       toast("This video codec is not supported here. Try an H.264 MP4 or WebM file.", "error");
     });
     dom.scrubber.addEventListener("input", () => {
-      state.temporalInspect = true;
       exitPreviewForEditing();
+      state.temporalInspect = true;
       dom.video.pause();
       renderOverlay();
       queueFrameSeek(Number(dom.scrubber.value));
@@ -2435,7 +2952,6 @@
       if (button.dataset.quick === "curve") setTool("curve");
     }));
 
-    let clickCandidate = null;
     dom.stageOverlay.addEventListener("keydown", event => {
       const handle = event.target.closest?.("[data-handle]");
       if (!handle || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
@@ -2453,7 +2969,8 @@
       if (event.key === "ArrowDown") point.y += step;
       point.x = clamp(point.x, 0, 1);
       point.y = clamp(point.y, 0, 1);
-      if (type === "control") shot.control = point;
+      if (type === "control") shot.control = constrainFlightApex(shot.start, shot.end, point);
+      else if (shot.control && shot.start && shot.end) shot.control = constrainFlightApex(shot.start, shot.end, shot.control);
       pushHistoryFrom(before, "nudge tracer");
       if (type === "control" && state.tool === "curve") state.tool = "idle";
       renderAll();
@@ -2461,8 +2978,9 @@
 
     dom.videoStage.addEventListener("pointerdown", event => {
       if (event.button !== 0 || state.preview) return;
-      if (state.frameSeekPending) return toast("Wait for this frame to finish loading before placing a point.", "error");
       const handle = event.target.closest?.("[data-handle]");
+      if (!handle && state.tool === "idle") return;
+      if (state.frameSeekPending) return toast("Wait for this frame to finish loading before placing a point.", "error");
       const point = eventToVideoPoint(event);
       if (handle && point) {
         dom.video.pause();
@@ -2500,7 +3018,7 @@
           toast("End marked. Drag the line to shape the flight.");
         } else if (state.tool === "curve") {
           state.temporalInspect = false;
-          shot.control = point;
+          shot.control = constrainFlightApex(shot.start, shot.end, point);
           state.dragging = { type: "control", before, pointerId: event.pointerId, moved: true, completeTool: true };
           dom.videoStage.setPointerCapture?.(event.pointerId);
           renderOverlay();
@@ -2508,7 +3026,6 @@
         event.preventDefault();
         return;
       }
-      clickCandidate = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
     });
 
     dom.scorecardOverlay.addEventListener("pointerdown", event => {
@@ -2521,10 +3038,7 @@
     });
 
     window.addEventListener("pointermove", event => {
-      if (!state.dragging || event.pointerId !== state.dragging.pointerId) {
-        if (clickCandidate && event.pointerId === clickCandidate.pointerId && Math.hypot(event.clientX - clickCandidate.x, event.clientY - clickCandidate.y) > 5) clickCandidate = null;
-        return;
-      }
+      if (!state.dragging || event.pointerId !== state.dragging.pointerId) return;
       if (state.dragging.type === "scorecard") {
         const bounds = dom.videoStage.getBoundingClientRect();
         const card = activeHole().scorecard;
@@ -2542,7 +3056,8 @@
       const shot = activeShot();
       if (state.dragging.type === "start") shot.start = point;
       if (state.dragging.type === "end") shot.end = point;
-      if (state.dragging.type === "control") shot.control = point;
+      if (state.dragging.type === "control") shot.control = constrainFlightApex(shot.start, shot.end, point);
+      else if (shot.control && shot.start && shot.end) shot.control = constrainFlightApex(shot.start, shot.end, shot.control);
       state.dragging.moved = true;
       renderOverlay();
     });
@@ -2555,12 +3070,7 @@
         if (drag.completeTool) state.tool = "idle";
         renderAll();
         if (drag.completeTool) toast("Flight path ready");
-        clickCandidate = null;
         return;
-      }
-      if (clickCandidate && event.pointerId === clickCandidate.pointerId) {
-        clickCandidate = null;
-        togglePlayback();
       }
     });
 
@@ -2568,14 +3078,13 @@
       if (!state.dragging || event.pointerId !== state.dragging.pointerId) return;
       const before = state.dragging.before;
       state.dragging = null;
-      clickCandidate = null;
       restoreSnapshot(before);
       renderAll();
     });
 
     dom.undoBtn.addEventListener("click", undo);
     dom.redoBtn.addEventListener("click", redo);
-    dom.previewBtn.addEventListener("click", startPreview);
+    dom.previewBtn.addEventListener("click", toggleProjectPreview);
     dom.settingsBtn.addEventListener("click", () => openSettings(state.panel, dom.settingsBtn));
     dom.settingsCloseBtn.addEventListener("click", closeSettings);
     dom.settingsDialog.addEventListener("click", event => {
@@ -2657,7 +3166,7 @@
       const visibility = flightVisibilityAt(shot, currentTime);
       if (visibility <= 0) return;
       const progress = flightProgressAt(shot, currentTime);
-      const apex = shot.control || defaultControl(shot.start, shot.end);
+      const apex = flightApexForShot(shot);
       const map = point => ({ x: rect.x + point.x * rect.width, y: rect.y + point.y * rect.height });
       drawQuadraticRibbon(
         context,
@@ -2837,7 +3346,7 @@
       const range = activeClipRange();
       if (range.end <= range.start + .08) return toast("Choose a longer video before exporting.", "error");
       dom.video.pause();
-      state.preview = false;
+      clearPreviewState();
       state.tool = "idle";
       setExportDialog(true);
       dom.exportProgress.style.width = "0%";
