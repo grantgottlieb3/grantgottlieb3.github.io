@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A simple, manual golf shot tracer and scorecard video editor.">
-  <title>Flightline — Golf Shot Tracer</title>
+  <meta name="description" content="A timeline-first video editor with manual golf shot tracers and scorecard graphics.">
+  <title>Flightline — Video Editor</title>
   <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
   <style>
     :root {
@@ -583,10 +583,269 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
+
+    /* Flightline Studio v2 -------------------------------------------------
+       The original shot-first application remains below as a migration
+       fallback. The timeline-first studio uses an isolated, fl- prefixed UI. */
+    body.studio-v2 > .legacy-app,
+    body.studio-v2 > #settingsDialog,
+    body.studio-v2 > #exportModal,
+    body.studio-v2 > #toastStack { display: none !important; }
+
+    .fl-studio { height: 100%; min-width: 1040px; display: flex; flex-direction: column; background: #eef0eb; }
+    .fl-topbar { height: 62px; flex: none; display: flex; align-items: center; gap: 11px; padding: 0 15px; border-bottom: 1px solid var(--line); background: rgba(252,253,250,.97); z-index: 40; }
+    .fl-brand { min-width: 206px; display: flex; align-items: center; gap: 10px; }
+    .fl-brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--accent-ink); background: var(--accent); box-shadow: inset 0 0 0 1px rgba(67,85,16,.12); }
+    .fl-brand-mark svg { width: 21px; }
+    .fl-brand strong { display: block; font-size: 14px; letter-spacing: -.02em; }
+    .fl-brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; font-weight: 760; letter-spacing: .13em; text-transform: uppercase; }
+    .fl-projects-btn { height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); cursor: pointer; font-size: 10px; font-weight: 720; }
+    .fl-projects-btn svg { width: 14px; }
+    .fl-project-name { width: min(300px, 27vw); height: 34px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px; color: var(--ink-2); background: transparent; font-size: 12px; font-weight: 680; }
+    .fl-project-name:hover, .fl-project-name:focus { border-color: var(--line); background: var(--paper); }
+    .fl-save-state { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; }
+    .fl-save-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .fl-save-state.saving::before { background: #d6a43e; }
+    .fl-top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .fl-icon-btn, .fl-btn, .fl-primary, .fl-tool-btn { height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink-2); background: var(--paper); cursor: pointer; font-size: 10px; font-weight: 700; transition: border-color .15s, background .15s, transform .15s; }
+    .fl-icon-btn { width: 34px; padding: 0; }
+    .fl-icon-btn svg, .fl-btn svg, .fl-primary svg, .fl-tool-btn svg { width: 14px; height: 14px; }
+    .fl-icon-btn:hover, .fl-btn:hover, .fl-tool-btn:hover { border-color: #bfc6bc; background: #f7f8f5; }
+    .fl-icon-btn:active, .fl-btn:active, .fl-primary:active, .fl-tool-btn:active { transform: translateY(1px); }
+    .fl-primary { color: var(--accent-ink); border-color: #c2db4b; background: var(--accent); box-shadow: 0 5px 13px rgba(148,174,33,.15); }
+    .fl-primary:hover { background: #def866; }
+    .fl-tool-btn.active { color: var(--accent-ink); border-color: #bfd643; background: #f1f8cf; }
+
+    .fl-workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 260px minmax(540px,1fr) 310px; }
+    .fl-score-panel, .fl-flight-panel { min-height: 0; display: flex; flex-direction: column; background: var(--panel); }
+    .fl-score-panel { border-right: 1px solid var(--line); }
+    .fl-flight-panel { border-left: 1px solid var(--line); }
+    .fl-side-head { flex: none; padding: 16px 15px 13px; border-bottom: 1px solid var(--line); }
+    .fl-kicker { margin: 0 0 5px; color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .fl-side-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .fl-side-title { margin: 0; font-size: 16px; font-weight: 770; letter-spacing: -.03em; }
+    .fl-mode-pill { padding: 4px 7px; border-radius: 999px; color: #526018; background: #eef5cf; font-size: 7.5px; font-weight: 790; letter-spacing: .05em; text-transform: uppercase; }
+    .fl-totals { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; margin-top: 12px; }
+    .fl-total { padding: 8px 6px; border: 1px solid var(--line); border-radius: 9px; background: #f4f6f1; }
+    .fl-total strong { display: block; font-size: 14px; letter-spacing: -.03em; }
+    .fl-total span { display: block; margin-top: 2px; color: var(--muted); font-size: 7px; font-weight: 760; letter-spacing: .08em; text-transform: uppercase; }
+    .fl-score-columns { flex: none; display: grid; grid-template-columns: minmax(65px,1fr) 38px 52px 44px; gap: 5px; padding: 9px 10px 6px; color: var(--muted); font-size: 7px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .fl-score-columns span:not(:first-child) { text-align: center; }
+    .fl-hole-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
+    .fl-hole-row { position: relative; display: grid; grid-template-columns: minmax(65px,1fr) 38px 52px 44px; gap: 5px; align-items: center; min-height: 42px; margin: 3px 0; padding: 4px 5px; border: 1px solid transparent; border-radius: 9px; }
+    .fl-hole-row:hover { background: #f1f3ee; }
+    .fl-hole-row.active { border-color: #d4e288; background: #f5f9df; }
+    .fl-hole-name-wrap { position: relative; min-width: 0; }
+    .fl-hole-status { position: absolute; left: 3px; top: 50%; width: 6px; height: 6px; transform: translateY(-50%); border-radius: 50%; background: #cdd2ca; }
+    .fl-hole-status.used { background: #d2a339; }
+    .fl-hole-status.ready { background: var(--success); }
+    .fl-hole-row input { width: 100%; height: 30px; min-width: 0; padding: 0 5px; border: 1px solid transparent; border-radius: 6px; color: var(--ink-2); background: transparent; text-align: center; font-size: 9.5px; }
+    .fl-hole-row input:hover, .fl-hole-row input:focus { border-color: var(--line); background: var(--paper); }
+    .fl-hole-row .fl-hole-label { padding-left: 14px; text-align: left; font-weight: 720; }
+    .fl-hole-row input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+    .fl-hole-row input[type=number]::-webkit-inner-spin-button, .fl-hole-row input[type=number]::-webkit-outer-spin-button,
+    .fl-field input[type=number]::-webkit-inner-spin-button, .fl-field input[type=number]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+    .fl-side-footer { flex: none; display: flex; gap: 5px; padding: 10px; border-top: 1px solid var(--line); }
+    .fl-side-footer .fl-btn:first-child { flex: 1; }
+    .fl-individual-card { margin: 10px; padding: 16px 14px; border: 1px solid var(--line); border-radius: 12px; background: #f4f6f1; }
+    .fl-individual-card strong { font-size: 11px; }
+    .fl-individual-card p { margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+
+    .fl-edit-bay { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(310px,1fr) 315px; background: #e9ebe6; }
+    .fl-preview-pane { min-height: 0; display: flex; flex-direction: column; padding: 13px 16px 10px; }
+    .fl-preview-head { flex: none; min-height: 35px; display: flex; align-items: flex-start; gap: 12px; }
+    .fl-preview-title { min-width: 0; }
+    .fl-preview-title strong { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .fl-preview-title span { display: block; margin-top: 3px; color: var(--muted); font-size: 8.5px; }
+    .fl-preview-actions { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+    .fl-zoom-label { min-width: 42px; color: var(--muted); text-align: center; font: 8px var(--mono); }
+    .fl-stage-shell { position: relative; flex: 1; min-height: 225px; display: grid; place-items: center; overflow: hidden; border-radius: 14px; background: radial-gradient(circle at 50% 45%,#252a25,#101310 70%); box-shadow: 0 12px 35px rgba(16,20,16,.13); }
+    .fl-stage-frame { position: relative; height: calc(100% - 24px); max-width: calc(100% - 24px); aspect-ratio: 16/9; overflow: hidden; background: #080a08; box-shadow: 0 0 0 1px rgba(255,255,255,.08),0 12px 35px rgba(0,0,0,.35); touch-action: none; }
+    .fl-stage-frame.pannable { cursor: grab; }
+    .fl-stage-frame.panning { cursor: grabbing; }
+    .fl-stage-frame.placing { cursor: crosshair; }
+    .fl-stage-transform { position: absolute; inset: 0; transform-origin: center; will-change: transform; }
+    .fl-stage-transform video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; background: #080a08; }
+    .fl-overlay-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; overflow: visible; }
+    .fl-tracer-shape { cursor: pointer; }
+    .fl-tracer-guide { fill: none; stroke: rgba(255,255,255,.65); stroke-width: 1.5; stroke-dasharray: 5 6; vector-effect: non-scaling-stroke; }
+    .fl-handle { cursor: grab; vector-effect: non-scaling-stroke; }
+    .fl-stage-score { position: absolute; z-index: 6; min-width: 126px; overflow: hidden; border: 1px solid rgba(255,255,255,.3); border-radius: 11px; color: #fff; background: rgba(15,19,15,.88); box-shadow: 0 8px 25px rgba(0,0,0,.24); pointer-events: none; }
+    .fl-stage-score.minimal { min-width: 100px; border: 0; background: rgba(10,13,10,.68); }
+    .fl-stage-score.social { min-width: 145px; border-color: rgba(215,243,92,.6); }
+    .fl-score-accent { height: 3px; background: var(--accent); }
+    .fl-score-content { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; padding: 9px 11px; }
+    .fl-score-hole { color: rgba(255,255,255,.68); font-size: 7px; font-weight: 760; letter-spacing: .09em; text-transform: uppercase; }
+    .fl-score-club { grid-column: 2; grid-row: 1/3; min-width: 30px; font-size: 23px; font-weight: 820; letter-spacing: -.05em; text-align: right; }
+    .fl-score-details { font-size: 9px; font-weight: 670; }
+    .fl-stage-empty { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; color: rgba(255,255,255,.8); text-align: center; }
+    .fl-stage-empty svg { width: 35px; height: 35px; margin-bottom: 8px; color: var(--accent); }
+    .fl-stage-empty strong { display: block; font-size: 12px; }
+    .fl-stage-empty span { display: block; margin-top: 5px; color: rgba(255,255,255,.48); font-size: 8.5px; }
+    .fl-placement-tip { position: absolute; left: 50%; bottom: 11px; z-index: 10; transform: translateX(-50%); padding: 7px 11px; border-radius: 999px; color: var(--ink); background: rgba(255,255,255,.94); box-shadow: var(--shadow-sm); font-size: 8.5px; font-weight: 700; pointer-events: none; }
+    .fl-transport { flex: none; height: 45px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .fl-play { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #fff; background: #202520; cursor: pointer; }
+    .fl-play svg { width: 13px; }
+    .fl-frame { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 8px; background: rgba(255,255,255,.7); cursor: pointer; }
+    .fl-frame svg { width: 13px; }
+    .fl-timecode { min-width: 126px; margin-left: 5px; color: var(--muted); font: 9px var(--mono); }
+
+    .fl-timeline { min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-strong); background: #f8f9f6; box-shadow: 0 -8px 22px rgba(25,30,24,.035); }
+    .fl-timeline-toolbar { flex: none; min-height: 44px; display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-bottom: 1px solid var(--line); }
+    .fl-timeline-title { margin-right: 4px; font-size: 11px; font-weight: 770; }
+    .fl-duration { color: var(--muted); font: 8px var(--mono); }
+    .fl-toolbar-divider { width: 1px; height: 21px; margin: 0 3px; background: var(--line); }
+    .fl-tool-btn { height: 29px; padding: 0 8px; font-size: 8.5px; }
+    .fl-timeline-zoom { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+    .fl-timeline-zoom input { width: 75px; accent-color: #a8c22d; }
+    .fl-media-bin { flex: none; height: 69px; display: grid; grid-template-columns: 94px minmax(0,1fr); border-bottom: 1px solid var(--line); background: #f2f4ef; }
+    .fl-media-label { display: flex; flex-direction: column; justify-content: center; padding: 0 10px; border-right: 1px solid var(--line); }
+    .fl-media-label strong { font-size: 9px; }
+    .fl-media-label span { margin-top: 3px; color: var(--muted); font-size: 7.5px; }
+    .fl-media-list { min-width: 0; display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 7px 9px; }
+    .fl-media-empty { color: var(--muted); font-size: 8.5px; }
+    .fl-media-card { position: relative; width: 128px; height: 52px; flex: none; display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 7px; align-items: center; padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); box-shadow: var(--shadow-sm); }
+    .fl-media-thumb { height: 40px; display: grid; place-items: center; overflow: hidden; border-radius: 5px; color: #fff; background: linear-gradient(145deg,#303730,#151915); }
+    .fl-media-thumb.audio { color: var(--accent); background: #252a25; }
+    .fl-media-thumb svg { width: 14px; }
+    .fl-media-copy { min-width: 0; }
+    .fl-media-copy strong { display: block; overflow: hidden; font-size: 7.8px; text-overflow: ellipsis; white-space: nowrap; }
+    .fl-media-copy span { display: block; margin-top: 3px; color: var(--muted); font: 7px var(--mono); }
+    .fl-media-add { position: absolute; right: 3px; bottom: 3px; width: 17px; height: 17px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 5px; color: var(--accent-ink); background: var(--accent); cursor: pointer; font-size: 12px; }
+    .fl-tracks-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 94px minmax(0,1fr); }
+    .fl-track-labels { padding-top: 20px; border-right: 1px solid var(--line); color: var(--muted); background: #f4f6f1; font-size: 7.5px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+    .fl-track-label { height: 37px; display: flex; align-items: center; gap: 5px; padding: 0 10px; border-bottom: 1px solid #e8ebe5; }
+    .fl-track-label.video { height: 52px; color: var(--ink-2); }
+    .fl-track-label svg { width: 11px; }
+    .fl-timeline-scroll { min-width: 0; overflow: auto; background: #eef0ec; }
+    .fl-timeline-canvas { position: relative; min-width: 100%; min-height: 181px; }
+    .fl-ruler { position: relative; height: 20px; border-bottom: 1px solid var(--line); background: #f7f8f5; color: var(--muted); font: 7px var(--mono); }
+    .fl-ruler-mark { position: absolute; top: 0; height: 100%; padding: 3px 0 0 4px; border-left: 1px solid #cfd4cd; }
+    .fl-track { position: relative; height: 37px; border-bottom: 1px solid #dde1da; }
+    .fl-track.video { height: 52px; background: rgba(255,255,255,.28); }
+    .fl-clip { position: absolute; top: 4px; height: 44px; min-width: 24px; border: 1px solid #3c463c; border-radius: 7px; overflow: visible; color: #fff; background: linear-gradient(145deg,#424b42,#222722); cursor: grab; user-select: none; }
+    .fl-clip.selected { z-index: 3; border-color: #d7f35c; box-shadow: 0 0 0 2px rgba(191,216,69,.48); }
+    .fl-clip.dragging { opacity: .55; }
+    .fl-clip-main { position: absolute; inset: 0 7px; overflow: hidden; padding: 7px 6px; cursor: pointer; }
+    .fl-clip-name { display: block; overflow: hidden; font-size: 7.8px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+    .fl-clip-meta { display: block; margin-top: 5px; overflow: hidden; color: rgba(255,255,255,.66); font: 6.8px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+    .fl-trim-handle { position: absolute; top: 0; bottom: 0; width: 8px; border: 0; padding: 0; background: rgba(215,243,92,.25); cursor: ew-resize; opacity: 0; }
+    .fl-clip:hover .fl-trim-handle, .fl-clip.selected .fl-trim-handle { opacity: 1; }
+    .fl-trim-handle.left { left: 0; border-radius: 6px 0 0 6px; }
+    .fl-trim-handle.right { right: 0; border-radius: 0 6px 6px 0; }
+    .fl-layer-item { position: absolute; top: 5px; height: 27px; min-width: 18px; display: flex; align-items: center; gap: 5px; overflow: hidden; padding: 0 7px; border: 1px solid; border-radius: 6px; cursor: pointer; font-size: 7.5px; font-weight: 710; white-space: nowrap; }
+    .fl-layer-item.tracer { color: #39430d; border-color: #aebe52; background: #e4f58c; }
+    .fl-layer-item.scorecard { color: #1d392f; border-color: #86b6a4; background: #cde8dd; }
+    .fl-layer-item.audio { color: #fff; border-color: #687769; background: #536052; cursor: grab; }
+    .fl-layer-item.voiceover { border-color: #836ca7; background: #6e598f; }
+    .fl-layer-item.audio .fl-trim-handle { opacity: .6; background: rgba(255,255,255,.3); }
+    .fl-layer-item.audio:hover .fl-trim-handle, .fl-layer-item.audio.selected .fl-trim-handle { opacity: 1; }
+    .fl-layer-item.selected { box-shadow: 0 0 0 2px rgba(27,32,27,.4); }
+    .fl-wave { opacity: .45; letter-spacing: -1px; }
+    .fl-playhead { position: absolute; top: 0; bottom: 0; z-index: 12; width: 1px; background: #d75042; pointer-events: none; }
+    .fl-playhead::before { content: ""; position: absolute; top: 0; left: -4px; width: 9px; height: 8px; border-radius: 2px 2px 5px 5px; background: #d75042; }
+    .fl-empty-track { position: absolute; left: 12px; top: 17px; color: var(--muted); font-size: 8px; }
+
+    .fl-flight-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+    .fl-selection-card { margin: 11px 11px 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #f4f6f1; }
+    .fl-selection-card strong { display: block; overflow: hidden; font-size: 9.5px; text-overflow: ellipsis; white-space: nowrap; }
+    .fl-selection-card span { display: block; margin-top: 4px; color: var(--muted); font-size: 7.8px; }
+    .fl-hole-assign { width: 100%; height: 28px; margin-top: 8px; padding: 0 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 8px; }
+    .fl-inspector-section { margin: 10px 11px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow-sm); }
+    .fl-inspector-head { display: flex; align-items: center; gap: 8px; padding: 11px 12px; border-bottom: 1px solid var(--line); }
+    .fl-inspector-icon { width: 28px; height: 28px; display: grid; place-items: center; flex: none; border-radius: 8px; color: var(--accent-ink); background: #eff6cd; }
+    .fl-inspector-icon svg { width: 14px; }
+    .fl-inspector-head strong { font-size: 10px; }
+    .fl-inspector-head span { display: block; margin-top: 2px; color: var(--muted); font-size: 7.5px; }
+    .fl-section-action { margin-left: auto; height: 27px; padding: 0 8px; border: 1px solid #c8dc65; border-radius: 7px; color: var(--accent-ink); background: #f0f7ce; cursor: pointer; font-size: 7.5px; font-weight: 760; }
+    .fl-inspector-body { padding: 11px; }
+    .fl-empty-inspector { padding: 7px 2px; color: var(--muted); font-size: 8.5px; line-height: 1.5; }
+    .fl-tracer-list { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 10px; }
+    .fl-item-pill { height: 25px; flex: none; padding: 0 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: #f7f8f5; cursor: pointer; font-size: 7.5px; font-weight: 710; }
+    .fl-item-pill.active { color: var(--accent-ink); border-color: #c6da62; background: #f0f7cf; }
+    .fl-checkpoints { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; margin-bottom: 12px; }
+    .fl-checkpoint { min-width: 0; min-height: 63px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 6px 2px; border: 1px solid var(--line); border-radius: 9px; background: #f6f7f4; cursor: pointer; }
+    .fl-checkpoint.active { border-color: #adc531; background: #f3f9d7; }
+    .fl-step-box { position: relative; width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid #bfc6bc; border-radius: 7px; color: var(--ink-2); background: #fff; font-size: 9px; font-weight: 800; line-height: 1; }
+    .fl-step-index, .fl-step-check { position: absolute; inset: 0; display: grid; place-items: center; line-height: 1; }
+    .fl-step-check { opacity: 0; color: var(--success); font-size: 12px; }
+    .fl-checkpoint.done .fl-step-index { opacity: 0; }
+    .fl-checkpoint.done .fl-step-check { opacity: 1; }
+    .fl-checkpoint small { max-width: 70px; overflow: hidden; color: var(--muted); font-size: 6.8px; font-weight: 740; text-overflow: ellipsis; white-space: nowrap; }
+    .fl-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+    .fl-field { min-width: 0; }
+    .fl-field.full { grid-column: 1/-1; }
+    .fl-field label { display: flex; justify-content: space-between; gap: 5px; margin-bottom: 4px; color: var(--muted); font-size: 6.8px; font-weight: 790; letter-spacing: .06em; text-transform: uppercase; }
+    .fl-field label output { color: var(--ink-2); font: 7px var(--mono); letter-spacing: 0; text-transform: none; }
+    .fl-field input:not([type=range]):not([type=color]), .fl-field select { width: 100%; height: 30px; padding: 0 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink-2); background: #fafbf8; font-size: 8.5px; }
+    .fl-field input[type=range] { width: 100%; accent-color: #a8bf38; }
+    .fl-range-limits { display: flex; justify-content: space-between; margin-top: 1px; color: var(--faint); font: 6.5px var(--mono); }
+    .fl-color-row { display: grid; grid-template-columns: 34px 1fr; gap: 6px; }
+    .fl-field input[type=color] { width: 34px; height: 30px; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+    .fl-preset-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; margin-bottom: 9px; }
+    .fl-preset { height: 28px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: #f8f9f6; cursor: pointer; font-size: 7px; font-weight: 730; }
+    .fl-preset.active { color: var(--accent-ink); border-color: #c2d759; background: #f0f7cf; }
+    .fl-inline-actions { display: flex; gap: 5px; margin-top: 10px; }
+    .fl-inline-actions .fl-btn { flex: 1; height: 29px; padding: 0 6px; font-size: 7.5px; }
+    .fl-recording { color: #a73931 !important; border-color: #e2aca7 !important; background: #fae9e7 !important; }
+
+    .fl-dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(12,15,12,.66); backdrop-filter: blur(7px); }
+    .fl-project-window { width: min(820px,100%); max-height: min(650px,calc(100vh - 48px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,.15); border-radius: 20px; background: #f8f9f6; box-shadow: 0 28px 90px rgba(0,0,0,.32); }
+    .fl-project-head { flex: none; display: flex; align-items: center; gap: 12px; padding: 22px 24px 17px; border-bottom: 1px solid var(--line); }
+    .fl-project-head h1, .fl-project-head h2 { margin: 0; font-size: 21px; letter-spacing: -.045em; }
+    .fl-project-head p { margin: 5px 0 0; color: var(--muted); font-size: 9.5px; }
+    .fl-project-head .fl-primary { margin-left: auto; }
+    .fl-close { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer; }
+    .fl-project-grid { min-height: 250px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; overflow-y: auto; padding: 18px 24px 25px; }
+    .fl-project-card { position: relative; min-height: 176px; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); cursor: pointer; text-align: left; box-shadow: var(--shadow-sm); transition: transform .16s,border-color .16s; }
+    .fl-project-card:hover { transform: translateY(-2px); border-color: #bbc2b7; }
+    .fl-project-thumb { height: 105px; display: grid; place-items: center; color: rgba(255,255,255,.5); background: radial-gradient(circle at 70% 24%,rgba(215,243,92,.23),transparent 24%),linear-gradient(145deg,#283028,#111411); }
+    .fl-project-thumb svg { width: 34px; color: var(--accent); }
+    .fl-project-copy { min-width: 0; padding: 12px; }
+    .fl-project-copy strong { display: block; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .fl-project-copy span { display: block; margin-top: 5px; color: var(--muted); font-size: 7.8px; }
+    .fl-project-delete { position: absolute; top: 7px; right: 7px; width: 25px; height: 25px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.22); border-radius: 7px; color: #fff; background: rgba(13,17,13,.65); cursor: pointer; }
+    .fl-new-card { align-items: center; justify-content: center; gap: 8px; border-style: dashed; color: var(--ink-2); background: #f4f6f1; text-align: center; }
+    .fl-new-plus { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 11px; color: var(--accent-ink); background: var(--accent); font-size: 22px; }
+    .fl-new-card strong { font-size: 10px; }
+    .fl-new-card span { max-width: 135px; color: var(--muted); font-size: 8px; line-height: 1.4; }
+    .fl-create-window { width: min(600px,100%); padding-bottom: 21px; }
+    .fl-create-body { padding: 18px 23px 0; }
+    .fl-create-body > label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 7.5px; font-weight: 780; letter-spacing: .07em; text-transform: uppercase; }
+    .fl-create-name { width: 100%; height: 39px; padding: 0 11px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--paper); font-size: 11px; }
+    .fl-mode-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 14px; }
+    .fl-mode-card { min-height: 145px; padding: 17px; border: 1px solid var(--line); border-radius: 13px; color: inherit; background: var(--paper); cursor: pointer; text-align: left; }
+    .fl-mode-card:hover, .fl-mode-card.selected { border-color: #b6cb47; box-shadow: 0 0 0 2px rgba(182,203,71,.2); }
+    .fl-mode-icon { width: 35px; height: 35px; display: grid; place-items: center; margin-bottom: 13px; border-radius: 10px; color: var(--accent-ink); background: #eff6cd; }
+    .fl-mode-icon svg { width: 18px; }
+    .fl-mode-card strong { display: block; font-size: 11px; }
+    .fl-mode-card p { margin: 6px 0 0; color: var(--muted); font-size: 8.5px; line-height: 1.5; }
+    .fl-create-actions { display: flex; justify-content: flex-end; gap: 7px; padding: 17px 23px 0; }
+    .fl-export-window { width: min(510px,100%); }
+    .fl-export-body { padding: 18px 22px 22px; }
+    .fl-export-options { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .fl-export-progress { height: 7px; overflow: hidden; margin-top: 16px; border-radius: 999px; background: #e5e8e1; }
+    .fl-export-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent-strong); }
+    .fl-export-status { display: flex; justify-content: space-between; gap: 10px; margin-top: 7px; color: var(--muted); font-size: 8px; }
+    .fl-toast-stack { position: fixed; right: 17px; bottom: 17px; z-index: 150; display: grid; gap: 7px; pointer-events: none; }
+    .fl-toast { width: min(330px,calc(100vw - 34px)); padding: 11px 13px; border-radius: 10px; color: #fff; background: rgba(24,29,24,.95); box-shadow: 0 13px 35px rgba(0,0,0,.24); font-size: 9px; animation: toast-in .22s ease; }
+
+    @media (max-width: 1220px) {
+      .fl-workspace { grid-template-columns: 242px minmax(520px,1fr) 285px; }
+      .fl-project-name { width: 205px; }
+      .fl-topbar { gap: 7px; }
+    }
+    @media (max-height: 760px) {
+      .fl-edit-bay { grid-template-rows: minmax(280px,1fr) 285px; }
+      .fl-timeline-toolbar { min-height: 40px; }
+      .fl-media-bin { height: 61px; }
+      .fl-media-card { height: 46px; }
+      .fl-media-thumb { height: 34px; }
+    }
   </style>
 </head>
-<body>
-  <div class="app">
+<body class="studio-v2">
+  <div class="app legacy-app" aria-hidden="true">
     <header class="topbar">
       <div class="brand" aria-label="Flightline Golf Shot Studio">
         <div class="brand-mark" aria-hidden="true">
@@ -772,7 +1031,184 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
-  <script>
+  <!-- Timeline-first editor. All IDs are deliberately namespaced so older
+       project data can be migrated without colliding with the V1 fallback. -->
+  <div class="fl-studio" id="flStudio" aria-hidden="true">
+    <header class="fl-topbar">
+      <div class="fl-brand" aria-label="Flightline Video Studio">
+        <span class="fl-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19C6.7 10.8 10.2 5.8 18.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="19" r="2" fill="currentColor"/><circle cx="18.5" cy="4" r="1.45" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></span>
+        <span><strong>Flightline</strong><small>Video studio</small></span>
+      </div>
+      <button class="fl-projects-btn" id="flProjectsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7.5h7l2-2h9v14H3Z"/><path d="M3 9h18"/></svg>Projects</button>
+      <input class="fl-project-name" id="flProjectName" value="Untitled project" aria-label="Project name" spellcheck="false">
+      <span class="fl-save-state" id="flSaveState">Saved locally</span>
+      <div class="fl-top-actions">
+        <button class="fl-icon-btn" id="flUndoBtn" title="Undo (Ctrl/⌘ Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 8 4.5 12 9 16"/><path d="M5 12h8.5a5.5 5.5 0 0 1 5.5 5.5"/></svg></button>
+        <button class="fl-icon-btn" id="flRedoBtn" title="Redo (Ctrl/⌘ Shift Z)" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 8 4.5 4-4.5 4"/><path d="M19 12h-8.5A5.5 5.5 0 0 0 5 17.5"/></svg></button>
+        <button class="fl-btn" id="flPreviewBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.8 12s3.3-6 9.2-6 9.2 6 9.2 6-3.3 6-9.2 6-9.2-6-9.2-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>Play project</button>
+        <button class="fl-primary" id="flExportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 20h14"/></svg>Export</button>
+      </div>
+    </header>
+
+    <div class="fl-workspace">
+      <aside class="fl-score-panel" aria-label="Scorecard and hole organization">
+        <header class="fl-side-head">
+          <p class="fl-kicker">Round organization</p>
+          <div class="fl-side-title-row"><h2 class="fl-side-title" id="flLeftTitle">Scorecard</h2><span class="fl-mode-pill" id="flModePill">Round</span></div>
+          <div class="fl-totals" id="flTotals">
+            <div class="fl-total"><strong id="flTotalStrokes">—</strong><span>Strokes</span></div>
+            <div class="fl-total"><strong id="flTotalRelative">—</strong><span>To par</span></div>
+            <div class="fl-total"><strong id="flHoleUsage">0/1</strong><span>With clips</span></div>
+          </div>
+        </header>
+        <div class="fl-score-columns" id="flScoreColumns"><span>Hole</span><span>Par</span><span>Yards</span><span>Score</span></div>
+        <div class="fl-hole-list" id="flHoleList"></div>
+        <footer class="fl-side-footer" id="flHoleFooter">
+          <button class="fl-btn" id="flAddHoleBtn">＋ Add hole</button>
+          <button class="fl-icon-btn" id="flHoleUpBtn" title="Move selected hole up" aria-label="Move hole up">↑</button>
+          <button class="fl-icon-btn" id="flHoleDownBtn" title="Move selected hole down" aria-label="Move hole down">↓</button>
+          <button class="fl-icon-btn" id="flDeleteHoleBtn" title="Delete selected hole" aria-label="Delete hole">×</button>
+        </footer>
+      </aside>
+
+      <main class="fl-edit-bay" aria-label="Video preview and project timeline">
+        <section class="fl-preview-pane" aria-label="Video preview">
+          <header class="fl-preview-head">
+            <div class="fl-preview-title"><strong id="flPreviewTitle">No clip selected</strong><span id="flPreviewMeta">Import footage in the timeline below</span></div>
+            <div class="fl-preview-actions" aria-label="Preview zoom">
+              <button class="fl-icon-btn" id="flZoomOutBtn" title="Zoom out" aria-label="Zoom out">−</button>
+              <span class="fl-zoom-label" id="flZoomLabel">Fit</span>
+              <button class="fl-icon-btn" id="flZoomInBtn" title="Zoom in" aria-label="Zoom in">＋</button>
+              <button class="fl-btn" id="flResetViewBtn">Fit</button>
+            </div>
+          </header>
+          <div class="fl-stage-shell" id="flStageShell">
+            <div class="fl-stage-frame" id="flStageFrame">
+              <div class="fl-stage-transform" id="flStageTransform">
+                <video id="flVideo" preload="metadata" playsinline></video>
+                <svg class="fl-overlay-svg" id="flOverlay" viewBox="0 0 1000 562.5" preserveAspectRatio="none" aria-label="Flightline editing surface">
+                  <defs><filter id="flGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                  <g id="flTracerShapes"></g>
+                  <path class="fl-tracer-guide hidden" id="flTracerGuide" d=""/>
+                  <g id="flTracerHandles" class="hidden">
+                    <circle class="fl-handle" data-fl-handle="start" r="8" fill="#fff" stroke="#202720" stroke-width="3"/>
+                    <circle class="fl-handle" data-fl-handle="apex" r="8" fill="#d7f35c" stroke="#202720" stroke-width="3"/>
+                    <circle class="fl-handle" data-fl-handle="end" r="8" fill="#fff" stroke="#202720" stroke-width="3"/>
+                  </g>
+                </svg>
+                <div class="fl-stage-score hidden" id="flStageScore"></div>
+              </div>
+              <div class="fl-stage-empty" id="flStageEmpty"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/></svg><strong>Add video to your timeline</strong><span>Any footage works—golf shots are optional.</span></div></div>
+              <div class="fl-placement-tip hidden" id="flPlacementTip">Click the ball start point</div>
+            </div>
+          </div>
+          <div class="fl-transport">
+            <button class="fl-frame" id="flPrevFrameBtn" aria-label="Previous frame" title="Previous frame (,)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m14.5 7-5 5 5 5"/><path d="M6 5v14"/></svg></button>
+            <button class="fl-play" id="flPlayBtn" aria-label="Play project"><svg id="flPlayIcon" viewBox="0 0 24 24" fill="currentColor"><path d="m8 5 11 7-11 7Z"/></svg></button>
+            <button class="fl-frame" id="flNextFrameBtn" aria-label="Next frame" title="Next frame (.)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m9.5 7 5 5-5 5"/><path d="M18 5v14"/></svg></button>
+            <span class="fl-timecode" id="flTimecode">00:00.000 / 00:00.000</span>
+          </div>
+        </section>
+
+        <section class="fl-timeline" id="flTimeline" aria-label="Project timeline">
+          <header class="fl-timeline-toolbar">
+            <span class="fl-timeline-title">Timeline</span><span class="fl-duration" id="flProjectDuration">0:00</span>
+            <span class="fl-toolbar-divider"></span>
+            <button class="fl-tool-btn" id="flImportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 14v5h16v-5"/></svg>Import media</button>
+            <button class="fl-tool-btn" id="flSplitBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="m8.5 8.5 10 7M8.5 15.5l10-7"/></svg>Split</button>
+            <button class="fl-tool-btn" id="flDuplicateBtn">Duplicate</button>
+            <button class="fl-tool-btn" id="flDeleteBtn">Delete</button>
+            <span class="fl-toolbar-divider"></span>
+            <button class="fl-tool-btn" id="flAddAudioBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>Add audio</button>
+            <button class="fl-tool-btn" id="flVoiceoverBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>Voiceover</button>
+            <div class="fl-timeline-zoom"><span>−</span><input id="flTimelineZoom" type="range" min="45" max="180" value="82" aria-label="Timeline zoom"><span>＋</span></div>
+          </header>
+          <div class="fl-media-bin">
+            <div class="fl-media-label"><strong>Media</strong><span>Drag or add to timeline</span></div>
+            <div class="fl-media-list" id="flMediaList"><span class="fl-media-empty">Imported video and audio will appear here.</span></div>
+          </div>
+          <div class="fl-tracks-wrap">
+            <div class="fl-track-labels" id="flTrackLabels">
+              <div class="fl-track-label video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg>Video</div>
+              <div class="fl-track-label">Tracer</div>
+              <div class="fl-track-label">Scorecard</div>
+              <div class="fl-track-label">Audio 1</div>
+            </div>
+            <div class="fl-timeline-scroll" id="flTimelineScroll">
+              <div class="fl-timeline-canvas" id="flTimelineCanvas">
+                <div class="fl-ruler" id="flRuler"></div>
+                <div class="fl-track video" id="flVideoTrack"></div>
+                <div class="fl-track" id="flTracerTrack"></div>
+                <div class="fl-track" id="flScoreTrack"></div>
+                <div id="flAudioTracks"><div class="fl-track" data-fl-audio-track="0"></div></div>
+                <div class="fl-playhead" id="flPlayhead"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="fl-flight-panel" aria-label="Flightline Editor">
+        <header class="fl-side-head"><p class="fl-kicker">Golf graphics</p><div class="fl-side-title-row"><h2 class="fl-side-title">Flightline Editor</h2><span class="fl-mode-pill">Manual</span></div></header>
+        <div class="fl-flight-scroll">
+          <div class="fl-selection-card" id="flSelectionCard"><strong>No clip selected</strong><span>Select a video clip in the timeline.</span></div>
+
+          <section class="fl-inspector-section">
+            <header class="fl-inspector-head"><span class="fl-inspector-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19C6 9 11 5 20 4"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="4" r="1.5"/></svg></span><div><strong>Shot Tracer</strong><span>Timed independently on any clip</span></div><button class="fl-section-action" id="flAddTracerBtn">＋ Add tracer</button></header>
+            <div class="fl-inspector-body" id="flTracerInspector"><div class="fl-empty-inspector">Add a tracer only where a golf shot occurs. One clip can contain as many tracers as you need.</div></div>
+          </section>
+
+          <section class="fl-inspector-section">
+            <header class="fl-inspector-head"><span class="fl-inspector-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M9 10v9"/></svg></span><div><strong>Scorecard Graphic</strong><span>Club, hole and score information</span></div><button class="fl-section-action" id="flAddScoreBtn">＋ Add graphic</button></header>
+            <div class="fl-inspector-body" id="flScoreInspector"><div class="fl-empty-inspector">Place a scorecard graphic anywhere in the project. The club—not a redundant H1 label—is the visual focus.</div></div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <input id="flMediaInput" type="file" multiple hidden accept="video/mp4,video/quicktime,video/webm,video/x-m4v,audio/*,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a,.aac,.ogg">
+  <input id="flAudioInput" type="file" multiple hidden accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg">
+
+  <div class="fl-dialog-backdrop" id="flProjectsBackdrop" role="dialog" aria-modal="true" aria-labelledby="flProjectsTitle">
+    <div class="fl-project-window">
+      <header class="fl-project-head"><div><h1 id="flProjectsTitle">Projects</h1><p>Each edit is saved separately in this browser.</p></div><button class="fl-primary" id="flNewProjectBtn">＋ New project</button><button class="fl-close" id="flProjectsClose" aria-label="Close projects">×</button></header>
+      <div class="fl-project-grid" id="flProjectGrid"></div>
+    </div>
+  </div>
+
+  <div class="fl-dialog-backdrop hidden" id="flCreateBackdrop" role="dialog" aria-modal="true" aria-labelledby="flCreateTitle">
+    <div class="fl-project-window fl-create-window">
+      <header class="fl-project-head"><div><h2 id="flCreateTitle">Create a project</h2><p>Choose the workspace that fits this edit.</p></div><button class="fl-close" id="flCreateClose" aria-label="Cancel">×</button></header>
+      <div class="fl-create-body">
+        <label for="flCreateName">Project name</label><input class="fl-create-name" id="flCreateName" value="Untitled video" spellcheck="false">
+        <div class="fl-mode-grid">
+          <button class="fl-mode-card selected" data-fl-mode="round"><span class="fl-mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 21V5m0 0c5-3 8 3 14 0v9c-6 3-9-3-14 0"/></svg></span><strong>Edit a Round</strong><p>Use a simple scorecard to organize any footage by editable hole labels.</p></button>
+          <button class="fl-mode-card" data-fl-mode="individual"><span class="fl-mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/></svg></span><strong>Individual Shots</strong><p>Range sessions, swing videos, instruction, social clips, or other golf footage.</p></button>
+        </div>
+      </div>
+      <div class="fl-create-actions"><button class="fl-btn" id="flCreateCancel">Cancel</button><button class="fl-primary" id="flCreateConfirm">Create project</button></div>
+    </div>
+  </div>
+
+  <div class="fl-dialog-backdrop hidden" id="flExportBackdrop" role="dialog" aria-modal="true" aria-labelledby="flExportTitle">
+    <div class="fl-project-window fl-export-window">
+      <header class="fl-project-head"><div><h2 id="flExportTitle">Export project</h2><p>Render the complete timeline, golf graphics, and audio mix.</p></div><button class="fl-close" id="flExportClose" aria-label="Close export">×</button></header>
+      <div class="fl-export-body">
+        <div class="fl-export-options">
+          <div class="fl-field"><label for="flExportRatio">Format</label><select id="flExportRatio"><option value="source">Source</option><option value="16:9">16:9 horizontal</option><option value="9:16">9:16 vertical</option></select></div>
+          <div class="fl-field"><label for="flExportQuality">Quality</label><select id="flExportQuality"><option value="standard">Standard</option><option value="high">High</option></select></div>
+        </div>
+        <div class="fl-export-progress hidden" id="flExportProgress"><span id="flExportProgressFill"></span></div>
+        <div class="fl-export-status"><span id="flExportStatus">Ready to render</span><span id="flExportPercent"></span></div>
+        <div class="fl-create-actions"><button class="fl-btn" id="flExportCancel">Cancel</button><button class="fl-primary" id="flExportStart">Export video</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fl-toast-stack" id="flToastStack" aria-live="polite"></div>
+
+  <script type="text/plain" id="flightlineLegacySource">
     "use strict";
 
     // Application code is intentionally dependency-free so this page can run directly on GitHub Pages.
@@ -3098,6 +3534,7 @@
     document.getElementById("topExportBtn").addEventListener("click", event => openSettings("export", event.currentTarget));
 
     document.addEventListener("keydown", event => {
+      if (document.body.classList.contains("studio-v2")) return;
       const formTarget = event.target.matches("input, select, textarea, [contenteditable=true]");
       const interactiveTarget = event.target.matches("button, input, select, textarea, summary, a[href], [role=button], [contenteditable=true]");
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !formTarget) {
@@ -3526,6 +3963,2533 @@
     if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => updateStageAspect()).observe(dom.stageShell);
     else window.addEventListener("resize", updateStageAspect);
     renderAll();
+  </script>
+  <script>
+  (() => {
+    "use strict";
+
+    const fl = id => document.getElementById(id);
+    const clampV2 = (value, min, max) => Math.min(max, Math.max(min, value));
+    const lerpV2 = (a, b, amount) => a + (b - a) * amount;
+    const flUid = prefix => (prefix || "id") + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+    const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+    const deepCopy = value => JSON.parse(JSON.stringify(value));
+    const formatClock = (seconds, millis) => {
+      const safe = Math.max(0, Number(seconds) || 0);
+      const minutes = Math.floor(safe / 60);
+      const whole = Math.floor(safe % 60);
+      const suffix = millis ? "." + String(Math.floor((safe % 1) * 1000)).padStart(3, "0") : "";
+      return String(minutes).padStart(2, "0") + ":" + String(whole).padStart(2, "0") + suffix;
+    };
+    const formatShort = seconds => {
+      const safe = Math.max(0, Number(seconds) || 0);
+      return Math.floor(safe / 60) + ":" + String(Math.floor(safe % 60)).padStart(2, "0");
+    };
+
+    const domV2 = {
+      studio: fl("flStudio"), projectName: fl("flProjectName"), saveState: fl("flSaveState"),
+      undo: fl("flUndoBtn"), redo: fl("flRedoBtn"), previewButton: fl("flPreviewBtn"),
+      leftTitle: fl("flLeftTitle"), modePill: fl("flModePill"), totals: fl("flTotals"),
+      totalStrokes: fl("flTotalStrokes"), totalRelative: fl("flTotalRelative"), holeUsage: fl("flHoleUsage"),
+      scoreColumns: fl("flScoreColumns"), holeList: fl("flHoleList"), holeFooter: fl("flHoleFooter"),
+      previewTitle: fl("flPreviewTitle"), previewMeta: fl("flPreviewMeta"), stageShell: fl("flStageShell"),
+      stage: fl("flStageFrame"), transform: fl("flStageTransform"), video: fl("flVideo"), overlay: fl("flOverlay"),
+      tracerShapes: fl("flTracerShapes"), tracerGuide: fl("flTracerGuide"), tracerHandles: fl("flTracerHandles"),
+      stageScore: fl("flStageScore"), stageEmpty: fl("flStageEmpty"), placementTip: fl("flPlacementTip"),
+      zoomLabel: fl("flZoomLabel"), playButton: fl("flPlayBtn"), playIcon: fl("flPlayIcon"), timecode: fl("flTimecode"),
+      duration: fl("flProjectDuration"), mediaList: fl("flMediaList"), trackLabels: fl("flTrackLabels"),
+      timelineScroll: fl("flTimelineScroll"), timelineCanvas: fl("flTimelineCanvas"),
+      selectionCard: fl("flSelectionCard"), tracerInspector: fl("flTracerInspector"), scoreInspector: fl("flScoreInspector"),
+      mediaInput: fl("flMediaInput"), audioInput: fl("flAudioInput"),
+      projectsBackdrop: fl("flProjectsBackdrop"), projectGrid: fl("flProjectGrid"), projectsClose: fl("flProjectsClose"),
+      createBackdrop: fl("flCreateBackdrop"), createName: fl("flCreateName"),
+      exportBackdrop: fl("flExportBackdrop"), exportProgress: fl("flExportProgress"),
+      exportProgressFill: fl("flExportProgressFill"), exportStatus: fl("flExportStatus"), exportPercent: fl("flExportPercent"),
+      exportStart: fl("flExportStart"), exportCancel: fl("flExportCancel"), exportClose: fl("flExportClose"),
+      toastStack: fl("flToastStack")
+    };
+    document.documentElement.dataset.flightlineStudio = "loading";
+
+    const TRACER_STYLES_V2 = {
+      classic: { preset: "classic", color: "#d7f35c", width: 6, opacity: .97, glow: false },
+      glow: { preset: "glow", color: "#f3ff8b", width: 7, opacity: 1, glow: true },
+      minimal: { preset: "minimal", color: "#ffffff", width: 3, opacity: .84, glow: false }
+    };
+    const CARRY_FALLBACKS = { driver: 260, wood: 220, hybrid: 190, iron: 155, wedge: 90, chip: 25, auto: 145 };
+
+    const runtime = {
+      project: null,
+      urls: new Map(),
+      selectedClipId: null,
+      selectedHoleId: null,
+      selectedItem: null,
+      playhead: 0,
+      playing: false,
+      transportToken: 0,
+      currentClipId: null,
+      timelinePixels: 82,
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      placing: null,
+      pointerEdit: null,
+      history: [],
+      redo: [],
+      saveTimer: 0,
+      audioPlayers: new Map(),
+      recorder: null,
+      recordStream: null,
+      recordChunks: [],
+      recordStart: 0,
+      exporting: false,
+      exportCancelRequested: false
+    };
+
+    function createHoleV2(label) {
+      return { id: flUid("hole"), label: label || "Hole 1", par: 4, distance: "", score: "" };
+    }
+
+    function createProjectV2(name, mode) {
+      const now = Date.now();
+      return {
+        schemaVersion: 2,
+        id: flUid("project"),
+        name: name || "Untitled video",
+        mode: mode === "individual" ? "individual" : "round",
+        createdAt: now,
+        updatedAt: now,
+        output: { aspect: "source", quality: "high", fps: 30 },
+        assets: [],
+        clips: [],
+        holes: mode === "individual" ? [] : [createHoleV2("Hole 1")],
+        graphics: [],
+        audioLayers: []
+      };
+    }
+
+    function normalizeProjectV2(value) {
+      const project = value && typeof value === "object" ? value : createProjectV2("Untitled video", "round");
+      project.schemaVersion = 2;
+      project.id = project.id || flUid("project");
+      project.name = project.name || "Untitled video";
+      project.mode = project.mode === "individual" ? "individual" : "round";
+      project.createdAt = Number(project.createdAt) || Date.now();
+      project.updatedAt = Number(project.updatedAt) || Date.now();
+      project.output = Object.assign({ aspect: "source", quality: "high", fps: 30 }, project.output || {});
+      project.assets = Array.isArray(project.assets) ? project.assets : [];
+      project.clips = Array.isArray(project.clips) ? project.clips : [];
+      project.holes = Array.isArray(project.holes) ? project.holes : [];
+      if (project.mode === "round" && !project.holes.length) project.holes.push(createHoleV2("Hole 1"));
+      project.graphics = Array.isArray(project.graphics) ? project.graphics : [];
+      project.audioLayers = Array.isArray(project.audioLayers) ? project.audioLayers : [];
+      project.clips.forEach(clip => {
+        clip.id = clip.id || flUid("clip");
+        clip.sourceStart = Math.max(0, Number(clip.sourceStart) || 0);
+        clip.sourceEnd = Math.max(clip.sourceStart + .1, Number(clip.sourceEnd) || clip.sourceStart + 1);
+        clip.volume = clampV2(Number.isFinite(Number(clip.volume)) ? Number(clip.volume) : 1, 0, 1);
+        clip.muted = Boolean(clip.muted);
+        clip.holeId = clip.holeId || null;
+      });
+      project.graphics.forEach(graphic => {
+        graphic.id = graphic.id || flUid(graphic.type || "graphic");
+        graphic.startTime = Math.max(0, Number(graphic.startTime) || 0);
+        graphic.endTime = Math.max(graphic.startTime + .1, Number(graphic.endTime) || graphic.startTime + 2);
+        if (graphic.type === "scorecard" && graphic.shot == null) graphic.shot = 1;
+      });
+      project.audioLayers.forEach(layer => {
+        layer.id = layer.id || flUid("audio");
+        layer.timelineStart = Math.max(0, Number(layer.timelineStart) || 0);
+        layer.sourceStart = Math.max(0, Number(layer.sourceStart) || 0);
+        layer.sourceEnd = Math.max(layer.sourceStart + .1, Number(layer.sourceEnd) || layer.sourceStart + 1);
+        layer.volume = clampV2(Number.isFinite(Number(layer.volume)) ? Number(layer.volume) : .8, 0, 1);
+        layer.muted = Boolean(layer.muted);
+        layer.role = layer.role === "voiceover" ? "voiceover" : "music";
+      });
+      return project;
+    }
+
+    let databasePromise = null;
+    function openDatabaseV2() {
+      if (databasePromise) return databasePromise;
+      databasePromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open("FlightlineStudioV2", 1);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains("projects")) database.createObjectStore("projects", { keyPath: "id" });
+          if (!database.objectStoreNames.contains("blobs")) {
+            const store = database.createObjectStore("blobs", { keyPath: "id" });
+            store.createIndex("projectId", "projectId", { unique: false });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return databasePromise;
+    }
+
+    async function idbGetAllV2(storeName) {
+      const database = await openDatabaseV2();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(storeName, "readonly").objectStore(storeName).getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function idbGetV2(storeName, id) {
+      const database = await openDatabaseV2();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(storeName, "readonly").objectStore(storeName).get(id);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function idbPutV2(storeName, value) {
+      const database = await openDatabaseV2();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, "readwrite");
+        transaction.objectStore(storeName).put(value);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+    }
+
+    async function idbDeleteV2(storeName, id) {
+      const database = await openDatabaseV2();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, "readwrite");
+        transaction.objectStore(storeName).delete(id);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+    }
+
+    async function idbDeleteProjectBlobsV2(projectId) {
+      const database = await openDatabaseV2();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction("blobs", "readwrite");
+        const index = transaction.objectStore("blobs").index("projectId");
+        const request = index.openCursor(IDBKeyRange.only(projectId));
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) return;
+          cursor.delete();
+          cursor.continue();
+        };
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+    }
+
+    function toastV2(message, type) {
+      const item = document.createElement("div");
+      item.className = "fl-toast" + (type === "error" ? " error" : "");
+      item.textContent = message;
+      domV2.toastStack.appendChild(item);
+      window.setTimeout(() => item.remove(), 3400);
+    }
+
+    function projectSnapshotV2() {
+      return runtime.project ? deepCopy(runtime.project) : null;
+    }
+
+    function pushHistoryV2(before, label) {
+      if (!before) return;
+      runtime.history.push({ label: label || "change", snapshot: before });
+      if (runtime.history.length > 45) runtime.history.shift();
+      runtime.redo = [];
+      updateHistoryButtonsV2();
+    }
+
+    function mutateProjectV2(label, callback, render) {
+      if (!runtime.project) return;
+      const before = projectSnapshotV2();
+      callback(runtime.project);
+      runtime.project.updatedAt = Date.now();
+      pushHistoryV2(before, label);
+      scheduleSaveV2();
+      if (render !== false) renderAllV2();
+    }
+
+    function updateHistoryButtonsV2() {
+      domV2.undo.disabled = !runtime.history.length;
+      domV2.redo.disabled = !runtime.redo.length;
+    }
+
+    function undoV2() {
+      const entry = runtime.history.pop();
+      if (!entry || !runtime.project) return;
+      runtime.redo.push({ label: entry.label, snapshot: projectSnapshotV2() });
+      runtime.project = normalizeProjectV2(entry.snapshot);
+      reconcileSelectionV2();
+      scheduleSaveV2();
+      renderAllV2();
+      seekProjectV2(runtime.playhead, false);
+      toastV2("Undid " + entry.label);
+    }
+
+    function redoV2() {
+      const entry = runtime.redo.pop();
+      if (!entry || !runtime.project) return;
+      runtime.history.push({ label: entry.label, snapshot: projectSnapshotV2() });
+      runtime.project = normalizeProjectV2(entry.snapshot);
+      reconcileSelectionV2();
+      scheduleSaveV2();
+      renderAllV2();
+      seekProjectV2(runtime.playhead, false);
+      toastV2("Redid " + entry.label);
+    }
+
+    function scheduleSaveV2() {
+      if (!runtime.project) return;
+      domV2.saveState.classList.add("saving");
+      domV2.saveState.textContent = "Saving…";
+      clearTimeout(runtime.saveTimer);
+      runtime.saveTimer = window.setTimeout(saveProjectV2, 450);
+    }
+
+    async function saveProjectV2() {
+      if (!runtime.project) return;
+      try {
+        runtime.project.updatedAt = Date.now();
+        await idbPutV2("projects", deepCopy(runtime.project));
+        domV2.saveState.classList.remove("saving");
+        domV2.saveState.textContent = "Saved locally";
+      } catch (error) {
+        domV2.saveState.classList.remove("saving");
+        domV2.saveState.textContent = "Save unavailable";
+        toastV2("This browser could not save the project.", "error");
+      }
+    }
+
+    function assetV2(id) {
+      return runtime.project && runtime.project.assets.find(asset => asset.id === id);
+    }
+
+    function clipV2(id) {
+      return runtime.project && runtime.project.clips.find(clip => clip.id === id);
+    }
+
+    function holeV2(id) {
+      return runtime.project && runtime.project.holes.find(hole => hole.id === id);
+    }
+
+    function graphicV2(id) {
+      return runtime.project && runtime.project.graphics.find(graphic => graphic.id === id);
+    }
+
+    function selectedClipV2() {
+      return clipV2(runtime.selectedClipId);
+    }
+
+    function selectedGraphicV2(type) {
+      const item = runtime.selectedItem && graphicV2(runtime.selectedItem.id);
+      return item && item.type === type ? item : null;
+    }
+
+    function clipDurationV2(clip) {
+      return clip ? Math.max(.1, Number(clip.sourceEnd) - Number(clip.sourceStart)) : 0;
+    }
+
+    function timelineLayoutV2() {
+      let cursor = 0;
+      return (runtime.project ? runtime.project.clips : []).map(clip => {
+        const duration = clipDurationV2(clip);
+        const item = { clip, start: cursor, end: cursor + duration, duration };
+        cursor += duration;
+        return item;
+      });
+    }
+
+    function videoDurationV2() {
+      return timelineLayoutV2().reduce((total, item) => Math.max(total, item.end), 0);
+    }
+
+    function projectDurationV2() {
+      let duration = videoDurationV2();
+      if (runtime.project) runtime.project.audioLayers.forEach(layer => {
+        duration = Math.max(duration, Number(layer.timelineStart) + Math.max(.1, Number(layer.sourceEnd) - Number(layer.sourceStart)));
+      });
+      return duration;
+    }
+
+    function clipLayoutByIdV2(id) {
+      return timelineLayoutV2().find(item => item.clip.id === id) || null;
+    }
+
+    function resolveProjectTimeV2(time) {
+      const layout = timelineLayoutV2();
+      if (!layout.length) return null;
+      const bounded = clampV2(Number(time) || 0, 0, Math.max(0, videoDurationV2()));
+      let item = layout.find(candidate => bounded >= candidate.start && bounded < candidate.end);
+      if (!item) item = layout[layout.length - 1];
+      const local = clampV2(bounded - item.start, 0, item.duration);
+      return { item, clip: item.clip, projectTime: bounded, localTime: local, sourceTime: item.clip.sourceStart + local };
+    }
+
+    function relativeScoreV2(hole) {
+      const score = Number(hole && hole.score);
+      const par = Number(hole && hole.par);
+      return score > 0 && par > 0 ? score - par : null;
+    }
+
+    function formatRelativeV2(value) {
+      if (value == null) return "—";
+      if (value === 0) return "E";
+      return value > 0 ? "+" + value : String(value);
+    }
+
+    function reconcileSelectionV2() {
+      if (!runtime.project) return;
+      if (!clipV2(runtime.selectedClipId)) runtime.selectedClipId = runtime.project.clips[0] ? runtime.project.clips[0].id : null;
+      const clip = selectedClipV2();
+      if (clip && clip.holeId) runtime.selectedHoleId = clip.holeId;
+      if (!holeV2(runtime.selectedHoleId)) runtime.selectedHoleId = runtime.project.holes[0] ? runtime.project.holes[0].id : null;
+      if (runtime.selectedItem) {
+        const exists = runtime.selectedItem.kind === "audio"
+          ? runtime.project.audioLayers.some(layer => layer.id === runtime.selectedItem.id)
+          : runtime.project.graphics.some(graphic => graphic.id === runtime.selectedItem.id);
+        if (!exists) runtime.selectedItem = null;
+      }
+      runtime.playhead = clampV2(runtime.playhead, 0, projectDurationV2());
+    }
+
+    function revokeProjectUrlsV2() {
+      runtime.urls.forEach(url => URL.revokeObjectURL(url));
+      runtime.urls.clear();
+      runtime.audioPlayers.forEach(player => {
+        player.pause();
+        player.removeAttribute("src");
+      });
+      runtime.audioPlayers.clear();
+    }
+
+    async function openProjectV2(project) {
+      pauseProjectV2();
+      revokeProjectUrlsV2();
+      runtime.project = normalizeProjectV2(deepCopy(project));
+      runtime.selectedClipId = runtime.project.clips[0] ? runtime.project.clips[0].id : null;
+      runtime.selectedHoleId = runtime.project.holes[0] ? runtime.project.holes[0].id : null;
+      runtime.selectedItem = null;
+      runtime.playhead = 0;
+      runtime.currentClipId = null;
+      runtime.history = [];
+      runtime.redo = [];
+      runtime.zoom = 1;
+      runtime.panX = 0;
+      runtime.panY = 0;
+      try {
+        const blobs = await idbGetAllV2("blobs");
+        blobs.filter(record => record.projectId === runtime.project.id).forEach(record => {
+          if (record.blob) runtime.urls.set(record.id, URL.createObjectURL(record.blob));
+        });
+      } catch (_) {
+        toastV2("Saved media could not be restored in this browser.", "error");
+      }
+      domV2.studio.setAttribute("aria-hidden", "false");
+      domV2.projectsBackdrop.classList.add("hidden");
+      domV2.projectsClose.disabled = false;
+      updateStageTransformV2();
+      renderAllV2();
+      await seekProjectV2(0, false);
+    }
+
+    async function renderProjectPickerV2() {
+      domV2.projectGrid.innerHTML = '<button class="fl-project-card fl-new-card" data-fl-new-project><span class="fl-new-plus">＋</span><strong>New project</strong><span>Start a round or a standalone video edit.</span></button>';
+      let projects = [];
+      try {
+        projects = await idbGetAllV2("projects");
+      } catch (_) {
+        toastV2("Project storage is unavailable.", "error");
+      }
+      projects.sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
+      let html = '<button class="fl-project-card fl-new-card" data-fl-new-project><span class="fl-new-plus">＋</span><strong>New project</strong><span>Start a round or a standalone video edit.</span></button>';
+      projects.forEach(project => {
+        const clipCount = Array.isArray(project.clips) ? project.clips.length : 0;
+        const duration = (project.clips || []).reduce((sum, clip) => sum + Math.max(.1, Number(clip.sourceEnd) - Number(clip.sourceStart)), 0);
+        const when = new Date(Number(project.updatedAt) || Date.now()).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        html += '<div class="fl-project-card" data-fl-open-project="' + escapeHtml(project.id) + '" role="button" tabindex="0">'
+          + '<div class="fl-project-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/></svg></div>'
+          + '<div class="fl-project-copy"><strong>' + escapeHtml(project.name) + '</strong><span>' + (project.mode === "round" ? "Round" : "Individual shots") + ' · ' + clipCount + ' clip' + (clipCount === 1 ? "" : "s") + ' · ' + formatShort(duration) + '</span><span>Edited ' + when + '</span></div>'
+          + '<button class="fl-project-delete" data-fl-delete-project="' + escapeHtml(project.id) + '" aria-label="Delete ' + escapeHtml(project.name) + '">×</button></div>';
+      });
+      domV2.projectGrid.innerHTML = html;
+      domV2.projectsClose.disabled = !runtime.project;
+    }
+
+    function renderScorecardV2() {
+      const project = runtime.project;
+      if (!project) return;
+      const isRound = project.mode === "round";
+      domV2.leftTitle.textContent = isRound ? "Scorecard" : "Project";
+      domV2.modePill.textContent = isRound ? "Round" : "Individual";
+      domV2.totals.classList.toggle("hidden", !isRound);
+      domV2.scoreColumns.classList.toggle("hidden", !isRound);
+      domV2.holeFooter.classList.toggle("hidden", !isRound);
+      if (!isRound) {
+        domV2.holeList.innerHTML = '<div class="fl-individual-card"><strong>A freeform edit</strong><p>Build the story on the timeline. Tracers and scorecard graphics are optional and can be placed on any clip.</p></div>';
+        return;
+      }
+      let strokes = 0;
+      let par = 0;
+      let scored = 0;
+      let used = 0;
+      const html = project.holes.map(hole => {
+        const hasClip = project.clips.some(clip => clip.holeId === hole.id);
+        const hasGraphic = project.graphics.some(graphic => graphic.type === "scorecard" && graphic.holeId === hole.id);
+        if (hasClip) used++;
+        if (Number(hole.score) > 0) {
+          strokes += Number(hole.score);
+          par += Number(hole.par) || 0;
+          scored++;
+        }
+        const status = hasGraphic ? " ready" : hasClip ? " used" : "";
+        return '<div class="fl-hole-row' + (runtime.selectedHoleId === hole.id ? " active" : "") + '" data-fl-hole-row="' + hole.id + '">'
+          + '<div class="fl-hole-name-wrap"><span class="fl-hole-status' + status + '"></span><input class="fl-hole-label" data-fl-hole-field="label" value="' + escapeHtml(hole.label) + '" aria-label="Hole label"></div>'
+          + '<input type="number" min="1" max="9" data-fl-hole-field="par" value="' + escapeHtml(hole.par) + '" aria-label="' + escapeHtml(hole.label) + ' par">'
+          + '<input type="number" min="1" data-fl-hole-field="distance" value="' + escapeHtml(hole.distance) + '" aria-label="' + escapeHtml(hole.label) + ' distance">'
+          + '<input type="number" min="1" data-fl-hole-field="score" value="' + escapeHtml(hole.score) + '" aria-label="' + escapeHtml(hole.label) + ' score"></div>';
+      }).join("");
+      domV2.holeList.innerHTML = html;
+      domV2.totalStrokes.textContent = scored ? String(strokes) : "—";
+      domV2.totalRelative.textContent = scored ? formatRelativeV2(strokes - par) : "—";
+      domV2.holeUsage.textContent = used + "/" + project.holes.length;
+    }
+
+    function renderMediaV2() {
+      if (!runtime.project || !runtime.project.assets.length) {
+        domV2.mediaList.innerHTML = '<span class="fl-media-empty">Imported video and audio will appear here.</span>';
+        return;
+      }
+      domV2.mediaList.innerHTML = runtime.project.assets.map(asset => {
+        const isAudio = asset.kind === "audio";
+        const icon = isAudio
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 7 8 5-8 5Z"/></svg>';
+        return '<div class="fl-media-card" draggable="true" data-fl-asset="' + asset.id + '"><div class="fl-media-thumb' + (isAudio ? " audio" : "") + '">' + icon + '</div><div class="fl-media-copy"><strong>' + escapeHtml(asset.name) + '</strong><span>' + (isAudio ? "Audio" : (asset.width || "—") + "×" + (asset.height || "—")) + ' · ' + formatShort(asset.duration) + '</span></div><button class="fl-media-add" data-fl-add-asset="' + asset.id + '" title="Add to timeline">＋</button></div>';
+      }).join("");
+    }
+
+    function renderTimelineV2() {
+      const project = runtime.project;
+      if (!project) return;
+      const layout = timelineLayoutV2();
+      const total = projectDurationV2();
+      const pixels = runtime.timelinePixels;
+      const viewportWidth = domV2.timelineScroll.clientWidth || 720;
+      const canvasWidth = Math.max(viewportWidth, Math.ceil(total * pixels + 90));
+      const audioRows = Math.max(1, project.audioLayers.length);
+      const canvasHeight = 20 + 52 + 37 + 37 + audioRows * 37;
+      const tick = pixels >= 120 ? 1 : pixels >= 70 ? 2 : 5;
+      let ruler = '<div class="fl-ruler">';
+      for (let second = 0; second <= Math.ceil(total + tick); second += tick) {
+        ruler += '<span class="fl-ruler-mark" style="left:' + (second * pixels) + 'px">' + formatShort(second) + '</span>';
+      }
+      ruler += "</div>";
+      let videoTrack = '<div class="fl-track video" data-fl-track="video">';
+      if (!layout.length) videoTrack += '<span class="fl-empty-track">Import video to begin editing.</span>';
+      layout.forEach(item => {
+        const asset = assetV2(item.clip.assetId);
+        const width = Math.max(18, item.duration * pixels);
+        const hole = holeV2(item.clip.holeId);
+        videoTrack += '<div class="fl-clip' + (runtime.selectedClipId === item.clip.id ? " selected" : "") + '" draggable="true" data-fl-clip="' + item.clip.id + '" style="left:' + (item.start * pixels) + 'px;width:' + width + 'px">'
+          + '<button class="fl-trim-handle left" data-fl-trim="left" aria-label="Trim clip start"></button>'
+          + '<div class="fl-clip-main"><span class="fl-clip-name">' + escapeHtml(asset ? asset.name : "Missing media") + '</span><span class="fl-clip-meta">' + (hole ? escapeHtml(hole.label) + " · " : "") + formatShort(item.duration) + '</span></div>'
+          + '<button class="fl-trim-handle right" data-fl-trim="right" aria-label="Trim clip end"></button></div>';
+      });
+      videoTrack += "</div>";
+      let tracerTrack = '<div class="fl-track" data-fl-track="tracer">';
+      let scoreTrack = '<div class="fl-track" data-fl-track="scorecard">';
+      project.graphics.forEach(graphic => {
+        const item = clipLayoutByIdV2(graphic.clipId);
+        if (!item) return;
+        const left = (item.start + clampV2(graphic.startTime, 0, item.duration)) * pixels;
+        const width = Math.max(18, (Math.min(item.duration, graphic.endTime) - Math.min(item.duration, graphic.startTime)) * pixels);
+        const selected = runtime.selectedItem && runtime.selectedItem.id === graphic.id ? " selected" : "";
+        const block = '<div class="fl-layer-item ' + graphic.type + selected + '" data-fl-graphic="' + graphic.id + '" style="left:' + left + 'px;width:' + width + 'px">' + (graphic.type === "tracer" ? "↗ Tracer" : escapeHtml(graphic.club || "Scorecard")) + '</div>';
+        if (graphic.type === "tracer") tracerTrack += block;
+        else scoreTrack += block;
+      });
+      tracerTrack += "</div>";
+      scoreTrack += "</div>";
+      let audioTracks = "";
+      project.audioLayers.forEach((layer, index) => {
+        const duration = Math.max(.1, layer.sourceEnd - layer.sourceStart);
+        const asset = assetV2(layer.assetId);
+        const selected = runtime.selectedItem && runtime.selectedItem.id === layer.id ? " selected" : "";
+        audioTracks += '<div class="fl-track" data-fl-audio-row="' + index + '"><div class="fl-layer-item audio ' + (layer.role === "voiceover" ? "voiceover" : "") + selected + '" draggable="true" data-fl-audio="' + layer.id + '" style="left:' + (layer.timelineStart * pixels) + 'px;width:' + Math.max(22, duration * pixels) + 'px"><button class="fl-trim-handle left" data-fl-audio-trim="left" aria-label="Trim audio start"></button><span class="fl-wave">▥▥▥</span>' + escapeHtml(asset ? asset.name : "Audio") + '<button class="fl-trim-handle right" data-fl-audio-trim="right" aria-label="Trim audio end"></button></div></div>';
+      });
+      if (!project.audioLayers.length) audioTracks = '<div class="fl-track" data-fl-audio-row="0"><span class="fl-empty-track">Add music, sound, or a voiceover.</span></div>';
+      domV2.timelineCanvas.style.width = canvasWidth + "px";
+      domV2.timelineCanvas.style.height = canvasHeight + "px";
+      domV2.timelineCanvas.innerHTML = ruler + videoTrack + tracerTrack + scoreTrack + audioTracks + '<div class="fl-playhead" id="flPlayhead"></div>';
+      let labels = '<div class="fl-track-label video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg>Video</div><div class="fl-track-label">Tracer</div><div class="fl-track-label">Scorecard</div>';
+      for (let index = 0; index < audioRows; index++) labels += '<div class="fl-track-label">' + (project.audioLayers[index] && project.audioLayers[index].role === "voiceover" ? "Voiceover" : "Audio " + (index + 1)) + '</div>';
+      domV2.trackLabels.innerHTML = labels;
+      domV2.duration.textContent = formatShort(total);
+      updatePlayheadV2(false);
+    }
+
+    function renderSelectionCardV2() {
+      const selectedAudio = runtime.selectedItem && runtime.selectedItem.kind === "audio" && runtime.project
+        ? runtime.project.audioLayers.find(layer => layer.id === runtime.selectedItem.id)
+        : null;
+      if (selectedAudio) {
+        const asset = assetV2(selectedAudio.assetId);
+        domV2.selectionCard.innerHTML = '<strong>' + escapeHtml(asset ? asset.name : "Audio layer") + '</strong><span>' + (selectedAudio.role === "voiceover" ? "Voiceover" : "Audio layer") + ' · starts at ' + formatClock(selectedAudio.timelineStart, true) + '</span>'
+          + '<div class="fl-form-grid" style="margin-top:8px"><div class="fl-field full"><label>Layer volume <output id="flAudioVolumeOut">' + Math.round(selectedAudio.volume * 100) + '%</output></label><input id="flAudioVolume" type="range" min="0" max="1" step=".01" value="' + selectedAudio.volume + '"></div>'
+          + '<div class="fl-field"><label>Timeline start</label><input id="flAudioStart" type="number" min="0" step=".01" value="' + selectedAudio.timelineStart.toFixed(2) + '"></div>'
+          + '<div class="fl-field"><label>Muted</label><select id="flAudioMuted"><option value="false"' + (!selectedAudio.muted ? " selected" : "") + '>On</option><option value="true"' + (selectedAudio.muted ? " selected" : "") + '>Muted</option></select></div></div>';
+        return;
+      }
+      const clip = selectedClipV2();
+      if (!clip || !runtime.project) {
+        domV2.selectionCard.innerHTML = "<strong>No clip selected</strong><span>Select a video clip in the timeline.</span>";
+        return;
+      }
+      const asset = assetV2(clip.assetId);
+      let options = '<option value="">No hole / filler footage</option>';
+      runtime.project.holes.forEach(hole => {
+        options += '<option value="' + hole.id + '"' + (clip.holeId === hole.id ? " selected" : "") + '>' + escapeHtml(hole.label) + "</option>";
+      });
+      domV2.selectionCard.innerHTML = '<strong>' + escapeHtml(asset ? asset.name : "Missing media") + '</strong><span>' + formatShort(clipDurationV2(clip)) + ' · ' + (asset && asset.width > asset.height ? "Horizontal" : "Vertical") + ' · source audio ' + Math.round(clip.volume * 100) + '%</span>'
+        + (runtime.project.mode === "round" ? '<select class="fl-hole-assign" id="flClipHoleAssign" aria-label="Assign clip to a hole">' + options + "</select>" : "")
+        + '<div class="fl-form-grid" style="margin-top:8px"><div class="fl-field"><label>Clip audio <output id="flClipVolumeOut">' + Math.round(clip.volume * 100) + '%</output></label><input id="flClipVolume" type="range" min="0" max="1" step=".01" value="' + clip.volume + '"></div><div class="fl-field"><label>Source sound</label><select id="flClipMuted"><option value="false"' + (!clip.muted ? " selected" : "") + '>On</option><option value="true"' + (clip.muted ? " selected" : "") + '>Muted</option></select></div></div>';
+    }
+
+    function checkpointMarkupV2(key, number, label, done) {
+      return '<button class="fl-checkpoint' + (done ? " done" : "") + (runtime.placing === key ? " active" : "") + '" data-fl-checkpoint="' + key + '"><span class="fl-step-box"><span class="fl-step-index">' + number + '</span><span class="fl-step-check">✓</span></span><small>' + label + "</small></button>";
+    }
+
+    function curveParametersV2(tracer) {
+      if (!tracer || !tracer.start || !tracer.end || !tracer.apex) return { peakT: .5, control: { x: .5, y: .2 } };
+      const start = tracer.start;
+      const end = tracer.end;
+      const apex = tracer.apex;
+      const rise = Math.max(0, start.y - apex.y);
+      const fall = Math.max(0, end.y - apex.y);
+      const riseRoot = Math.sqrt(rise);
+      const fallRoot = Math.sqrt(fall);
+      const total = riseRoot + fallRoot;
+      if (total <= .0001) return { peakT: .5, control: { x: 2 * apex.x - .5 * (start.x + end.x), y: apex.y } };
+      if (riseRoot <= .0001) return { peakT: .001, control: { x: start.x + (end.x - start.x) * .5, y: start.y } };
+      if (fallRoot <= .0001) return { peakT: .999, control: { x: end.x - (end.x - start.x) * .5, y: end.y } };
+      const peakT = riseRoot / total;
+      const inverse = 1 - peakT;
+      const denominator = Math.max(.0001, 2 * inverse * peakT);
+      return { peakT, control: {
+        x: (apex.x - inverse * inverse * start.x - peakT * peakT * end.x) / denominator,
+        y: (apex.y - inverse * inverse * start.y - peakT * peakT * end.y) / denominator
+      } };
+    }
+
+    function resolvedFlightV2(tracer) {
+      const parameters = curveParametersV2(tracer);
+      const explicitCarry = Number(tracer && tracer.flight && tracer.flight.carryYards);
+      const club = tracer && tracer.flight && tracer.flight.club || "auto";
+      const carry = explicitCarry > 0 ? explicitCarry : CARRY_FALLBACKS[club] || CARRY_FALLBACKS.auto;
+      const x = clampV2((carry - 30) / 230, 0, 1);
+      const distanceFactor = x * x * (3 - 2 * x);
+      let peak = lerpV2(parameters.peakT, .46, distanceFactor);
+      let velocity = lerpV2(1, .18, distanceFactor);
+      const character = tracer && tracer.flight && tracer.flight.character || "standard";
+      if (character === "piercing") {
+        velocity *= lerpV2(1, 1.18, distanceFactor);
+        peak -= .02 * distanceFactor;
+      } else if (character === "floating") {
+        velocity *= lerpV2(1, .78, distanceFactor);
+        peak += .025 * distanceFactor;
+      }
+      const explicitPeak = Number(tracer && tracer.flight && tracer.flight.timeToPeak);
+      if (explicitPeak >= .2 && explicitPeak <= .8) peak = explicitPeak;
+      const spatialShape = distanceFactor * (character === "floating" ? .78 : character === "piercing" ? .44 : .6);
+      return { carry, club, character, distanceFactor, spatialShape, peak: clampV2(peak, .2, .8), velocity: clampV2(velocity, .12, 1.15), geometricPeak: parameters.peakT, parameters };
+    }
+
+    function renderTracerInspectorV2() {
+      const clip = selectedClipV2();
+      if (!runtime.project || !clip) {
+        domV2.tracerInspector.innerHTML = '<div class="fl-empty-inspector">Select a video clip, then add a tracer at the playhead.</div>';
+        return;
+      }
+      const tracers = runtime.project.graphics.filter(graphic => graphic.type === "tracer" && graphic.clipId === clip.id);
+      let tracer = selectedGraphicV2("tracer");
+      if (!tracer && tracers.length) tracer = tracers[0];
+      if (!tracer) {
+        domV2.tracerInspector.innerHTML = '<div class="fl-empty-inspector">This clip has no shot tracers. Filler footage can stay exactly that way.</div>';
+        return;
+      }
+      const flight = resolvedFlightV2(tracer);
+      const style = Object.assign({}, TRACER_STYLES_V2.classic, tracer.style || {});
+      const duration = Math.max(.1, tracer.endTime - tracer.startTime);
+      const list = '<div class="fl-tracer-list">' + tracers.map((item, index) => '<button class="fl-item-pill' + (item.id === tracer.id ? " active" : "") + '" data-fl-select-graphic="' + item.id + '">Tracer ' + (index + 1) + "</button>").join("") + "</div>";
+      domV2.tracerInspector.innerHTML = list
+        + '<div class="fl-checkpoints">' + checkpointMarkupV2("start", 1, "Ball start", Boolean(tracer.start)) + checkpointMarkupV2("end", 2, "Landing", Boolean(tracer.end)) + checkpointMarkupV2("apex", 3, "Flight peak", Boolean(tracer.apex)) + "</div>"
+        + '<div class="fl-form-grid">'
+        + '<div class="fl-field"><label for="flCarry">Carry distance</label><input id="flCarry" type="number" min="1" max="500" placeholder="Auto · ' + flight.carry + ' yd" value="' + escapeHtml(tracer.flight && tracer.flight.carryYards || "") + '"></div>'
+        + '<div class="fl-field"><label for="flClubType">Flight profile</label><select id="flClubType">' + ["auto", "driver", "wood", "hybrid", "iron", "wedge", "chip"].map(value => '<option value="' + value + '"' + ((tracer.flight && tracer.flight.club || "auto") === value ? " selected" : "") + '>' + value.charAt(0).toUpperCase() + value.slice(1) + "</option>").join("") + "</select></div>"
+        + '<div class="fl-field"><label for="flCharacter">Spin / shape</label><select id="flCharacter">' + ["piercing", "standard", "floating"].map(value => '<option value="' + value + '"' + ((tracer.flight && tracer.flight.character || "standard") === value ? " selected" : "") + '>' + value.charAt(0).toUpperCase() + value.slice(1) + "</option>").join("") + "</select></div>"
+        + '<div class="fl-field"><label for="flTracerStart">Starts at</label><input id="flTracerStart" type="number" min="0" step=".01" value="' + tracer.startTime.toFixed(2) + '"></div>'
+        + '<div class="fl-field full"><label for="flPeakTime">Time to peak <output id="flPeakOut">' + Math.round(flight.peak * 100) + '% · ' + (duration * flight.peak).toFixed(2) + 's</output></label><input id="flPeakTime" type="range" min="20" max="80" step="1" value="' + Math.round(flight.peak * 100) + '"><div class="fl-range-limits"><span>20% · earlier peak</span><span>80% · later peak</span></div></div>'
+        + '<div class="fl-field"><label for="flTracerDuration">Flight duration</label><input id="flTracerDuration" type="number" min=".2" step=".05" value="' + duration.toFixed(2) + '"></div>'
+        + '<div class="fl-field"><label for="flTracerColor">Tracer color</label><div class="fl-color-row"><input id="flTracerColor" type="color" value="' + escapeHtml(style.color) + '"><select id="flTracerPreset"><option value="classic"' + (style.preset === "classic" ? " selected" : "") + '>Classic</option><option value="glow"' + (style.preset === "glow" ? " selected" : "") + '>Glow</option><option value="minimal"' + (style.preset === "minimal" ? " selected" : "") + '>Minimal</option></select></div></div>'
+        + '<div class="fl-field"><label for="flTracerWidth">Thickness <output id="flWidthOut">' + Number(style.width).toFixed(0) + '</output></label><input id="flTracerWidth" type="range" min="2" max="12" step=".5" value="' + style.width + '"></div>'
+        + '<div class="fl-field"><label for="flTracerOpacity">Opacity <output id="flOpacityOut">' + Math.round(style.opacity * 100) + '%</output></label><input id="flTracerOpacity" type="range" min=".2" max="1" step=".01" value="' + style.opacity + '"></div>'
+        + '</div><div class="fl-inline-actions"><button class="fl-btn" id="flTracerGlow">' + (style.glow ? "✓ Glow on" : "Glow off") + '</button><button class="fl-btn" id="flResetTracer">Reset points</button><button class="fl-btn" id="flDeleteTracer">Delete tracer</button></div>';
+    }
+
+    function renderScoreInspectorV2() {
+      const clip = selectedClipV2();
+      if (!runtime.project || !clip) {
+        domV2.scoreInspector.innerHTML = '<div class="fl-empty-inspector">Select a video clip, then place a scorecard graphic at the playhead.</div>';
+        return;
+      }
+      const graphics = runtime.project.graphics.filter(graphic => graphic.type === "scorecard" && graphic.clipId === clip.id);
+      let graphic = selectedGraphicV2("scorecard");
+      if (!graphic && graphics.length) graphic = graphics[0];
+      if (!graphic) {
+        domV2.scoreInspector.innerHTML = '<div class="fl-empty-inspector">No scorecard graphic is attached to this clip. Add one only where it helps the edit.</div>';
+        return;
+      }
+      const list = '<div class="fl-tracer-list">' + graphics.map((item, index) => '<button class="fl-item-pill' + (item.id === graphic.id ? " active" : "") + '" data-fl-select-graphic="' + item.id + '">Graphic ' + (index + 1) + "</button>").join("") + "</div>";
+      const duration = Math.max(.1, graphic.endTime - graphic.startTime);
+      domV2.scoreInspector.innerHTML = list
+        + '<div class="fl-preset-row">' + ["minimal", "broadcast", "social"].map(value => '<button class="fl-preset' + (graphic.preset === value ? " active" : "") + '" data-fl-score-preset="' + value + '">' + (value === "broadcast" ? "Golf broadcast" : value.charAt(0).toUpperCase() + value.slice(1)) + "</button>").join("") + "</div>"
+        + '<div class="fl-form-grid">'
+        + '<div class="fl-field"><label for="flScoreClub">Club used</label><input id="flScoreClub" maxlength="8" placeholder="8i, D, PW" value="' + escapeHtml(graphic.club || "") + '"></div>'
+        + '<div class="fl-field"><label for="flScoreHole">Hole label</label><input id="flScoreHole" value="' + escapeHtml(graphic.holeLabel || "") + '"></div>'
+        + '<div class="fl-field"><label for="flScorePar">Par</label><input id="flScorePar" type="number" min="1" value="' + escapeHtml(graphic.par || "") + '"></div>'
+        + '<div class="fl-field"><label for="flScoreDistance">Distance</label><input id="flScoreDistance" type="number" min="1" value="' + escapeHtml(graphic.distance || "") + '"></div>'
+        + '<div class="fl-field"><label for="flScoreValue">Score</label><input id="flScoreValue" type="number" min="1" value="' + escapeHtml(graphic.score || "") + '"></div>'
+        + '<div class="fl-field"><label for="flScoreShot">Shot number</label><input id="flScoreShot" type="number" min="1" value="' + escapeHtml(graphic.shot || 1) + '"></div>'
+        + '<div class="fl-field"><label for="flScorePosition">Position</label><select id="flScorePosition">' + [["tl", "Top left"], ["tr", "Top right"], ["bl", "Bottom left"], ["br", "Bottom right"]].map(option => '<option value="' + option[0] + '"' + (graphic.position === option[0] ? " selected" : "") + '>' + option[1] + "</option>").join("") + "</select></div>"
+        + '<div class="fl-field"><label for="flScoreStart">Starts at</label><input id="flScoreStart" type="number" min="0" step=".01" value="' + graphic.startTime.toFixed(2) + '"></div>'
+        + '<div class="fl-field"><label for="flScoreDuration">Duration</label><input id="flScoreDuration" type="number" min=".2" step=".05" value="' + duration.toFixed(2) + '"></div>'
+        + '<div class="fl-field full"><label for="flScoreScale">Size <output id="flScoreScaleOut">' + Math.round((graphic.scale || 1) * 100) + '%</output></label><input id="flScoreScale" type="range" min=".65" max="1.6" step=".01" value="' + (graphic.scale || 1) + '"></div>'
+        + '<div class="fl-field full"><label for="flScoreOpacity">Background opacity <output id="flScoreOpacityOut">' + Math.round((graphic.opacity == null ? .88 : graphic.opacity) * 100) + '%</output></label><input id="flScoreOpacity" type="range" min=".2" max="1" step=".01" value="' + (graphic.opacity == null ? .88 : graphic.opacity) + '"></div>'
+        + '</div><div class="fl-inline-actions"><button class="fl-btn" id="flDeleteScore">Delete graphic</button></div>';
+    }
+
+    function renderAllV2() {
+      if (!runtime.project) return;
+      reconcileSelectionV2();
+      domV2.projectName.value = runtime.project.name;
+      renderScorecardV2();
+      renderMediaV2();
+      renderTimelineV2();
+      renderSelectionCardV2();
+      renderTracerInspectorV2();
+      renderScoreInspectorV2();
+      updatePreviewHeaderV2();
+      updateHistoryButtonsV2();
+      renderOverlaysV2();
+    }
+
+    function containRectV2(sourceWidth, sourceHeight, targetWidth, targetHeight) {
+      const sw = Math.max(1, Number(sourceWidth) || targetWidth || 1);
+      const sh = Math.max(1, Number(sourceHeight) || targetHeight || 1);
+      const tw = Math.max(1, targetWidth || 1);
+      const th = Math.max(1, targetHeight || 1);
+      if (sw / sh > tw / th) {
+        const width = tw;
+        const height = width * sh / sw;
+        return { x: 0, y: (th - height) / 2, width, height };
+      }
+      const height = th;
+      const width = height * sw / sh;
+      return { x: (tw - width) / 2, y: 0, width, height };
+    }
+
+    function currentPreviewResolutionV2() {
+      const resolved = resolveProjectTimeV2(runtime.playhead);
+      const clip = resolved ? resolved.clip : selectedClipV2();
+      const asset = clip ? assetV2(clip.assetId) : null;
+      return { clip, asset };
+    }
+
+    function currentVideoRectV2() {
+      const current = currentPreviewResolutionV2();
+      const width = domV2.stage.clientWidth || 1000;
+      const height = domV2.stage.clientHeight || 562.5;
+      if (!current.asset || !current.asset.width || !current.asset.height) return { x: 0, y: 0, width, height };
+      return containRectV2(current.asset.width, current.asset.height, width, height);
+    }
+
+    function videoPointToStageV2(point, rect) {
+      const bounds = rect || currentVideoRectV2();
+      return { x: bounds.x + point.x * bounds.width, y: bounds.y + point.y * bounds.height };
+    }
+
+    function eventToVideoPointV2(event) {
+      const bounds = domV2.stage.getBoundingClientRect();
+      const stageX = (event.clientX - bounds.left - runtime.panX) / runtime.zoom;
+      const stageY = (event.clientY - bounds.top - runtime.panY) / runtime.zoom;
+      const rect = currentVideoRectV2();
+      if (stageX < rect.x || stageX > rect.x + rect.width || stageY < rect.y || stageY > rect.y + rect.height) return null;
+      return { x: clampV2((stageX - rect.x) / rect.width, 0, 1), y: clampV2((stageY - rect.y) / rect.height, 0, 1) };
+    }
+
+    function curvePointV2(tracer, t, parameters) {
+      const start = tracer.start;
+      const end = tracer.end;
+      const curve = parameters || curveParametersV2(tracer);
+      const control = curve.control;
+      const inverse = 1 - t;
+      const x = inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x;
+      const baseY = inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y;
+      /*
+       * Carry changes more than animation speed. Long/floating shots get a
+       * broader shoulder while chips remain the unmodified parabola. The
+       * deformation has zeros at start, apex and end—and a zero derivative at
+       * the apex—so all three manual checkpoints remain exact and the peak
+       * transition stays smooth.
+       */
+      const flight = resolvedFlightV2(tracer);
+      const distanceFromPeak = t - curve.peakT;
+      const requestedLift = flight.spatialShape * 2 * t * (1 - t) * distanceFromPeak * distanceFromPeak;
+      const safeLift = Math.min(requestedLift, Math.max(0, baseY - tracer.apex.y) * .42);
+      return { x, y: baseY - safeLift };
+    }
+
+    function curveTangentV2(tracer, t, parameters) {
+      const curve = parameters || curveParametersV2(tracer);
+      const epsilon = .0006;
+      const before = curvePointV2(tracer, Math.max(0, t - epsilon), curve);
+      const after = curvePointV2(tracer, Math.min(1, t + epsilon), curve);
+      return { x: after.x - before.x, y: after.y - before.y };
+    }
+
+    function rationalEaseV2(value, factor) {
+      const z = clampV2(value, 0, 1);
+      const k = Math.max(.0001, factor);
+      const denominator = z + k * (1 - z);
+      return denominator > 0 ? z / denominator : z;
+    }
+
+    function flightParameterV2(tracer, localTime) {
+      if (!tracer || !tracer.start || !tracer.end || !tracer.apex) return 0;
+      const duration = Math.max(.001, tracer.endTime - tracer.startTime);
+      const u = clampV2((localTime - tracer.startTime) / duration, 0, 1);
+      if (u <= 0 || u >= 1) return u;
+      const flight = resolvedFlightV2(tracer);
+      const a = clampV2(flight.geometricPeak, .001, .999);
+      const q = clampV2(flight.peak, .2, .8);
+      const v = flight.velocity;
+      if (!Number.isFinite(a) || !Number.isFinite(q) || duration < .067) return u;
+      if (u <= q) {
+        const kUp = Math.max(.0001, v * q / a);
+        return a * rationalEaseV2(u / q, kUp);
+      }
+      const kDown = Math.max(.0001, (1 - a) / ((1 - q) * v));
+      return a + (1 - a) * rationalEaseV2((u - q) / (1 - q), kDown);
+    }
+
+    function tracerVisibilityV2(tracer, localTime) {
+      if (!tracer || localTime < tracer.startTime) return 0;
+      if (localTime <= tracer.endTime + .7) return 1;
+      return clampV2(1 - (localTime - tracer.endTime - .7) / .5, 0, 1);
+    }
+
+    function tracerWidthScaleV2(t) {
+      const smooth = t * t * (3 - 2 * t);
+      return lerpV2(1.08, .62, smooth);
+    }
+
+    function tracerRibbonV2(tracer, curveLimit, pixelWidth, rect) {
+      if (!tracer || !tracer.start || !tracer.end || !tracer.apex || curveLimit <= 0) return null;
+      const parameters = curveParametersV2(tracer);
+      const bounds = rect || currentVideoRectV2();
+      const steps = Math.max(8, Math.ceil(66 * curveLimit));
+      const left = [];
+      const right = [];
+      let startCap = null;
+      let endCap = null;
+      for (let index = 0; index <= steps; index++) {
+        const t = curveLimit * index / steps;
+        const normalized = curvePointV2(tracer, t, parameters);
+        const point = videoPointToStageV2(normalized, bounds);
+        const tangentN = curveTangentV2(tracer, t, parameters);
+        let tx = tangentN.x * bounds.width;
+        let ty = tangentN.y * bounds.height;
+        let length = Math.hypot(tx, ty);
+        if (length < .0001) {
+          tx = (tracer.end.x - tracer.start.x) * bounds.width;
+          ty = (tracer.end.y - tracer.start.y) * bounds.height;
+          length = Math.hypot(tx, ty) || 1;
+        }
+        const unitX = tx / length;
+        const unitY = ty / length;
+        const half = pixelWidth * tracerWidthScaleV2(t) / 2;
+        left.push({ x: point.x - unitY * half, y: point.y + unitX * half });
+        right.push({ x: point.x + unitY * half, y: point.y - unitX * half });
+        if (index === 0) startCap = { x: point.x - unitX * half * 1.3, y: point.y - unitY * half * 1.3 };
+        if (index === steps) endCap = { x: point.x + unitX * half * 1.3, y: point.y + unitY * half * 1.3 };
+      }
+      return { left, right, startCap, endCap };
+    }
+
+    function ribbonPathV2(geometry) {
+      if (!geometry) return "";
+      const format = point => point.x.toFixed(2) + " " + point.y.toFixed(2);
+      const left = geometry.left;
+      const right = geometry.right;
+      return "M " + format(left[0]) + " " + left.slice(1).map(point => "L " + format(point)).join(" ")
+        + " Q " + format(geometry.endCap) + " " + format(right[right.length - 1]) + " "
+        + right.slice().reverse().slice(1).map(point => "L " + format(point)).join(" ")
+        + " Q " + format(geometry.startCap) + " " + format(left[0]) + " Z";
+    }
+
+    function guidePathV2(tracer, rect) {
+      if (!tracer || !tracer.start || !tracer.end || !tracer.apex) return "";
+      const parameters = curveParametersV2(tracer);
+      const points = [];
+      for (let index = 0; index <= 40; index++) points.push(videoPointToStageV2(curvePointV2(tracer, index / 40, parameters), rect));
+      return points.map((point, index) => (index ? "L " : "M ") + point.x + " " + point.y).join(" ");
+    }
+
+    function activeTimelineContextV2() {
+      const resolved = resolveProjectTimeV2(runtime.playhead);
+      if (!resolved) return null;
+      return { clip: resolved.clip, localTime: resolved.localTime, sourceTime: resolved.sourceTime, layout: resolved.item };
+    }
+
+    function renderOverlaysV2() {
+      if (!runtime.project) return;
+      const context = activeTimelineContextV2();
+      const width = domV2.stage.clientWidth || 1000;
+      const height = domV2.stage.clientHeight || 562.5;
+      domV2.overlay.setAttribute("viewBox", "0 0 " + width + " " + height);
+      if (!context) {
+        domV2.tracerShapes.innerHTML = "";
+        domV2.tracerGuide.classList.add("hidden");
+        domV2.tracerHandles.classList.add("hidden");
+        domV2.stageScore.classList.add("hidden");
+        return;
+      }
+      const rect = currentVideoRectV2();
+      const tracers = runtime.project.graphics.filter(graphic => graphic.type === "tracer" && graphic.clipId === context.clip.id);
+      let shapes = "";
+      tracers.forEach(tracer => {
+        const selected = runtime.selectedItem && runtime.selectedItem.id === tracer.id;
+        const active = context.localTime >= tracer.startTime && context.localTime <= tracer.endTime + 1.2;
+        if (!active && !(selected && !runtime.playing)) return;
+        const style = Object.assign({}, TRACER_STYLES_V2.classic, tracer.style || {});
+        const curveT = selected && !runtime.playing && !active ? 1 : flightParameterV2(tracer, context.localTime);
+        const shownT = selected && !runtime.playing && curveT <= .001 ? 1 : curveT;
+        const geometry = tracerRibbonV2(tracer, shownT, Number(style.width) || 6, rect);
+        const opacity = active ? tracerVisibilityV2(tracer, context.localTime) * style.opacity : .44;
+        if (style.glow && geometry) {
+          const glowGeometry = tracerRibbonV2(tracer, shownT, (Number(style.width) || 6) * 2.1, rect);
+          shapes += '<path class="fl-tracer-shape" data-fl-shape="' + tracer.id + '" d="' + ribbonPathV2(glowGeometry) + '" fill="' + escapeHtml(style.color) + '" opacity="' + (.22 * opacity) + '" filter="url(#flGlow)"></path>';
+        }
+        shapes += '<path class="fl-tracer-shape" data-fl-shape="' + tracer.id + '" d="' + ribbonPathV2(geometry) + '" fill="' + escapeHtml(style.color) + '" opacity="' + opacity + '"></path>';
+      });
+      domV2.tracerShapes.innerHTML = shapes;
+      const selectedTracer = selectedGraphicV2("tracer");
+      if (selectedTracer && selectedTracer.clipId === context.clip.id && selectedTracer.start && selectedTracer.end && selectedTracer.apex && !runtime.playing) {
+        domV2.tracerGuide.setAttribute("d", guidePathV2(selectedTracer, rect));
+        domV2.tracerGuide.classList.remove("hidden");
+        domV2.tracerHandles.classList.remove("hidden");
+        ["start", "apex", "end"].forEach((key, index) => {
+          const point = videoPointToStageV2(selectedTracer[key], rect);
+          const handle = domV2.tracerHandles.children[index];
+          handle.setAttribute("cx", point.x);
+          handle.setAttribute("cy", point.y);
+        });
+      } else {
+        domV2.tracerGuide.classList.add("hidden");
+        domV2.tracerHandles.classList.add("hidden");
+      }
+      const scorecards = runtime.project.graphics.filter(graphic => graphic.type === "scorecard" && graphic.clipId === context.clip.id);
+      let score = scorecards.find(graphic => context.localTime >= graphic.startTime && context.localTime <= graphic.endTime);
+      const selectedScore = selectedGraphicV2("scorecard");
+      if (!score && selectedScore && selectedScore.clipId === context.clip.id && !runtime.playing) score = selectedScore;
+      if (!score) {
+        domV2.stageScore.classList.add("hidden");
+      } else {
+        domV2.stageScore.className = "fl-stage-score " + (score.preset || "broadcast");
+        domV2.stageScore.style.background = "rgba(15,19,15," + (score.opacity == null ? .88 : score.opacity) + ")";
+        domV2.stageScore.style.transform = "scale(" + (score.scale || 1) + ")";
+        domV2.stageScore.style.transformOrigin = score.position && score.position.includes("r") ? "right top" : "left top";
+        domV2.stageScore.style.left = score.position && score.position.includes("r") ? "auto" : "4%";
+        domV2.stageScore.style.right = score.position && score.position.includes("r") ? "4%" : "auto";
+        domV2.stageScore.style.top = score.position && score.position.startsWith("b") ? "auto" : "4%";
+        domV2.stageScore.style.bottom = score.position && score.position.startsWith("b") ? "4%" : "auto";
+        const scoreRelative = score.score && score.par ? formatRelativeV2(Number(score.score) - Number(score.par)) : "";
+        domV2.stageScore.innerHTML = '<div class="fl-score-accent"></div><div class="fl-score-content"><span class="fl-score-hole">' + escapeHtml(score.holeLabel || "Golf") + '</span><strong class="fl-score-club">' + escapeHtml(score.club || "—") + '</strong><span class="fl-score-details">' + (score.shot ? "Shot " + escapeHtml(score.shot) : "") + (score.par ? (score.shot ? " · " : "") + "Par " + escapeHtml(score.par) : "") + (score.distance ? " · " + escapeHtml(score.distance) + " yd" : "") + (scoreRelative ? " · " + scoreRelative : "") + "</span></div>";
+        domV2.stageScore.classList.remove("hidden");
+      }
+    }
+
+    function updatePreviewHeaderV2() {
+      const context = activeTimelineContextV2();
+      const fallback = selectedClipV2();
+      const clip = context ? context.clip : fallback;
+      const asset = clip ? assetV2(clip.assetId) : null;
+      if (!clip) {
+        domV2.previewTitle.textContent = "No clip selected";
+        domV2.previewMeta.textContent = "Import footage in the timeline below";
+        domV2.stageEmpty.classList.remove("hidden");
+        return;
+      }
+      const hole = holeV2(clip.holeId);
+      domV2.previewTitle.textContent = asset ? asset.name : "Missing media";
+      domV2.previewMeta.textContent = (hole ? hole.label + " · " : "Unassigned / filler · ") + formatShort(clipDurationV2(clip)) + " clip";
+      domV2.stageEmpty.classList.toggle("hidden", Boolean(asset && runtime.urls.get(asset.id)));
+      updateStageAspectV2(asset);
+    }
+
+    function updateStageAspectV2(asset) {
+      if (!asset) return;
+      const aspect = runtime.project && runtime.project.output && runtime.project.output.aspect || "source";
+      let ratio = Number(asset.width) > 0 && Number(asset.height) > 0 ? asset.width / asset.height : 16 / 9;
+      if (aspect === "16:9") ratio = 16 / 9;
+      if (aspect === "9:16") ratio = 9 / 16;
+      domV2.stage.style.aspectRatio = String(ratio);
+      requestAnimationFrame(renderOverlaysV2);
+    }
+
+    function updateStageTransformV2() {
+      runtime.zoom = clampV2(runtime.zoom, 1, 4);
+      if (runtime.zoom === 1) {
+        runtime.panX = 0;
+        runtime.panY = 0;
+      }
+      const maxX = domV2.stage.clientWidth * (runtime.zoom - 1) / 2;
+      const maxY = domV2.stage.clientHeight * (runtime.zoom - 1) / 2;
+      runtime.panX = clampV2(runtime.panX, -maxX, maxX);
+      runtime.panY = clampV2(runtime.panY, -maxY, maxY);
+      domV2.transform.style.transform = "translate(" + runtime.panX + "px," + runtime.panY + "px) scale(" + runtime.zoom + ")";
+      domV2.zoomLabel.textContent = runtime.zoom === 1 ? "Fit" : Math.round(runtime.zoom * 100) + "%";
+      domV2.stage.classList.toggle("pannable", runtime.zoom > 1 && !runtime.placing);
+    }
+
+    function updatePlayheadV2(autoScroll) {
+      const playhead = fl("flPlayhead");
+      if (!playhead) return;
+      const left = runtime.playhead * runtime.timelinePixels;
+      playhead.style.left = left + "px";
+      domV2.timecode.textContent = formatClock(runtime.playhead, true) + " / " + formatClock(projectDurationV2(), true);
+      if (autoScroll && runtime.playing) {
+        const viewportLeft = domV2.timelineScroll.scrollLeft;
+        const viewportRight = viewportLeft + domV2.timelineScroll.clientWidth;
+        if (left > viewportRight - 80) domV2.timelineScroll.scrollLeft = left - domV2.timelineScroll.clientWidth + 110;
+        else if (left < viewportLeft + 20) domV2.timelineScroll.scrollLeft = Math.max(0, left - 30);
+      }
+    }
+
+    async function waitForMediaV2(element, eventName, token) {
+      if (eventName === "loadedmetadata" && element.readyState >= 1) return;
+      if (eventName === "seeked" && Math.abs(element.currentTime - Number(element.dataset.flSeekTarget || element.currentTime)) < .035) return;
+      await new Promise((resolve, reject) => {
+        const done = () => { cleanup(); resolve(); };
+        const fail = () => { cleanup(); reject(new Error("Media could not be decoded.")); };
+        const cleanup = () => {
+          element.removeEventListener(eventName, done);
+          element.removeEventListener("error", fail);
+        };
+        element.addEventListener(eventName, done, { once: true });
+        element.addEventListener("error", fail, { once: true });
+        window.setTimeout(() => { cleanup(); resolve(); }, 2600);
+      });
+      if (token !== runtime.transportToken) throw new Error("Stale transport");
+    }
+
+    async function loadClipAtV2(clip, sourceTime, token) {
+      const asset = assetV2(clip.assetId);
+      const url = asset && runtime.urls.get(asset.id);
+      if (!asset || !url) {
+        domV2.video.pause();
+        domV2.video.removeAttribute("src");
+        runtime.currentClipId = null;
+        updatePreviewHeaderV2();
+        return false;
+      }
+      if (domV2.video.dataset.flAsset !== asset.id) {
+        domV2.video.pause();
+        domV2.video.src = url;
+        domV2.video.dataset.flAsset = asset.id;
+        domV2.video.load();
+        await waitForMediaV2(domV2.video, "loadedmetadata", token);
+      }
+      if (token !== runtime.transportToken) return false;
+      runtime.currentClipId = clip.id;
+      const target = clampV2(sourceTime, clip.sourceStart, Math.max(clip.sourceStart, clip.sourceEnd - .001));
+      if (Math.abs(domV2.video.currentTime - target) > .025) {
+        domV2.video.dataset.flSeekTarget = String(target);
+        domV2.video.currentTime = target;
+        await waitForMediaV2(domV2.video, "seeked", token);
+      }
+      domV2.video.volume = clampV2(clip.volume, 0, 1);
+      domV2.video.muted = Boolean(clip.muted);
+      updateStageAspectV2(asset);
+      return true;
+    }
+
+    function getAudioPlayerV2(layer) {
+      let player = runtime.audioPlayers.get(layer.id);
+      const url = runtime.urls.get(layer.assetId);
+      if (!url) return null;
+      if (!player) {
+        player = new Audio(url);
+        player.preload = "auto";
+        player.dataset.flAsset = layer.assetId;
+        runtime.audioPlayers.set(layer.id, player);
+      } else if (player.dataset.flAsset !== layer.assetId) {
+        player.src = url;
+        player.dataset.flAsset = layer.assetId;
+      }
+      return player;
+    }
+
+    function syncAudioLayersV2(time, shouldPlay, force) {
+      if (!runtime.project) return;
+      runtime.project.audioLayers.forEach(layer => {
+        const player = getAudioPlayerV2(layer);
+        if (!player) return;
+        const duration = Math.max(.1, layer.sourceEnd - layer.sourceStart);
+        const local = time - layer.timelineStart;
+        const active = local >= 0 && local < duration;
+        if (!active) {
+          player.pause();
+          return;
+        }
+        const target = layer.sourceStart + local;
+        if (force || Math.abs(player.currentTime - target) > .12) {
+          try { player.currentTime = target; } catch (_) { /* metadata may still be loading */ }
+        }
+        player.volume = clampV2(layer.volume, 0, 1);
+        player.muted = Boolean(layer.muted);
+        if (shouldPlay) player.play().catch(() => {});
+        else player.pause();
+      });
+    }
+
+    function pauseProjectV2() {
+      runtime.playing = false;
+      domV2.video.pause();
+      runtime.audioPlayers.forEach(player => player.pause());
+      cancelAnimationFrame(runtime.playbackFrame);
+      runtime.playbackFrame = 0;
+      domV2.playIcon.innerHTML = '<path d="m8 5 11 7-11 7Z"/>';
+      domV2.playButton.setAttribute("aria-label", "Play project");
+      domV2.previewButton.classList.remove("active");
+      domV2.previewButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.8 12s3.3-6 9.2-6 9.2 6 9.2 6-3.3 6-9.2 6-9.2-6-9.2-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>Play project';
+      renderOverlaysV2();
+    }
+
+    async function seekProjectV2(time, autoplay) {
+      if (!runtime.project) return;
+      const total = projectDurationV2();
+      runtime.playhead = clampV2(Number(time) || 0, 0, total);
+      const resolved = resolveProjectTimeV2(runtime.playhead);
+      updatePlayheadV2(false);
+      if (!resolved) {
+        pauseProjectV2();
+        renderOverlaysV2();
+        return;
+      }
+      const previousClip = runtime.selectedClipId;
+      runtime.selectedClipId = resolved.clip.id;
+      if (resolved.clip.holeId) runtime.selectedHoleId = resolved.clip.holeId;
+      const token = ++runtime.transportToken;
+      try {
+        const ready = await loadClipAtV2(resolved.clip, resolved.sourceTime, token);
+        if (!ready || token !== runtime.transportToken) return;
+        syncAudioLayersV2(runtime.playhead, Boolean(autoplay), true);
+        updatePreviewHeaderV2();
+        renderOverlaysV2();
+        if (previousClip !== resolved.clip.id) {
+          renderScorecardV2();
+          renderTimelineV2();
+          renderSelectionCardV2();
+          renderTracerInspectorV2();
+          renderScoreInspectorV2();
+        }
+        if (autoplay) {
+          runtime.playing = true;
+          domV2.playIcon.innerHTML = '<path d="M7 5h4v14H7zM14 5h4v14h-4z"/>';
+          domV2.playButton.setAttribute("aria-label", "Pause project");
+          domV2.previewButton.classList.add("active");
+          domV2.previewButton.textContent = "Pause project";
+          await domV2.video.play();
+          syncAudioLayersV2(runtime.playhead, true, true);
+          runtime.playbackFrame = requestAnimationFrame(playbackLoopV2);
+        }
+      } catch (error) {
+        if (error && error.message === "Stale transport") return;
+        pauseProjectV2();
+        toastV2("This clip could not be played by the browser.", "error");
+      }
+    }
+
+    async function playProjectV2() {
+      if (!runtime.project || !runtime.project.clips.length) {
+        toastV2("Import a video before playing.", "error");
+        return;
+      }
+      if (runtime.playing) {
+        pauseProjectV2();
+        return;
+      }
+      if (runtime.playhead >= videoDurationV2() - .02) runtime.playhead = 0;
+      await seekProjectV2(runtime.playhead, true);
+    }
+
+    function playbackLoopV2() {
+      if (!runtime.playing) return;
+      const layout = clipLayoutByIdV2(runtime.currentClipId);
+      if (!layout) {
+        pauseProjectV2();
+        return;
+      }
+      runtime.playhead = clampV2(layout.start + (domV2.video.currentTime - layout.clip.sourceStart), layout.start, layout.end);
+      updatePlayheadV2(true);
+      renderOverlaysV2();
+      syncAudioLayersV2(runtime.playhead, true, false);
+      if (domV2.video.currentTime >= layout.clip.sourceEnd - .018 || domV2.video.ended) {
+        const timeline = timelineLayoutV2();
+        const index = timeline.findIndex(item => item.clip.id === layout.clip.id);
+        if (index >= 0 && timeline[index + 1]) {
+          seekProjectV2(timeline[index + 1].start, true);
+          return;
+        }
+        runtime.playhead = layout.end;
+        updatePlayheadV2(true);
+        pauseProjectV2();
+        return;
+      }
+      runtime.playbackFrame = requestAnimationFrame(playbackLoopV2);
+    }
+
+    function stepFrameV2(direction) {
+      pauseProjectV2();
+      const fps = runtime.project && runtime.project.output && runtime.project.output.fps || 30;
+      seekProjectV2(runtime.playhead + direction / fps, false);
+    }
+
+    function openCreateProjectV2() {
+      domV2.createName.value = "Untitled video";
+      document.querySelectorAll("[data-fl-mode]").forEach(button => button.classList.toggle("selected", button.dataset.flMode === "round"));
+      domV2.createBackdrop.classList.remove("hidden");
+      requestAnimationFrame(() => {
+        domV2.createName.focus();
+        domV2.createName.select();
+      });
+    }
+
+    async function createAndOpenProjectV2() {
+      const selected = document.querySelector("[data-fl-mode].selected");
+      const mode = selected ? selected.dataset.flMode : "round";
+      const project = createProjectV2(domV2.createName.value.trim() || "Untitled video", mode);
+      await idbPutV2("projects", project);
+      domV2.createBackdrop.classList.add("hidden");
+      await openProjectV2(project);
+      toastV2("Project created");
+    }
+
+    async function deleteProjectV2(id) {
+      const project = await idbGetV2("projects", id);
+      if (!project) return;
+      if (!window.confirm('Delete "' + project.name + '" and its saved media? This cannot be undone.')) return;
+      await idbDeleteV2("projects", id);
+      await idbDeleteProjectBlobsV2(id);
+      if (runtime.project && runtime.project.id === id) {
+        pauseProjectV2();
+        revokeProjectUrlsV2();
+        runtime.project = null;
+        domV2.studio.setAttribute("aria-hidden", "true");
+      }
+      await renderProjectPickerV2();
+      toastV2("Project deleted");
+    }
+
+    function nextHoleLabelV2() {
+      if (!runtime.project || !runtime.project.holes.length) return "Hole 1";
+      const labels = runtime.project.holes.map(hole => {
+        const match = String(hole.label).match(/(\d+)/);
+        return match ? Number(match[1]) : 0;
+      });
+      return "Hole " + (Math.max.apply(null, labels.concat([0])) + 1);
+    }
+
+    function seekFirstClipForHoleV2(holeId) {
+      const item = timelineLayoutV2().find(candidate => candidate.clip.holeId === holeId);
+      if (!item) return;
+      runtime.selectedClipId = item.clip.id;
+      runtime.selectedItem = null;
+      seekProjectV2(item.start, false);
+      renderAllV2();
+    }
+
+    function mimeKindV2(file) {
+      const name = String(file.name || "").toLowerCase();
+      if (String(file.type || "").startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/.test(name)) return "audio";
+      if (String(file.type || "").startsWith("video/") || /\.(mp4|mov|webm|m4v)$/.test(name)) return "video";
+      return null;
+    }
+
+    async function probeFileV2(file) {
+      const kind = mimeKindV2(file);
+      if (!kind) throw new Error("Unsupported media type");
+      const url = URL.createObjectURL(file);
+      const element = document.createElement(kind === "video" ? "video" : "audio");
+      element.preload = "metadata";
+      element.src = url;
+      try {
+        await new Promise((resolve, reject) => {
+          const timer = window.setTimeout(() => reject(new Error("Metadata timed out")), 9000);
+          element.onloadedmetadata = () => { clearTimeout(timer); resolve(); };
+          element.onerror = () => { clearTimeout(timer); reject(new Error("The browser cannot decode this file.")); };
+        });
+        return {
+          asset: {
+            id: flUid("asset"),
+            kind,
+            name: file.name || (kind === "video" ? "Untitled video" : "Untitled audio"),
+            mime: file.type || "",
+            size: file.size || 0,
+            duration: Math.max(.1, Number(element.duration) || 1),
+            width: kind === "video" ? Number(element.videoWidth) || 0 : 0,
+            height: kind === "video" ? Number(element.videoHeight) || 0 : 0
+          },
+          url
+        };
+      } catch (error) {
+        URL.revokeObjectURL(url);
+        throw error;
+      }
+    }
+
+    async function importFilesV2(files, addAudioLayers) {
+      const list = Array.from(files || []).filter(file => mimeKindV2(file));
+      if (!runtime.project || !list.length) return;
+      const before = projectSnapshotV2();
+      let imported = 0;
+      for (const file of list) {
+        try {
+          const result = await probeFileV2(file);
+          const asset = result.asset;
+          runtime.urls.set(asset.id, result.url);
+          runtime.project.assets.push(asset);
+          await idbPutV2("blobs", { id: asset.id, projectId: runtime.project.id, blob: file });
+          if (asset.kind === "video") {
+            runtime.project.clips.push({
+              id: flUid("clip"), assetId: asset.id, sourceStart: 0, sourceEnd: asset.duration,
+              holeId: null, volume: 1, muted: false
+            });
+          } else if (addAudioLayers) {
+            runtime.project.audioLayers.push({
+              id: flUid("audio"), assetId: asset.id, timelineStart: runtime.playhead,
+              sourceStart: 0, sourceEnd: asset.duration, volume: .8, muted: false, role: "music"
+            });
+          }
+          imported++;
+        } catch (error) {
+          toastV2((file.name || "Media") + " could not be imported: " + error.message, "error");
+        }
+      }
+      if (!imported) return;
+      runtime.project.updatedAt = Date.now();
+      pushHistoryV2(before, "import media");
+      if (!runtime.selectedClipId && runtime.project.clips[0]) runtime.selectedClipId = runtime.project.clips[0].id;
+      scheduleSaveV2();
+      renderAllV2();
+      if (runtime.project.clips.length && videoDurationV2() > 0) {
+        const selected = clipLayoutByIdV2(runtime.selectedClipId);
+        seekProjectV2(selected ? selected.start : 0, false);
+      }
+      toastV2(imported + " media file" + (imported === 1 ? "" : "s") + " imported");
+    }
+
+    function addAssetToTimelineV2(assetId, atIndex, timelineStart) {
+      const asset = assetV2(assetId);
+      if (!asset || !runtime.project) return;
+      mutateProjectV2("add media to timeline", project => {
+        if (asset.kind === "video") {
+          const clip = { id: flUid("clip"), assetId: asset.id, sourceStart: 0, sourceEnd: asset.duration, holeId: null, volume: 1, muted: false };
+          const index = Number.isInteger(atIndex) ? clampV2(atIndex, 0, project.clips.length) : project.clips.length;
+          project.clips.splice(index, 0, clip);
+          runtime.selectedClipId = clip.id;
+          runtime.selectedItem = null;
+        } else {
+          const layer = { id: flUid("audio"), assetId: asset.id, timelineStart: Math.max(0, Number(timelineStart == null ? runtime.playhead : timelineStart)), sourceStart: 0, sourceEnd: asset.duration, volume: .8, muted: false, role: "music" };
+          project.audioLayers.push(layer);
+          runtime.selectedItem = { kind: "audio", id: layer.id };
+        }
+      });
+      const item = clipLayoutByIdV2(runtime.selectedClipId);
+      if (item && asset.kind === "video") seekProjectV2(item.start, false);
+    }
+
+    function splitSelectedClipV2() {
+      const clip = selectedClipV2();
+      const layout = clip && clipLayoutByIdV2(clip.id);
+      if (!clip || !layout || runtime.playhead <= layout.start + .08 || runtime.playhead >= layout.end - .08) {
+        toastV2("Place the playhead inside the selected clip to split it.", "error");
+        return;
+      }
+      const splitLocal = runtime.playhead - layout.start;
+      const splitSource = clip.sourceStart + splitLocal;
+      mutateProjectV2("split clip", project => {
+        const index = project.clips.findIndex(item => item.id === clip.id);
+        const right = Object.assign({}, clip, { id: flUid("clip"), sourceStart: splitSource });
+        clip.sourceEnd = splitSource;
+        project.clips.splice(index + 1, 0, right);
+        const additions = [];
+        project.graphics.filter(graphic => graphic.clipId === clip.id).forEach(graphic => {
+          if (graphic.startTime >= splitLocal) {
+            graphic.clipId = right.id;
+            graphic.startTime -= splitLocal;
+            graphic.endTime -= splitLocal;
+          } else if (graphic.endTime > splitLocal) {
+            const duplicate = deepCopy(graphic);
+            duplicate.id = flUid(graphic.type);
+            duplicate.clipId = right.id;
+            duplicate.startTime = 0;
+            duplicate.endTime = graphic.endTime - splitLocal;
+            graphic.endTime = splitLocal;
+            additions.push(duplicate);
+          }
+        });
+        project.graphics.push.apply(project.graphics, additions);
+        runtime.selectedClipId = right.id;
+        runtime.selectedItem = null;
+      });
+      seekProjectV2(runtime.playhead, false);
+      toastV2("Clip split at " + formatClock(runtime.playhead, true));
+    }
+
+    function duplicateSelectedClipV2() {
+      const clip = selectedClipV2();
+      if (!clip || !runtime.project) return;
+      mutateProjectV2("duplicate clip", project => {
+        const index = project.clips.findIndex(item => item.id === clip.id);
+        const duplicate = Object.assign({}, deepCopy(clip), { id: flUid("clip") });
+        project.clips.splice(index + 1, 0, duplicate);
+        project.graphics.filter(graphic => graphic.clipId === clip.id).map(graphic => {
+          const copy = deepCopy(graphic);
+          copy.id = flUid(graphic.type);
+          copy.clipId = duplicate.id;
+          return copy;
+        }).forEach(graphic => project.graphics.push(graphic));
+        runtime.selectedClipId = duplicate.id;
+        runtime.selectedItem = null;
+      });
+      const item = clipLayoutByIdV2(runtime.selectedClipId);
+      if (item) seekProjectV2(item.start, false);
+    }
+
+    function deleteSelectionV2() {
+      if (!runtime.project) return;
+      if (runtime.selectedItem && runtime.selectedItem.kind === "graphic") {
+        const graphic = graphicV2(runtime.selectedItem.id);
+        if (!graphic) return;
+        mutateProjectV2("delete " + graphic.type, project => {
+          project.graphics = project.graphics.filter(item => item.id !== graphic.id);
+          runtime.selectedItem = null;
+        });
+        return;
+      }
+      if (runtime.selectedItem && runtime.selectedItem.kind === "audio") {
+        const layerId = runtime.selectedItem.id;
+        mutateProjectV2("delete audio layer", project => {
+          project.audioLayers = project.audioLayers.filter(layer => layer.id !== layerId);
+          const player = runtime.audioPlayers.get(layerId);
+          if (player) player.pause();
+          runtime.audioPlayers.delete(layerId);
+          runtime.selectedItem = null;
+        });
+        return;
+      }
+      const clip = selectedClipV2();
+      if (!clip) return;
+      const oldLayout = clipLayoutByIdV2(clip.id);
+      mutateProjectV2("delete clip", project => {
+        const index = project.clips.findIndex(item => item.id === clip.id);
+        project.clips = project.clips.filter(item => item.id !== clip.id);
+        project.graphics = project.graphics.filter(graphic => graphic.clipId !== clip.id);
+        runtime.selectedClipId = project.clips[Math.min(index, project.clips.length - 1)] ? project.clips[Math.min(index, project.clips.length - 1)].id : null;
+        runtime.selectedItem = null;
+      });
+      seekProjectV2(Math.min(oldLayout ? oldLayout.start : runtime.playhead, videoDurationV2()), false);
+    }
+
+    function addTracerV2() {
+      const clip = selectedClipV2();
+      const layout = clip && clipLayoutByIdV2(clip.id);
+      if (!clip || !layout) {
+        toastV2("Select a video clip before adding a tracer.", "error");
+        return;
+      }
+      const local = clampV2(runtime.playhead - layout.start, 0, Math.max(0, layout.duration - .2));
+      const available = Math.max(.2, layout.duration - local);
+      const duration = Math.min(available, 3.8);
+      let tracer;
+      mutateProjectV2("add shot tracer", project => {
+        tracer = {
+          id: flUid("tracer"), type: "tracer", clipId: clip.id,
+          startTime: local, endTime: local + duration,
+          start: null, apex: null, end: null,
+          style: Object.assign({}, TRACER_STYLES_V2.classic),
+          flight: { carryYards: null, club: "auto", character: "standard", timeToPeak: null }
+        };
+        project.graphics.push(tracer);
+        runtime.selectedItem = { kind: "graphic", id: tracer.id };
+        runtime.placing = "start";
+      });
+      domV2.placementTip.textContent = "1 of 3 · Click the ball start point";
+      domV2.placementTip.classList.remove("hidden");
+      domV2.stage.classList.add("placing");
+      toastV2("Tracer added at the playhead");
+    }
+
+    function addScorecardV2() {
+      const clip = selectedClipV2();
+      const layout = clip && clipLayoutByIdV2(clip.id);
+      if (!clip || !layout) {
+        toastV2("Select a video clip before adding a scorecard graphic.", "error");
+        return;
+      }
+      const hole = holeV2(clip.holeId);
+      const local = clampV2(runtime.playhead - layout.start, 0, Math.max(0, layout.duration - .2));
+      const duration = Math.min(4, Math.max(.2, layout.duration - local));
+      let graphic;
+      mutateProjectV2("add scorecard graphic", project => {
+        graphic = {
+          id: flUid("scorecard"), type: "scorecard", clipId: clip.id,
+          startTime: local, endTime: local + duration, holeId: hole ? hole.id : null,
+          club: "", shot: 1, holeLabel: hole ? hole.label : "Golf", par: hole ? hole.par : "",
+          distance: hole ? hole.distance : "", score: hole ? hole.score : "",
+          preset: "broadcast", position: "tr", scale: 1, opacity: .88
+        };
+        project.graphics.push(graphic);
+        runtime.selectedItem = { kind: "graphic", id: graphic.id };
+      });
+      toastV2("Scorecard graphic added");
+    }
+
+    function handleTracerControlV2(target) {
+      const tracer = selectedGraphicV2("tracer");
+      if (!tracer) return false;
+      tracer.flight = Object.assign({ carryYards: null, club: "auto", character: "standard", timeToPeak: null }, tracer.flight || {});
+      tracer.style = Object.assign({}, TRACER_STYLES_V2.classic, tracer.style || {});
+      if (target.id === "flCarry") tracer.flight.carryYards = target.value === "" ? null : clampV2(Number(target.value) || 0, 1, 500);
+      else if (target.id === "flClubType") tracer.flight.club = target.value;
+      else if (target.id === "flCharacter") tracer.flight.character = target.value;
+      else if (target.id === "flPeakTime") {
+        tracer.flight.timeToPeak = clampV2(Number(target.value) / 100, .2, .8);
+        const output = fl("flPeakOut");
+        if (output) output.textContent = target.value + "% · " + ((tracer.endTime - tracer.startTime) * tracer.flight.timeToPeak).toFixed(2) + "s";
+      } else if (target.id === "flTracerStart") {
+        const duration = tracer.endTime - tracer.startTime;
+        const clip = clipV2(tracer.clipId);
+        tracer.startTime = clampV2(Number(target.value) || 0, 0, Math.max(0, clipDurationV2(clip) - .1));
+        tracer.endTime = Math.min(clipDurationV2(clip), tracer.startTime + duration);
+      } else if (target.id === "flTracerDuration") {
+        const clip = clipV2(tracer.clipId);
+        tracer.endTime = Math.min(clipDurationV2(clip), tracer.startTime + Math.max(.2, Number(target.value) || .2));
+      } else if (target.id === "flTracerColor") tracer.style.color = target.value;
+      else if (target.id === "flTracerPreset") {
+        const preset = TRACER_STYLES_V2[target.value] || TRACER_STYLES_V2.classic;
+        tracer.style = Object.assign({}, preset);
+      } else if (target.id === "flTracerWidth") {
+        tracer.style.width = Number(target.value);
+        const output = fl("flWidthOut");
+        if (output) output.textContent = Number(target.value).toFixed(0);
+      } else if (target.id === "flTracerOpacity") {
+        tracer.style.opacity = Number(target.value);
+        const output = fl("flOpacityOut");
+        if (output) output.textContent = Math.round(Number(target.value) * 100) + "%";
+      } else return false;
+      renderOverlaysV2();
+      return true;
+    }
+
+    function handleScoreControlV2(target) {
+      const graphic = selectedGraphicV2("scorecard");
+      if (!graphic) return false;
+      if (target.id === "flScoreClub") graphic.club = target.value;
+      else if (target.id === "flScoreHole") graphic.holeLabel = target.value;
+      else if (target.id === "flScorePar") graphic.par = target.value;
+      else if (target.id === "flScoreDistance") graphic.distance = target.value;
+      else if (target.id === "flScoreValue") graphic.score = target.value;
+      else if (target.id === "flScoreShot") graphic.shot = target.value;
+      else if (target.id === "flScorePosition") graphic.position = target.value;
+      else if (target.id === "flScoreStart") {
+        const duration = graphic.endTime - graphic.startTime;
+        const clip = clipV2(graphic.clipId);
+        graphic.startTime = clampV2(Number(target.value) || 0, 0, Math.max(0, clipDurationV2(clip) - .1));
+        graphic.endTime = Math.min(clipDurationV2(clip), graphic.startTime + duration);
+      } else if (target.id === "flScoreDuration") {
+        const clip = clipV2(graphic.clipId);
+        graphic.endTime = Math.min(clipDurationV2(clip), graphic.startTime + Math.max(.2, Number(target.value) || .2));
+      } else if (target.id === "flScoreScale") {
+        graphic.scale = Number(target.value);
+        const output = fl("flScoreScaleOut");
+        if (output) output.textContent = Math.round(graphic.scale * 100) + "%";
+      } else if (target.id === "flScoreOpacity") {
+        graphic.opacity = Number(target.value);
+        const output = fl("flScoreOpacityOut");
+        if (output) output.textContent = Math.round(graphic.opacity * 100) + "%";
+      } else return false;
+      renderOverlaysV2();
+      return true;
+    }
+
+    function handleSelectionControlV2(target) {
+      const selectedAudio = runtime.selectedItem && runtime.selectedItem.kind === "audio"
+        ? runtime.project.audioLayers.find(layer => layer.id === runtime.selectedItem.id)
+        : null;
+      if (selectedAudio) {
+        if (target.id === "flAudioVolume") {
+          selectedAudio.volume = Number(target.value);
+          const output = fl("flAudioVolumeOut");
+          if (output) output.textContent = Math.round(selectedAudio.volume * 100) + "%";
+        } else if (target.id === "flAudioStart") selectedAudio.timelineStart = Math.max(0, Number(target.value) || 0);
+        else if (target.id === "flAudioMuted") selectedAudio.muted = target.value === "true";
+        else return false;
+        syncAudioLayersV2(runtime.playhead, runtime.playing, true);
+        return true;
+      }
+      const clip = selectedClipV2();
+      if (!clip) return false;
+      if (target.id === "flClipHoleAssign") {
+        clip.holeId = target.value || null;
+        runtime.selectedHoleId = clip.holeId || runtime.selectedHoleId;
+        const assignedHole = holeV2(clip.holeId);
+        if (assignedHole) runtime.project.graphics.filter(graphic => graphic.type === "scorecard" && graphic.clipId === clip.id).forEach(graphic => {
+          graphic.holeId = assignedHole.id;
+          graphic.holeLabel = assignedHole.label;
+          graphic.par = assignedHole.par;
+          graphic.distance = assignedHole.distance;
+          graphic.score = assignedHole.score;
+        });
+      } else if (target.id === "flClipVolume") {
+        clip.volume = Number(target.value);
+        if (runtime.currentClipId === clip.id) domV2.video.volume = clip.volume;
+        const output = fl("flClipVolumeOut");
+        if (output) output.textContent = Math.round(clip.volume * 100) + "%";
+      } else if (target.id === "flClipMuted") {
+        clip.muted = target.value === "true";
+        if (runtime.currentClipId === clip.id) domV2.video.muted = clip.muted;
+      } else return false;
+      return true;
+    }
+
+    async function toggleVoiceoverV2() {
+      const button = fl("flVoiceoverBtn");
+      if (runtime.recorder && runtime.recorder.state === "recording") {
+        runtime.recorder.stop();
+        button.classList.remove("fl-recording");
+        button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>Voiceover';
+        return;
+      }
+      if (!navigator.mediaDevices || !window.MediaRecorder) {
+        toastV2("Microphone recording is not supported in this browser.", "error");
+        return;
+      }
+      try {
+        runtime.recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        runtime.recordChunks = [];
+        runtime.recordStart = runtime.playhead;
+        const options = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? { mimeType: "audio/webm;codecs=opus" } : {};
+        runtime.recorder = new MediaRecorder(runtime.recordStream, options);
+        runtime.recorder.ondataavailable = event => { if (event.data && event.data.size) runtime.recordChunks.push(event.data); };
+        runtime.recorder.onstop = async () => {
+          runtime.recordStream && runtime.recordStream.getTracks().forEach(track => track.stop());
+          const blob = new Blob(runtime.recordChunks, { type: runtime.recorder.mimeType || "audio/webm" });
+          const file = new File([blob], "Voiceover " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ".webm", { type: blob.type });
+          const before = projectSnapshotV2();
+          try {
+            const result = await probeFileV2(file);
+            runtime.urls.set(result.asset.id, result.url);
+            runtime.project.assets.push(result.asset);
+            runtime.project.audioLayers.push({ id: flUid("voiceover"), assetId: result.asset.id, timelineStart: runtime.recordStart, sourceStart: 0, sourceEnd: result.asset.duration, volume: 1, muted: false, role: "voiceover" });
+            await idbPutV2("blobs", { id: result.asset.id, projectId: runtime.project.id, blob: file });
+            pushHistoryV2(before, "record voiceover");
+            scheduleSaveV2();
+            renderAllV2();
+            toastV2("Voiceover added to the timeline");
+          } catch (error) {
+            toastV2("The voiceover could not be added.", "error");
+          }
+          runtime.recorder = null;
+          runtime.recordStream = null;
+        };
+        runtime.recorder.start(250);
+        button.classList.add("fl-recording");
+        button.textContent = "■ Stop recording";
+        if (!runtime.playing && runtime.project.clips.length) playProjectV2();
+        toastV2("Recording voiceover from the playhead");
+      } catch (_) {
+        toastV2("Microphone access was not granted.", "error");
+      }
+    }
+
+    function reorderClipV2(sourceId, targetId, after) {
+      if (!runtime.project || sourceId === targetId) return;
+      mutateProjectV2("reorder clips", project => {
+        const sourceIndex = project.clips.findIndex(clip => clip.id === sourceId);
+        let targetIndex = project.clips.findIndex(clip => clip.id === targetId);
+        if (sourceIndex < 0 || targetIndex < 0) return;
+        const moved = project.clips.splice(sourceIndex, 1)[0];
+        targetIndex = project.clips.findIndex(clip => clip.id === targetId);
+        project.clips.splice(targetIndex + (after ? 1 : 0), 0, moved);
+      });
+      const item = clipLayoutByIdV2(sourceId);
+      if (item) seekProjectV2(item.start, false);
+    }
+
+    function finalizePointerEditV2() {
+      const edit = runtime.pointerEdit;
+      if (!edit) return;
+      runtime.pointerEdit = null;
+      domV2.stage.classList.remove("panning");
+      if (edit.type === "pan") return;
+      if (edit.type === "trim") {
+        const clip = clipV2(edit.id);
+        if (clip) {
+          const duration = clipDurationV2(clip);
+          runtime.project.graphics = runtime.project.graphics.filter(graphic => graphic.clipId !== clip.id || (graphic.endTime > 0 && graphic.startTime < duration));
+          runtime.project.graphics.filter(graphic => graphic.clipId === clip.id).forEach(graphic => {
+            graphic.startTime = clampV2(graphic.startTime, 0, Math.max(0, duration - .1));
+            graphic.endTime = clampV2(graphic.endTime, graphic.startTime + .1, duration);
+          });
+        }
+      }
+      pushHistoryV2(edit.before, edit.label);
+      runtime.project.updatedAt = Date.now();
+      scheduleSaveV2();
+      renderAllV2();
+      seekProjectV2(runtime.playhead, false);
+    }
+
+    domV2.projectGrid.addEventListener("click", async event => {
+      const deleteButton = event.target.closest("[data-fl-delete-project]");
+      if (deleteButton) {
+        event.stopPropagation();
+        await deleteProjectV2(deleteButton.dataset.flDeleteProject);
+        return;
+      }
+      if (event.target.closest("[data-fl-new-project]")) {
+        openCreateProjectV2();
+        return;
+      }
+      const card = event.target.closest("[data-fl-open-project]");
+      if (!card) return;
+      const project = await idbGetV2("projects", card.dataset.flOpenProject);
+      if (project) openProjectV2(project);
+    });
+    domV2.projectGrid.addEventListener("keydown", event => {
+      if ((event.key === "Enter" || event.key === " ") && event.target.matches("[data-fl-open-project]")) {
+        event.preventDefault();
+        event.target.click();
+      }
+    });
+    fl("flNewProjectBtn").addEventListener("click", openCreateProjectV2);
+    document.querySelectorAll("[data-fl-mode]").forEach(button => button.addEventListener("click", () => {
+      document.querySelectorAll("[data-fl-mode]").forEach(item => item.classList.toggle("selected", item === button));
+    }));
+    fl("flCreateConfirm").addEventListener("click", createAndOpenProjectV2);
+    fl("flCreateCancel").addEventListener("click", () => domV2.createBackdrop.classList.add("hidden"));
+    fl("flCreateClose").addEventListener("click", () => domV2.createBackdrop.classList.add("hidden"));
+    domV2.createName.addEventListener("keydown", event => { if (event.key === "Enter") createAndOpenProjectV2(); });
+    fl("flProjectsBtn").addEventListener("click", async () => {
+      await renderProjectPickerV2();
+      domV2.projectsBackdrop.classList.remove("hidden");
+    });
+    domV2.projectsClose.addEventListener("click", () => {
+      if (runtime.project) domV2.projectsBackdrop.classList.add("hidden");
+    });
+
+    domV2.projectName.addEventListener("focus", () => { runtime.controlBefore = projectSnapshotV2(); });
+    domV2.projectName.addEventListener("input", () => {
+      if (!runtime.project) return;
+      runtime.project.name = domV2.projectName.value;
+      scheduleSaveV2();
+    });
+    domV2.projectName.addEventListener("change", () => {
+      if (!runtime.project) return;
+      runtime.project.name = domV2.projectName.value.trim() || "Untitled video";
+      domV2.projectName.value = runtime.project.name;
+      pushHistoryV2(runtime.controlBefore, "rename project");
+      runtime.controlBefore = null;
+      scheduleSaveV2();
+    });
+    domV2.undo.addEventListener("click", undoV2);
+    domV2.redo.addEventListener("click", redoV2);
+    domV2.previewButton.addEventListener("click", playProjectV2);
+
+    domV2.holeList.addEventListener("click", event => {
+      const row = event.target.closest("[data-fl-hole-row]");
+      if (!row || !runtime.project) return;
+      runtime.selectedHoleId = row.dataset.flHoleRow;
+      if (event.target.matches("input")) {
+        domV2.holeList.querySelectorAll("[data-fl-hole-row]").forEach(item => item.classList.toggle("active", item === row));
+      } else {
+        renderScorecardV2();
+        seekFirstClipForHoleV2(runtime.selectedHoleId);
+      }
+    });
+    domV2.holeList.addEventListener("focusin", event => {
+      if (event.target.matches("[data-fl-hole-field]")) runtime.controlBefore = projectSnapshotV2();
+    });
+    domV2.holeList.addEventListener("change", event => {
+      const field = event.target.closest("[data-fl-hole-field]");
+      const row = event.target.closest("[data-fl-hole-row]");
+      if (!field || !row) return;
+      const hole = holeV2(row.dataset.flHoleRow);
+      if (!hole) return;
+      const key = field.dataset.flHoleField;
+      hole[key] = key === "label" ? (field.value.trim() || "Hole") : field.value;
+      runtime.project.graphics.filter(graphic => graphic.type === "scorecard" && graphic.holeId === hole.id).forEach(graphic => {
+        if (key === "label") graphic.holeLabel = hole.label;
+        if (key === "par") graphic.par = hole.par;
+        if (key === "distance") graphic.distance = hole.distance;
+        if (key === "score") graphic.score = hole.score;
+      });
+      pushHistoryV2(runtime.controlBefore, "edit scorecard");
+      runtime.controlBefore = null;
+      scheduleSaveV2();
+      renderAllV2();
+    });
+    fl("flAddHoleBtn").addEventListener("click", () => mutateProjectV2("add hole", project => {
+      const hole = createHoleV2(nextHoleLabelV2());
+      project.holes.push(hole);
+      runtime.selectedHoleId = hole.id;
+    }));
+    fl("flHoleUpBtn").addEventListener("click", () => {
+      if (!runtime.project) return;
+      const index = runtime.project.holes.findIndex(hole => hole.id === runtime.selectedHoleId);
+      if (index <= 0) return;
+      mutateProjectV2("move hole", project => {
+        const item = project.holes.splice(index, 1)[0];
+        project.holes.splice(index - 1, 0, item);
+      });
+    });
+    fl("flHoleDownBtn").addEventListener("click", () => {
+      if (!runtime.project) return;
+      const index = runtime.project.holes.findIndex(hole => hole.id === runtime.selectedHoleId);
+      if (index < 0 || index >= runtime.project.holes.length - 1) return;
+      mutateProjectV2("move hole", project => {
+        const item = project.holes.splice(index, 1)[0];
+        project.holes.splice(index + 1, 0, item);
+      });
+    });
+    fl("flDeleteHoleBtn").addEventListener("click", () => {
+      if (!runtime.project || runtime.project.holes.length <= 1) {
+        toastV2("A round needs at least one scorecard row.", "error");
+        return;
+      }
+      const id = runtime.selectedHoleId;
+      mutateProjectV2("delete hole", project => {
+        project.holes = project.holes.filter(hole => hole.id !== id);
+        project.clips.forEach(clip => { if (clip.holeId === id) clip.holeId = null; });
+        project.graphics.forEach(graphic => { if (graphic.holeId === id) graphic.holeId = null; });
+        runtime.selectedHoleId = project.holes[0].id;
+      });
+    });
+
+    fl("flImportBtn").addEventListener("click", () => domV2.mediaInput.click());
+    fl("flAddAudioBtn").addEventListener("click", () => domV2.audioInput.click());
+    domV2.mediaInput.addEventListener("change", event => {
+      importFilesV2(event.target.files, false);
+      event.target.value = "";
+    });
+    domV2.audioInput.addEventListener("change", event => {
+      importFilesV2(event.target.files, true);
+      event.target.value = "";
+    });
+    domV2.mediaList.addEventListener("click", event => {
+      const button = event.target.closest("[data-fl-add-asset]");
+      if (!button) return;
+      const selectedIndex = runtime.project.clips.findIndex(clip => clip.id === runtime.selectedClipId);
+      addAssetToTimelineV2(button.dataset.flAddAsset, selectedIndex >= 0 ? selectedIndex + 1 : undefined, runtime.playhead);
+    });
+    domV2.mediaList.addEventListener("dragstart", event => {
+      const card = event.target.closest("[data-fl-asset]");
+      if (card && event.dataTransfer) {
+        event.dataTransfer.setData("application/x-flightline-asset", card.dataset.flAsset);
+        event.dataTransfer.effectAllowed = "copy";
+      }
+    });
+    fl("flSplitBtn").addEventListener("click", splitSelectedClipV2);
+    fl("flDuplicateBtn").addEventListener("click", duplicateSelectedClipV2);
+    fl("flDeleteBtn").addEventListener("click", deleteSelectionV2);
+    fl("flVoiceoverBtn").addEventListener("click", toggleVoiceoverV2);
+    fl("flTimelineZoom").addEventListener("input", event => {
+      runtime.timelinePixels = Number(event.target.value);
+      renderTimelineV2();
+    });
+
+    domV2.timelineCanvas.addEventListener("click", event => {
+      if (event.target.closest("[data-fl-trim],[data-fl-audio-trim]")) return;
+      const graphicElement = event.target.closest("[data-fl-graphic]");
+      if (graphicElement) {
+        const graphic = graphicV2(graphicElement.dataset.flGraphic);
+        const layout = graphic && clipLayoutByIdV2(graphic.clipId);
+        if (!graphic || !layout) return;
+        runtime.selectedClipId = graphic.clipId;
+        runtime.selectedItem = { kind: "graphic", id: graphic.id };
+        seekProjectV2(layout.start + graphic.startTime, false);
+        renderAllV2();
+        return;
+      }
+      const audioElement = event.target.closest("[data-fl-audio]");
+      if (audioElement) {
+        const layer = runtime.project.audioLayers.find(item => item.id === audioElement.dataset.flAudio);
+        if (!layer) return;
+        runtime.selectedItem = { kind: "audio", id: layer.id };
+        seekProjectV2(layer.timelineStart, false);
+        renderAllV2();
+        return;
+      }
+      const clipElement = event.target.closest("[data-fl-clip]");
+      if (clipElement) {
+        const layout = clipLayoutByIdV2(clipElement.dataset.flClip);
+        if (!layout) return;
+        runtime.selectedClipId = layout.clip.id;
+        runtime.selectedItem = null;
+        if (layout.clip.holeId) runtime.selectedHoleId = layout.clip.holeId;
+        seekProjectV2(layout.start, false);
+        renderAllV2();
+        return;
+      }
+      const rect = domV2.timelineScroll.getBoundingClientRect();
+      const x = event.clientX - rect.left + domV2.timelineScroll.scrollLeft;
+      seekProjectV2(clampV2(x / runtime.timelinePixels, 0, projectDurationV2()), false);
+    });
+
+    domV2.timelineCanvas.addEventListener("pointerdown", event => {
+      const clipHandle = event.target.closest("[data-fl-trim]");
+      const audioHandle = event.target.closest("[data-fl-audio-trim]");
+      if (!clipHandle && !audioHandle) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (clipHandle) {
+        const element = clipHandle.closest("[data-fl-clip]");
+        const clip = element && clipV2(element.dataset.flClip);
+        const asset = clip && assetV2(clip.assetId);
+        if (!clip || !asset) return;
+        runtime.pointerEdit = {
+          type: "trim", label: "trim clip", id: clip.id, side: clipHandle.dataset.flTrim,
+          startX: event.clientX, originalStart: clip.sourceStart, originalEnd: clip.sourceEnd,
+          assetDuration: asset.duration, before: projectSnapshotV2()
+        };
+      } else {
+        const element = audioHandle.closest("[data-fl-audio]");
+        const layer = element && runtime.project.audioLayers.find(item => item.id === element.dataset.flAudio);
+        const asset = layer && assetV2(layer.assetId);
+        if (!layer || !asset) return;
+        runtime.pointerEdit = {
+          type: "audioTrim", label: "trim audio", id: layer.id, side: audioHandle.dataset.flAudioTrim,
+          startX: event.clientX, originalStart: layer.sourceStart, originalEnd: layer.sourceEnd,
+          originalTimelineStart: layer.timelineStart, assetDuration: asset.duration, before: projectSnapshotV2()
+        };
+      }
+    });
+
+    domV2.timelineCanvas.addEventListener("dragstart", event => {
+      if (event.target.closest("[data-fl-trim],[data-fl-audio-trim]")) {
+        event.preventDefault();
+        return;
+      }
+      const clip = event.target.closest("[data-fl-clip]");
+      const audio = event.target.closest("[data-fl-audio]");
+      if (clip && event.dataTransfer) {
+        event.dataTransfer.setData("application/x-flightline-clip", clip.dataset.flClip);
+        event.dataTransfer.effectAllowed = "move";
+        clip.classList.add("dragging");
+      } else if (audio && event.dataTransfer) {
+        event.dataTransfer.setData("application/x-flightline-audio", audio.dataset.flAudio);
+        event.dataTransfer.effectAllowed = "move";
+      }
+    });
+    domV2.timelineCanvas.addEventListener("dragend", () => document.querySelectorAll(".fl-clip.dragging").forEach(element => element.classList.remove("dragging")));
+    domV2.timelineCanvas.addEventListener("dragover", event => {
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = event.dataTransfer.types.includes("application/x-flightline-asset") ? "copy" : "move";
+    });
+    domV2.timelineCanvas.addEventListener("drop", event => {
+      event.preventDefault();
+      if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
+        importFilesV2(event.dataTransfer.files, false);
+        return;
+      }
+      const rect = domV2.timelineScroll.getBoundingClientRect();
+      const time = Math.max(0, (event.clientX - rect.left + domV2.timelineScroll.scrollLeft) / runtime.timelinePixels);
+      const target = event.target.closest("[data-fl-clip]");
+      const assetId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-asset");
+      if (assetId) {
+        const index = target ? runtime.project.clips.findIndex(clip => clip.id === target.dataset.flClip) : runtime.project.clips.length;
+        addAssetToTimelineV2(assetId, index, time);
+        return;
+      }
+      const clipId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-clip");
+      if (clipId && target) {
+        const bounds = target.getBoundingClientRect();
+        reorderClipV2(clipId, target.dataset.flClip, event.clientX > bounds.left + bounds.width / 2);
+        return;
+      }
+      const audioId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-audio");
+      if (audioId) {
+        const layer = runtime.project.audioLayers.find(item => item.id === audioId);
+        if (!layer) return;
+        mutateProjectV2("move audio", () => { layer.timelineStart = time; });
+      }
+    });
+    domV2.timelineCanvas.addEventListener("dragenter", event => event.preventDefault());
+
+    window.addEventListener("dragover", event => {
+      if (event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files")) event.preventDefault();
+    });
+    window.addEventListener("drop", event => {
+      if (!event.target.closest("#flTimeline") && event.dataTransfer && event.dataTransfer.files.length) {
+        event.preventDefault();
+        importFilesV2(event.dataTransfer.files, false);
+      }
+    });
+
+    window.addEventListener("pointermove", event => {
+      const edit = runtime.pointerEdit;
+      if (!edit || !runtime.project) return;
+      if (edit.type === "trim") {
+        const clip = clipV2(edit.id);
+        if (!clip) return;
+        const delta = (event.clientX - edit.startX) / runtime.timelinePixels;
+        if (edit.side === "left") {
+          clip.sourceStart = clampV2(edit.originalStart + delta, 0, edit.originalEnd - .1);
+          const sourceDelta = clip.sourceStart - edit.originalStart;
+          const originalGraphics = edit.before.graphics.filter(graphic => graphic.clipId === clip.id);
+          runtime.project.graphics.filter(graphic => graphic.clipId === clip.id).forEach(graphic => {
+            const original = originalGraphics.find(item => item.id === graphic.id);
+            if (original) {
+              graphic.startTime = original.startTime - sourceDelta;
+              graphic.endTime = original.endTime - sourceDelta;
+            }
+          });
+        } else clip.sourceEnd = clampV2(edit.originalEnd + delta, edit.originalStart + .1, edit.assetDuration);
+        renderTimelineV2();
+      } else if (edit.type === "audioTrim") {
+        const layer = runtime.project.audioLayers.find(item => item.id === edit.id);
+        if (!layer) return;
+        const delta = (event.clientX - edit.startX) / runtime.timelinePixels;
+        if (edit.side === "left") {
+          layer.sourceStart = clampV2(edit.originalStart + delta, 0, edit.originalEnd - .1);
+          layer.timelineStart = Math.max(0, edit.originalTimelineStart + (layer.sourceStart - edit.originalStart));
+        } else layer.sourceEnd = clampV2(edit.originalEnd + delta, edit.originalStart + .1, edit.assetDuration);
+        renderTimelineV2();
+      } else if (edit.type === "handle") {
+        const tracer = graphicV2(edit.id);
+        const point = eventToVideoPointV2(event);
+        if (!tracer || !point) return;
+        tracer[edit.handle] = point;
+        renderOverlaysV2();
+      } else if (edit.type === "pan") {
+        runtime.panX = edit.originalX + event.clientX - edit.startX;
+        runtime.panY = edit.originalY + event.clientY - edit.startY;
+        updateStageTransformV2();
+      }
+    });
+    window.addEventListener("pointerup", finalizePointerEditV2);
+    window.addEventListener("pointercancel", finalizePointerEditV2);
+
+    domV2.stage.addEventListener("pointerdown", event => {
+      const handle = event.target.closest("[data-fl-handle]");
+      if (handle) {
+        const tracer = selectedGraphicV2("tracer");
+        if (!tracer) return;
+        event.preventDefault();
+        runtime.pointerEdit = { type: "handle", label: "shape tracer", id: tracer.id, handle: handle.dataset.flHandle, before: projectSnapshotV2() };
+        return;
+      }
+      if (runtime.placing) {
+        const tracer = selectedGraphicV2("tracer");
+        const point = eventToVideoPointV2(event);
+        if (!tracer || !point) return;
+        const before = projectSnapshotV2();
+        tracer[runtime.placing] = point;
+        if (runtime.placing === "start") {
+          runtime.placing = "end";
+          domV2.placementTip.textContent = "2 of 3 · Click the landing point";
+        } else if (runtime.placing === "end") {
+          runtime.placing = "apex";
+          domV2.placementTip.textContent = "3 of 3 · Click the peak of the flight";
+        } else {
+          runtime.placing = null;
+          domV2.placementTip.classList.add("hidden");
+          domV2.stage.classList.remove("placing");
+          toastV2("Flight path ready");
+        }
+        pushHistoryV2(before, "place tracer checkpoint");
+        scheduleSaveV2();
+        renderAllV2();
+        return;
+      }
+      if (runtime.zoom > 1 && event.button === 0) {
+        runtime.pointerEdit = { type: "pan", label: "pan preview", startX: event.clientX, startY: event.clientY, originalX: runtime.panX, originalY: runtime.panY, before: null };
+        domV2.stage.classList.add("panning");
+      }
+    });
+    domV2.stage.addEventListener("wheel", event => {
+      event.preventDefault();
+      runtime.zoom = clampV2(runtime.zoom * (event.deltaY < 0 ? 1.12 : .89), 1, 4);
+      updateStageTransformV2();
+    }, { passive: false });
+    domV2.tracerShapes.addEventListener("click", event => {
+      const shape = event.target.closest("[data-fl-shape]");
+      if (!shape) return;
+      runtime.selectedItem = { kind: "graphic", id: shape.dataset.flShape };
+      renderAllV2();
+    });
+    fl("flZoomInBtn").addEventListener("click", () => { runtime.zoom = Math.min(4, runtime.zoom + .25); updateStageTransformV2(); });
+    fl("flZoomOutBtn").addEventListener("click", () => { runtime.zoom = Math.max(1, runtime.zoom - .25); updateStageTransformV2(); });
+    fl("flResetViewBtn").addEventListener("click", () => { runtime.zoom = 1; runtime.panX = 0; runtime.panY = 0; updateStageTransformV2(); });
+    domV2.playButton.addEventListener("click", playProjectV2);
+    fl("flPrevFrameBtn").addEventListener("click", () => stepFrameV2(-1));
+    fl("flNextFrameBtn").addEventListener("click", () => stepFrameV2(1));
+
+    fl("flAddTracerBtn").addEventListener("click", addTracerV2);
+    fl("flAddScoreBtn").addEventListener("click", addScorecardV2);
+    domV2.tracerInspector.addEventListener("click", event => {
+      const select = event.target.closest("[data-fl-select-graphic]");
+      if (select) {
+        runtime.selectedItem = { kind: "graphic", id: select.dataset.flSelectGraphic };
+        renderAllV2();
+        return;
+      }
+      const checkpoint = event.target.closest("[data-fl-checkpoint]");
+      if (checkpoint) {
+        runtime.placing = checkpoint.dataset.flCheckpoint;
+        domV2.placementTip.textContent = (runtime.placing === "start" ? "1 of 3 · Click the ball start point" : runtime.placing === "end" ? "2 of 3 · Click the landing point" : "3 of 3 · Click the peak of the flight");
+        domV2.placementTip.classList.remove("hidden");
+        domV2.stage.classList.add("placing");
+        renderTracerInspectorV2();
+        return;
+      }
+      const tracer = selectedGraphicV2("tracer");
+      if (!tracer) return;
+      if (event.target.id === "flTracerGlow") mutateProjectV2("toggle tracer glow", () => { tracer.style.glow = !tracer.style.glow; });
+      else if (event.target.id === "flResetTracer") mutateProjectV2("reset tracer", () => {
+        tracer.start = null; tracer.end = null; tracer.apex = null; runtime.placing = "start";
+        domV2.placementTip.textContent = "1 of 3 · Click the ball start point";
+        domV2.placementTip.classList.remove("hidden");
+        domV2.stage.classList.add("placing");
+      });
+      else if (event.target.id === "flDeleteTracer") deleteSelectionV2();
+    });
+    domV2.scoreInspector.addEventListener("click", event => {
+      const select = event.target.closest("[data-fl-select-graphic]");
+      if (select) {
+        runtime.selectedItem = { kind: "graphic", id: select.dataset.flSelectGraphic };
+        renderAllV2();
+        return;
+      }
+      const preset = event.target.closest("[data-fl-score-preset]");
+      const graphic = selectedGraphicV2("scorecard");
+      if (preset && graphic) mutateProjectV2("change scorecard style", () => { graphic.preset = preset.dataset.flScorePreset; });
+      else if (event.target.id === "flDeleteScore") deleteSelectionV2();
+    });
+
+    [domV2.tracerInspector, domV2.scoreInspector, domV2.selectionCard].forEach(container => {
+      container.addEventListener("focusin", event => {
+        if (event.target.matches("input,select")) runtime.controlBefore = projectSnapshotV2();
+      });
+      container.addEventListener("input", event => {
+        if (!runtime.project) return;
+        const handled = handleTracerControlV2(event.target) || handleScoreControlV2(event.target) || handleSelectionControlV2(event.target);
+        if (handled) {
+          runtime.project.updatedAt = Date.now();
+          if (event.target.id === "flAudioStart") renderTimelineV2();
+        }
+      });
+      container.addEventListener("change", event => {
+        if (!runtime.project) return;
+        const handled = handleTracerControlV2(event.target) || handleScoreControlV2(event.target) || handleSelectionControlV2(event.target);
+        if (!handled) return;
+        pushHistoryV2(runtime.controlBefore, "edit " + (event.target.closest("#flTracerInspector") ? "tracer" : event.target.closest("#flScoreInspector") ? "scorecard graphic" : "clip"));
+        runtime.controlBefore = null;
+        scheduleSaveV2();
+        renderAllV2();
+      });
+    });
+
+    document.addEventListener("keydown", event => {
+      const form = event.target.matches("input,select,textarea,[contenteditable=true]");
+      const interactive = event.target.matches("button,input,select,textarea,a,[contenteditable=true]");
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !form) {
+        event.preventDefault();
+        event.shiftKey ? redoV2() : undoV2();
+      } else if (event.code === "Space" && !interactive && domV2.projectsBackdrop.classList.contains("hidden") && domV2.createBackdrop.classList.contains("hidden") && domV2.exportBackdrop.classList.contains("hidden")) {
+        event.preventDefault();
+        playProjectV2();
+      } else if (!form && event.key === ",") {
+        event.preventDefault();
+        stepFrameV2(-1);
+      } else if (!form && event.key === ".") {
+        event.preventDefault();
+        stepFrameV2(1);
+      } else if (!form && (event.key === "Delete" || event.key === "Backspace")) {
+        event.preventDefault();
+        deleteSelectionV2();
+      } else if (event.key === "Escape" && runtime.placing) {
+        runtime.placing = null;
+        domV2.placementTip.classList.add("hidden");
+        domV2.stage.classList.remove("placing");
+        renderTracerInspectorV2();
+      }
+    });
+
+    function drawRibbonCanvasV2(context, geometry, color, opacity, glow) {
+      if (!geometry || !geometry.left.length) return;
+      const left = geometry.left;
+      const right = geometry.right;
+      context.save();
+      context.globalAlpha = opacity;
+      context.fillStyle = color;
+      if (glow) {
+        context.shadowColor = color;
+        context.shadowBlur = 16;
+      }
+      context.beginPath();
+      context.moveTo(left[0].x, left[0].y);
+      left.slice(1).forEach(point => context.lineTo(point.x, point.y));
+      context.quadraticCurveTo(geometry.endCap.x, geometry.endCap.y, right[right.length - 1].x, right[right.length - 1].y);
+      right.slice().reverse().slice(1).forEach(point => context.lineTo(point.x, point.y));
+      context.quadraticCurveTo(geometry.startCap.x, geometry.startCap.y, left[0].x, left[0].y);
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+
+    function roundedRectV2(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function drawScorecardCanvasV2(context, graphic, width, height) {
+      const scale = Math.max(.5, Number(graphic.scale) || 1) * width / 1280;
+      const boxWidth = 230 * scale;
+      const boxHeight = 78 * scale;
+      const margin = 42 * width / 1280;
+      const right = graphic.position && graphic.position.includes("r");
+      const bottom = graphic.position && graphic.position.startsWith("b");
+      const x = right ? width - margin - boxWidth : margin;
+      const y = bottom ? height - margin - boxHeight : margin;
+      context.save();
+      roundedRectV2(context, x, y, boxWidth, boxHeight, 12 * scale);
+      context.fillStyle = "rgba(15,19,15," + (graphic.opacity == null ? .88 : graphic.opacity) + ")";
+      context.fill();
+      context.fillStyle = "#d7f35c";
+      context.fillRect(x, y, boxWidth, Math.max(3, 4 * scale));
+      context.fillStyle = "rgba(255,255,255,.7)";
+      context.font = "700 " + Math.max(8, 10 * scale) + "px Inter, sans-serif";
+      context.fillText(String(graphic.holeLabel || "Golf").toUpperCase(), x + 14 * scale, y + 24 * scale);
+      context.fillStyle = "#fff";
+      context.font = "700 " + Math.max(9, 13 * scale) + "px Inter, sans-serif";
+      let detail = "";
+      if (graphic.shot) detail += "Shot " + graphic.shot;
+      if (graphic.par) detail += (detail ? " · " : "") + "Par " + graphic.par;
+      if (graphic.distance) detail += (detail ? " · " : "") + graphic.distance + " yd";
+      if (graphic.score && graphic.par) detail += " · " + formatRelativeV2(Number(graphic.score) - Number(graphic.par));
+      context.fillText(detail, x + 14 * scale, y + 52 * scale);
+      context.textAlign = "right";
+      context.font = "800 " + Math.max(18, 31 * scale) + "px Inter, sans-serif";
+      context.fillText(graphic.club || "—", x + boxWidth - 14 * scale, y + 49 * scale);
+      context.restore();
+    }
+
+    function drawExportFrameV2(context, canvas, video, clip, localTime) {
+      const asset = assetV2(clip.assetId);
+      context.fillStyle = "#080a08";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      const rect = containRectV2(asset && asset.width, asset && asset.height, canvas.width, canvas.height);
+      try { context.drawImage(video, rect.x, rect.y, rect.width, rect.height); } catch (_) { /* decoder warm-up */ }
+      runtime.project.graphics.filter(graphic => graphic.clipId === clip.id && graphic.type === "tracer").forEach(tracer => {
+        if (localTime < tracer.startTime || localTime > tracer.endTime + 1.2) return;
+        const style = Object.assign({}, TRACER_STYLES_V2.classic, tracer.style || {});
+        const curveT = flightParameterV2(tracer, localTime);
+        const geometry = tracerRibbonV2(tracer, curveT, style.width * canvas.width / 1000, rect);
+        drawRibbonCanvasV2(context, geometry, style.color, tracerVisibilityV2(tracer, localTime) * style.opacity, style.glow);
+      });
+      const score = runtime.project.graphics.find(graphic => graphic.clipId === clip.id && graphic.type === "scorecard" && localTime >= graphic.startTime && localTime <= graphic.endTime);
+      if (score) drawScorecardCanvasV2(context, score, canvas.width, canvas.height);
+    }
+
+    function exportDimensionsV2(ratio, quality) {
+      const high = quality === "high";
+      if (ratio === "9:16") return high ? { width: 720, height: 1280 } : { width: 480, height: 854 };
+      if (ratio === "16:9") return high ? { width: 1280, height: 720 } : { width: 854, height: 480 };
+      const first = runtime.project && runtime.project.clips[0] && assetV2(runtime.project.clips[0].assetId);
+      const sourceWidth = first && first.width || 1280;
+      const sourceHeight = first && first.height || 720;
+      const maxSide = high ? 1280 : 854;
+      const factor = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+      return { width: Math.max(2, Math.round(sourceWidth * factor / 2) * 2), height: Math.max(2, Math.round(sourceHeight * factor / 2) * 2) };
+    }
+
+    function waitForElementEventV2(element, eventName) {
+      if (eventName === "loadedmetadata" && element.readyState >= 1) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const timer = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("Media preparation timed out during export."));
+        }, 7000);
+        const cleanup = () => {
+          clearTimeout(timer);
+          element.removeEventListener(eventName, done);
+          element.removeEventListener("error", fail);
+        };
+        const done = () => { cleanup(); resolve(); };
+        const fail = () => { cleanup(); reject(new Error("A media file could not be decoded during export.")); };
+        element.addEventListener(eventName, done, { once: true });
+        element.addEventListener("error", fail, { once: true });
+      });
+    }
+
+    async function exportProjectV2() {
+      if (!runtime.project || !runtime.project.clips.length || runtime.exporting) {
+        if (!runtime.project || !runtime.project.clips.length) toastV2("Add video to the timeline before exporting.", "error");
+        return;
+      }
+      const ratio = fl("flExportRatio").value;
+      const quality = fl("flExportQuality").value;
+      runtime.project.output.aspect = ratio;
+      runtime.project.output.quality = quality;
+      scheduleSaveV2();
+      const dimensions = exportDimensionsV2(ratio, quality);
+      const canvas = document.createElement("canvas");
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      const context = canvas.getContext("2d");
+      if (!canvas.captureStream || !window.MediaRecorder) {
+        toastV2("Full video export is not supported in this browser.", "error");
+        return;
+      }
+      runtime.exporting = true;
+      runtime.exportCancelRequested = false;
+      domV2.exportStart.disabled = true;
+      domV2.exportClose.disabled = true;
+      domV2.exportCancel.textContent = "Cancel export";
+      domV2.exportProgress.classList.remove("hidden");
+      domV2.exportStatus.textContent = "Preparing timeline…";
+      domV2.exportPercent.textContent = "0%";
+      let audioContext = null;
+      let destination = null;
+      let stream = null;
+      let recorder = null;
+      const exportVideo = document.createElement("video");
+      exportVideo.preload = "auto";
+      exportVideo.playsInline = true;
+      const exportAudio = [];
+      let chunks = [];
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioContext = new AudioContextClass();
+          audioContext.resume().catch(() => {});
+          destination = audioContext.createMediaStreamDestination();
+        }
+        stream = canvas.captureStream(runtime.project.output.fps || 30);
+        let videoGain = null;
+        if (audioContext && destination) {
+          const node = audioContext.createMediaElementSource(exportVideo);
+          videoGain = audioContext.createGain();
+          node.connect(videoGain).connect(destination);
+          runtime.project.audioLayers.forEach(layer => {
+            const url = runtime.urls.get(layer.assetId);
+            if (!url) return;
+            const player = new Audio(url);
+            player.preload = "auto";
+            const source = audioContext.createMediaElementSource(player);
+            const gain = audioContext.createGain();
+            source.connect(gain).connect(destination);
+            exportAudio.push({ layer, player, gain });
+          });
+          destination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+        }
+        const mimeOptions = [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm",
+          "video/mp4"
+        ];
+        const mimeType = mimeOptions.find(type => MediaRecorder.isTypeSupported(type)) || "";
+        recorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: quality === "high" ? 8000000 : 4000000 } : undefined);
+        recorder.ondataavailable = event => { if (event.data && event.data.size) chunks.push(event.data); };
+        const stopped = new Promise((resolve, reject) => {
+          recorder.onstop = resolve;
+          recorder.onerror = () => reject(recorder.error || new Error("Recorder failed."));
+        });
+        recorder.start(500);
+        const layout = timelineLayoutV2();
+        const total = Math.max(.1, videoDurationV2());
+        for (let index = 0; index < layout.length; index++) {
+          if (runtime.exportCancelRequested) throw new Error("Export canceled");
+          const item = layout[index];
+          const asset = assetV2(item.clip.assetId);
+          const url = asset && runtime.urls.get(asset.id);
+          if (!url) throw new Error("A timeline clip is missing its source media.");
+          exportVideo.pause();
+          exportAudio.forEach(entry => entry.player.pause());
+          exportVideo.src = url;
+          exportVideo.load();
+          await waitForElementEventV2(exportVideo, "loadedmetadata");
+          exportVideo.currentTime = item.clip.sourceStart;
+          await waitForElementEventV2(exportVideo, "seeked");
+          if (videoGain) videoGain.gain.value = item.clip.muted ? 0 : clampV2(item.clip.volume, 0, 1);
+          const syncExportAudio = (projectTime, play) => {
+            exportAudio.forEach(entry => {
+              const layer = entry.layer;
+              const duration = layer.sourceEnd - layer.sourceStart;
+              const local = projectTime - layer.timelineStart;
+              if (local < 0 || local >= duration || layer.muted) {
+                entry.player.pause();
+                return;
+              }
+              const target = layer.sourceStart + local;
+              if (Math.abs(entry.player.currentTime - target) > .15) {
+                try { entry.player.currentTime = target; } catch (_) { /* metadata will settle */ }
+              }
+              entry.gain.gain.value = clampV2(layer.volume, 0, 1);
+              if (play && entry.player.paused) entry.player.play().catch(() => {});
+            });
+          };
+          syncExportAudio(item.start, false);
+          drawExportFrameV2(context, canvas, exportVideo, item.clip, 0);
+          await exportVideo.play();
+          syncExportAudio(item.start, true);
+          await new Promise((resolve, reject) => {
+            const render = () => {
+              if (runtime.exportCancelRequested) {
+                reject(new Error("Export canceled"));
+                return;
+              }
+              const local = clampV2(exportVideo.currentTime - item.clip.sourceStart, 0, item.duration);
+              const projectTime = item.start + local;
+              drawExportFrameV2(context, canvas, exportVideo, item.clip, local);
+              syncExportAudio(projectTime, true);
+              const percent = Math.round(projectTime / total * 100);
+              domV2.exportProgressFill.style.width = percent + "%";
+              domV2.exportPercent.textContent = percent + "%";
+              domV2.exportStatus.textContent = "Rendering clip " + (index + 1) + " of " + layout.length + " · " + dimensions.width + "×" + dimensions.height;
+              if (exportVideo.currentTime >= item.clip.sourceEnd - .018 || exportVideo.ended) {
+                resolve();
+                return;
+              }
+              requestAnimationFrame(render);
+            };
+            requestAnimationFrame(render);
+          });
+          exportVideo.pause();
+          exportAudio.forEach(entry => entry.player.pause());
+        }
+        recorder.stop();
+        await stopped;
+        if (runtime.exportCancelRequested) throw new Error("Export canceled");
+        const blob = new Blob(chunks, { type: recorder.mimeType || "video/webm" });
+        const download = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        const extension = blob.type.includes("mp4") ? "mp4" : "webm";
+        anchor.href = download;
+        anchor.download = (runtime.project.name || "Flightline project").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") + "." + extension;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(download), 30000);
+        domV2.exportProgressFill.style.width = "100%";
+        domV2.exportPercent.textContent = "100%";
+        domV2.exportStatus.textContent = "Export complete";
+        toastV2("Full project exported");
+      } catch (error) {
+        if (recorder && recorder.state !== "inactive") recorder.stop();
+        domV2.exportStatus.textContent = error.message === "Export canceled" ? "Export canceled" : "Export failed";
+        if (error.message !== "Export canceled") toastV2(error.message || "Export failed.", "error");
+      } finally {
+        exportVideo.pause();
+        exportVideo.removeAttribute("src");
+        exportAudio.forEach(entry => {
+          entry.player.pause();
+          entry.player.removeAttribute("src");
+        });
+        stream && stream.getTracks().forEach(track => track.stop());
+        if (audioContext) audioContext.close().catch(() => {});
+        runtime.exporting = false;
+        runtime.exportCancelRequested = false;
+        domV2.exportStart.disabled = false;
+        domV2.exportClose.disabled = false;
+        domV2.exportCancel.textContent = "Close";
+      }
+    }
+
+    fl("flExportBtn").addEventListener("click", () => {
+      if (!runtime.project || !runtime.project.clips.length) {
+        toastV2("Add video to the timeline before exporting.", "error");
+        return;
+      }
+      fl("flExportRatio").value = runtime.project.output.aspect || "source";
+      fl("flExportQuality").value = runtime.project.output.quality || "high";
+      domV2.exportProgress.classList.add("hidden");
+      domV2.exportProgressFill.style.width = "0";
+      domV2.exportStatus.textContent = "Ready to render the complete timeline";
+      domV2.exportPercent.textContent = "";
+      domV2.exportBackdrop.classList.remove("hidden");
+    });
+    domV2.exportStart.addEventListener("click", exportProjectV2);
+    fl("flExportRatio").addEventListener("change", event => {
+      if (!runtime.project) return;
+      runtime.project.output.aspect = event.target.value;
+      const current = currentPreviewResolutionV2();
+      if (current.asset) updateStageAspectV2(current.asset);
+      scheduleSaveV2();
+    });
+    fl("flExportQuality").addEventListener("change", event => {
+      if (!runtime.project) return;
+      runtime.project.output.quality = event.target.value;
+      scheduleSaveV2();
+    });
+    domV2.exportClose.addEventListener("click", () => { if (!runtime.exporting) domV2.exportBackdrop.classList.add("hidden"); });
+    domV2.exportCancel.addEventListener("click", () => {
+      if (runtime.exporting) {
+        runtime.exportCancelRequested = true;
+        domV2.exportCancel.textContent = "Canceling…";
+      } else domV2.exportBackdrop.classList.add("hidden");
+    });
+
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => {
+        updateStageTransformV2();
+        renderOverlaysV2();
+      }).observe(domV2.stageShell);
+      new ResizeObserver(() => renderTimelineV2()).observe(domV2.timelineScroll);
+    } else {
+      window.addEventListener("resize", () => {
+        updateStageTransformV2();
+        renderOverlaysV2();
+        if (runtime.project) renderTimelineV2();
+      });
+    }
+    window.addEventListener("beforeunload", () => {
+      revokeProjectUrlsV2();
+      runtime.recordStream && runtime.recordStream.getTracks().forEach(track => track.stop());
+    });
+
+    updateStageTransformV2();
+    renderProjectPickerV2().then(() => {
+      document.documentElement.dataset.flightlineStudio = "ready";
+    }).catch(error => {
+      document.documentElement.dataset.flightlineStudio = "error";
+      console.error(error);
+    });
+  })();
   </script>
 </body>
 </html>
