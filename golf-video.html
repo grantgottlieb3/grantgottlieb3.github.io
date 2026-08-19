@@ -690,7 +690,8 @@
     .fl-frame svg { width: 13px; }
     .fl-timecode { min-width: 126px; margin-left: 5px; color: var(--muted); font: 9px var(--mono); }
 
-    .fl-timeline { min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-strong); background: #f8f9f6; box-shadow: 0 -8px 22px rgba(25,30,24,.035); }
+    .fl-timeline { position: relative; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-strong); background: #f8f9f6; box-shadow: 0 -8px 22px rgba(25,30,24,.035); }
+    .fl-timeline.fl-dragover::after { content: "Drop media to add it here"; position: absolute; inset: 7px; z-index: 30; display: grid; place-items: center; border: 2px dashed #b7cf3c; border-radius: 12px; color: var(--accent-ink); background: rgba(244,250,218,.94); box-shadow: inset 0 0 0 1px rgba(255,255,255,.8); font-size: 12px; font-weight: 780; pointer-events: none; }
     .fl-timeline-toolbar { flex: none; min-height: 44px; display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-bottom: 1px solid var(--line); }
     .fl-timeline-title { margin-right: 4px; font-size: 11px; font-weight: 770; }
     .fl-duration { color: var(--muted); font: 8px var(--mono); }
@@ -711,6 +712,7 @@
     .fl-media-copy { min-width: 0; }
     .fl-media-copy strong { display: block; overflow: hidden; font-size: 7.8px; text-overflow: ellipsis; white-space: nowrap; }
     .fl-media-copy span { display: block; margin-top: 3px; color: var(--muted); font: 7px var(--mono); }
+    .fl-media-copy span.warning { color: #a06623; }
     .fl-media-add { position: absolute; right: 3px; bottom: 3px; width: 17px; height: 17px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 5px; color: var(--accent-ink); background: var(--accent); cursor: pointer; font-size: 12px; }
     .fl-tracks-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 94px minmax(0,1fr); }
     .fl-track-labels { padding-top: 20px; border-right: 1px solid var(--line); color: var(--muted); background: #f4f6f1; font-size: 7.5px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
@@ -1167,7 +1169,7 @@
     </div>
   </div>
 
-  <input id="flMediaInput" type="file" multiple hidden accept="video/mp4,video/quicktime,video/webm,video/x-m4v,audio/*,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a,.aac,.ogg">
+  <input id="flMediaInput" type="file" multiple hidden accept="video/*,audio/*,.mp4,.mov,.MOV,.qt,.webm,.m4v,.mp3,.wav,.m4a,.aac,.ogg">
   <input id="flAudioInput" type="file" multiple hidden accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg">
 
   <div class="fl-dialog-backdrop" id="flProjectsBackdrop" role="dialog" aria-modal="true" aria-labelledby="flProjectsTitle">
@@ -3997,7 +3999,7 @@
       tracerShapes: fl("flTracerShapes"), tracerGuide: fl("flTracerGuide"), tracerHandles: fl("flTracerHandles"),
       stageScore: fl("flStageScore"), stageEmpty: fl("flStageEmpty"), placementTip: fl("flPlacementTip"),
       zoomLabel: fl("flZoomLabel"), playButton: fl("flPlayBtn"), playIcon: fl("flPlayIcon"), timecode: fl("flTimecode"),
-      duration: fl("flProjectDuration"), mediaList: fl("flMediaList"), trackLabels: fl("flTrackLabels"),
+      duration: fl("flProjectDuration"), timeline: fl("flTimeline"), mediaList: fl("flMediaList"), trackLabels: fl("flTrackLabels"),
       timelineScroll: fl("flTimelineScroll"), timelineCanvas: fl("flTimelineCanvas"),
       selectionCard: fl("flSelectionCard"), tracerInspector: fl("flTracerInspector"), scoreInspector: fl("flScoreInspector"),
       mediaInput: fl("flMediaInput"), audioInput: fl("flAudioInput"),
@@ -4082,6 +4084,13 @@
       if (project.mode === "round" && !project.holes.length) project.holes.push(createHoleV2("Hole 1"));
       project.graphics = Array.isArray(project.graphics) ? project.graphics : [];
       project.audioLayers = Array.isArray(project.audioLayers) ? project.audioLayers : [];
+      project.assets.forEach(asset => {
+        asset.id = asset.id || flUid("asset");
+        asset.duration = Math.max(.1, Number(asset.duration) || 1);
+        asset.width = Math.max(0, Number(asset.width) || 0);
+        asset.height = Math.max(0, Number(asset.height) || 0);
+        asset.compatibility = asset.compatibility || "native";
+      });
       project.clips.forEach(clip => {
         clip.id = clip.id || flUid("clip");
         clip.sourceStart = Math.max(0, Number(clip.sourceStart) || 0);
@@ -4152,6 +4161,7 @@
         transaction.objectStore(storeName).put(value);
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error("Browser storage was unavailable."));
       });
     }
 
@@ -4162,6 +4172,7 @@
         transaction.objectStore(storeName).delete(id);
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error("Browser storage was unavailable."));
       });
     }
 
@@ -4179,6 +4190,7 @@
         };
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error("Browser storage was unavailable."));
       });
     }
 
@@ -4464,10 +4476,11 @@
       }
       domV2.mediaList.innerHTML = runtime.project.assets.map(asset => {
         const isAudio = asset.kind === "audio";
+        const compatibility = asset.compatibility === "unsupported" ? "Codec unavailable" : asset.compatibility === "unverified" ? "MOV imported" : "";
         const icon = isAudio
           ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>'
           : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 7 8 5-8 5Z"/></svg>';
-        return '<div class="fl-media-card" draggable="true" data-fl-asset="' + asset.id + '"><div class="fl-media-thumb' + (isAudio ? " audio" : "") + '">' + icon + '</div><div class="fl-media-copy"><strong>' + escapeHtml(asset.name) + '</strong><span>' + (isAudio ? "Audio" : (asset.width || "—") + "×" + (asset.height || "—")) + ' · ' + formatShort(asset.duration) + '</span></div><button class="fl-media-add" data-fl-add-asset="' + asset.id + '" title="Add to timeline">＋</button></div>';
+        return '<div class="fl-media-card" draggable="true" data-fl-asset="' + asset.id + '"><div class="fl-media-thumb' + (isAudio ? " audio" : "") + '">' + icon + '</div><div class="fl-media-copy"><strong>' + escapeHtml(asset.name) + '</strong><span class="' + (compatibility ? "warning" : "") + '">' + (compatibility || (isAudio ? "Audio" : (asset.width || "—") + "×" + (asset.height || "—"))) + ' · ' + formatShort(asset.duration) + '</span></div><button class="fl-media-add" data-fl-add-asset="' + asset.id + '" title="Add to timeline">＋</button></div>';
       }).join("");
     }
 
@@ -4553,7 +4566,8 @@
       runtime.project.holes.forEach(hole => {
         options += '<option value="' + hole.id + '"' + (clip.holeId === hole.id ? " selected" : "") + '>' + escapeHtml(hole.label) + "</option>";
       });
-      domV2.selectionCard.innerHTML = '<strong>' + escapeHtml(asset ? asset.name : "Missing media") + '</strong><span>' + formatShort(clipDurationV2(clip)) + ' · ' + (asset && asset.width > asset.height ? "Horizontal" : "Vertical") + ' · source audio ' + Math.round(clip.volume * 100) + '%</span>'
+      const mediaState = asset && asset.compatibility === "unsupported" ? " · codec unavailable in this browser" : asset && asset.compatibility === "unverified" ? " · MOV compatibility pending" : "";
+      domV2.selectionCard.innerHTML = '<strong>' + escapeHtml(asset ? asset.name : "Missing media") + '</strong><span>' + formatShort(clipDurationV2(clip)) + ' · ' + (asset && asset.width > asset.height ? "Horizontal" : "Vertical") + ' · source audio ' + Math.round(clip.volume * 100) + '%' + mediaState + '</span>'
         + (runtime.project.mode === "round" ? '<select class="fl-hole-assign" id="flClipHoleAssign" aria-label="Assign clip to a hole">' + options + "</select>" : "")
         + '<div class="fl-form-grid" style="margin-top:8px"><div class="fl-field"><label>Clip audio <output id="flClipVolumeOut">' + Math.round(clip.volume * 100) + '%</output></label><input id="flClipVolume" type="range" min="0" max="1" step=".01" value="' + clip.volume + '"></div><div class="fl-field"><label>Source sound</label><select id="flClipMuted"><option value="false"' + (!clip.muted ? " selected" : "") + '>On</option><option value="true"' + (clip.muted ? " selected" : "") + '>Muted</option></select></div></div>';
     }
@@ -4936,7 +4950,18 @@
       const hole = holeV2(clip.holeId);
       domV2.previewTitle.textContent = asset ? asset.name : "Missing media";
       domV2.previewMeta.textContent = (hole ? hole.label + " · " : "Unassigned / filler · ") + formatShort(clipDurationV2(clip)) + " clip";
-      domV2.stageEmpty.classList.toggle("hidden", Boolean(asset && runtime.urls.get(asset.id)));
+      const hasSource = Boolean(asset && runtime.urls.get(asset.id));
+      if (asset && asset.compatibility === "unsupported") {
+        const isMov = asset.extension === "mov" || asset.extension === "qt" || asset.mime === "video/quicktime";
+        domV2.stageEmpty.innerHTML = '<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 2.8 20h18.4Z"/><path d="M12 9v5m0 3h.01"/></svg><strong>' + (isMov ? "MOV" : "Video") + ' imported, codec unavailable</strong><span>This browser cannot preview this codec. Try Safari, or convert the file to H.264 MP4.</span></div>';
+        domV2.stageEmpty.classList.remove("hidden");
+      } else if (asset && !hasSource) {
+        domV2.stageEmpty.innerHTML = '<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19h16V8H4Zm3-14h10"/></svg><strong>Media needs to be reselected</strong><span>The project is intact, but this source file was not retained by the browser.</span></div>';
+        domV2.stageEmpty.classList.remove("hidden");
+      } else {
+        domV2.stageEmpty.innerHTML = '<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/></svg><strong>Add video to your timeline</strong><span>Any footage works—golf shots are optional.</span></div>';
+        domV2.stageEmpty.classList.toggle("hidden", hasSource);
+      }
       updateStageAspectV2(asset);
     }
 
@@ -5014,6 +5039,24 @@
         await waitForMediaV2(domV2.video, "loadedmetadata", token);
       }
       if (token !== runtime.transportToken) return false;
+      if (domV2.video.readyState < 2 || !domV2.video.videoWidth || !domV2.video.videoHeight) {
+        await waitForMediaV2(domV2.video, "loadeddata", token);
+      }
+      if (token !== runtime.transportToken) return false;
+      if (domV2.video.readyState < 2 || !domV2.video.videoWidth || !domV2.video.videoHeight) throw new Error("Unsupported media codec");
+      asset.width = Number(domV2.video.videoWidth) || asset.width;
+      asset.height = Number(domV2.video.videoHeight) || asset.height;
+      if (asset.compatibility !== "native") {
+        const oldDuration = asset.duration;
+        const decodedDuration = Number(domV2.video.duration);
+        asset.compatibility = "native";
+        if (decodedDuration > 0 && Number.isFinite(decodedDuration)) {
+          asset.duration = decodedDuration;
+          runtime.project.clips.filter(item => item.assetId === asset.id && Math.abs(item.sourceEnd - oldDuration) < .05).forEach(item => { item.sourceEnd = decodedDuration; });
+          asset.provisionalDuration = false;
+        }
+        scheduleSaveV2();
+      }
       runtime.currentClipId = clip.id;
       const target = clampV2(sourceTime, clip.sourceStart, Math.max(clip.sourceStart, clip.sourceEnd - .001));
       if (Math.abs(domV2.video.currentTime - target) > .025) {
@@ -5119,8 +5162,17 @@
         }
       } catch (error) {
         if (error && error.message === "Stale transport") return;
+        const failedAsset = resolved && assetV2(resolved.clip.assetId);
+        if (failedAsset) {
+          failedAsset.compatibility = "unsupported";
+          scheduleSaveV2();
+          renderMediaV2();
+          renderSelectionCardV2();
+          updatePreviewHeaderV2();
+        }
         pauseProjectV2();
-        toastV2("This clip could not be played by the browser.", "error");
+        const isMov = failedAsset && (failedAsset.extension === "mov" || failedAsset.extension === "qt" || failedAsset.mime === "video/quicktime");
+        toastV2("The " + (isMov ? "MOV" : "video") + " was added, but this browser cannot decode its codec. Try Safari, or convert it to H.264 MP4.", "error");
       }
     }
 
@@ -5226,62 +5278,233 @@
     function mimeKindV2(file) {
       const name = String(file.name || "").toLowerCase();
       if (String(file.type || "").startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/.test(name)) return "audio";
-      if (String(file.type || "").startsWith("video/") || /\.(mp4|mov|webm|m4v)$/.test(name)) return "video";
+      if (String(file.type || "").startsWith("video/") || /\.(mp4|mov|qt|webm|m4v)$/.test(name)) return "video";
       return null;
+    }
+
+    function fileExtensionV2(file) {
+      const match = String(file && file.name || "").toLowerCase().match(/\.([a-z0-9]+)$/);
+      return match ? match[1] : "";
+    }
+
+    function bytesMatchV2(bytes, offset, text) {
+      if (offset < 0 || offset + text.length > bytes.length) return false;
+      for (let index = 0; index < text.length; index++) {
+        if (bytes[offset + index] !== text.charCodeAt(index)) return false;
+      }
+      return true;
+    }
+
+    function parseIsoChunkV2(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      const result = { duration: 0, width: 0, height: 0, codec: "" };
+      const codecNames = {
+        hvc1: "HEVC", hev1: "HEVC", avc1: "H.264", avc3: "H.264",
+        ap4h: "ProRes 4444", ap4x: "ProRes 4444 XQ", apch: "ProRes 422 HQ",
+        apcn: "ProRes 422", apcs: "ProRes 422 LT", apco: "ProRes 422 Proxy",
+        vp09: "VP9", av01: "AV1", mp4v: "MPEG-4 Video", jpeg: "Motion JPEG"
+      };
+      for (let index = 4; index + 4 < bytes.length; index++) {
+        const first = bytes[index];
+        if (first === 109 && bytesMatchV2(bytes, index, "mvhd")) {
+          try {
+            const version = view.getUint8(index + 4);
+            const timescaleOffset = version === 1 ? index + 24 : index + 16;
+            const durationOffset = version === 1 ? index + 28 : index + 20;
+            const timescale = view.getUint32(timescaleOffset, false);
+            let duration = 0;
+            if (version === 1 && typeof view.getBigUint64 === "function") duration = Number(view.getBigUint64(durationOffset, false));
+            else duration = view.getUint32(durationOffset, false);
+            if (timescale > 0 && duration > 0 && Number.isFinite(duration / timescale)) result.duration = Math.max(result.duration, duration / timescale);
+          } catch (_) { /* Partial atom in a sliced chunk. */ }
+        } else if (first === 116 && bytesMatchV2(bytes, index, "tkhd")) {
+          try {
+            const atomStart = index - 4;
+            const atomSize = view.getUint32(atomStart, false);
+            const atomEnd = atomStart + atomSize;
+            if (atomSize >= 84 && atomEnd <= bytes.length) {
+              const width = view.getUint32(atomEnd - 8, false) / 65536;
+              const height = view.getUint32(atomEnd - 4, false) / 65536;
+              if (width >= 16 && height >= 16 && width <= 32768 && height <= 32768 && width * height > result.width * result.height) {
+                result.width = Math.round(width);
+                result.height = Math.round(height);
+              }
+            }
+          } catch (_) { /* Ignore a malformed track header. */ }
+        } else if (!result.codec && (first === 104 || first === 97 || first === 118 || first === 109 || first === 106)) {
+          for (const code of Object.keys(codecNames)) {
+            if (bytesMatchV2(bytes, index, code)) {
+              result.codec = codecNames[code];
+              break;
+            }
+          }
+        }
+      }
+      return result;
+    }
+
+    async function parseIsoMediaMetadataV2(file) {
+      const chunk = 24 * 1024 * 1024;
+      const slices = [file.slice(0, Math.min(file.size, chunk))];
+      if (file.size > chunk) slices.push(file.slice(Math.max(0, file.size - chunk * 2), file.size));
+      const parsed = await Promise.all(slices.map(slice => slice.arrayBuffer().then(parseIsoChunkV2)));
+      return parsed.reduce((combined, item) => {
+        if (item.duration > 0) combined.duration = item.duration;
+        if (item.width * item.height > combined.width * combined.height) {
+          combined.width = item.width;
+          combined.height = item.height;
+        }
+        if (item.codec) combined.codec = item.codec;
+        return combined;
+      }, { duration: 0, width: 0, height: 0, codec: "" });
+    }
+
+    function probeElementMetadataV2(element, timeout, url, kind) {
+      return new Promise(resolve => {
+        let settled = false;
+        const events = ["loadedmetadata", "loadeddata", "canplay", "durationchange"];
+        const readMetadata = () => {
+          const duration = Number(element.duration);
+          if (!(duration > 0) || !Number.isFinite(duration)) return null;
+          if (kind === "video") {
+            const width = Number(element.videoWidth) || 0;
+            const height = Number(element.videoHeight) || 0;
+            if (element.readyState < 2 || width <= 0 || height <= 0) return null;
+            return { duration, width, height };
+          }
+          return { duration, width: 0, height: 0 };
+        };
+        const finish = value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          events.forEach(name => element.removeEventListener(name, maybeFinish));
+          element.onerror = null;
+          resolve(value);
+        };
+        const maybeFinish = () => {
+          const metadata = readMetadata();
+          if (metadata) finish(metadata);
+        };
+        const timer = window.setTimeout(() => finish(null), timeout);
+        events.forEach(name => element.addEventListener(name, maybeFinish));
+        element.onerror = () => finish(null);
+        element.src = url;
+        element.load();
+      });
     }
 
     async function probeFileV2(file) {
       const kind = mimeKindV2(file);
       if (!kind) throw new Error("Unsupported media type");
+      if (!file.size) throw new Error("The selected file is empty");
       const url = URL.createObjectURL(file);
       const element = document.createElement(kind === "video" ? "video" : "audio");
-      element.preload = "metadata";
-      element.src = url;
-      try {
-        await new Promise((resolve, reject) => {
-          const timer = window.setTimeout(() => reject(new Error("Metadata timed out")), 9000);
-          element.onloadedmetadata = () => { clearTimeout(timer); resolve(); };
-          element.onerror = () => { clearTimeout(timer); reject(new Error("The browser cannot decode this file.")); };
-        });
-        return {
-          asset: {
-            id: flUid("asset"),
-            kind,
-            name: file.name || (kind === "video" ? "Untitled video" : "Untitled audio"),
-            mime: file.type || "",
-            size: file.size || 0,
-            duration: Math.max(.1, Number(element.duration) || 1),
-            width: kind === "video" ? Number(element.videoWidth) || 0 : 0,
-            height: kind === "video" ? Number(element.videoHeight) || 0 : 0
-          },
-          url
-        };
-      } catch (error) {
-        URL.revokeObjectURL(url);
-        throw error;
+      element.preload = kind === "video" ? "auto" : "metadata";
+      element.muted = true;
+      element.playsInline = true;
+      const extension = fileExtensionV2(file);
+      const isoVideo = kind === "video" && ["mov", "qt", "mp4", "m4v"].includes(extension);
+      const containerProbe = isoVideo ? parseIsoMediaMetadataV2(file).catch(() => null) : Promise.resolve(null);
+      const container = await containerProbe;
+      const codecTypes = {
+        "HEVC": ['video/mp4; codecs="hvc1"', 'video/mp4; codecs="hev1"'],
+        "H.264": ['video/mp4; codecs="avc1.42E01E"'],
+        "VP9": ['video/webm; codecs="vp9"', 'video/mp4; codecs="vp09.00.10.08"'],
+        "AV1": ['video/mp4; codecs="av01.0.01M.08"'],
+        "MPEG-4 Video": ['video/mp4; codecs="mp4v.20.9"']
+      };
+      const advertisedTypes = container && codecTypes[container.codec];
+      const codecAdvertisedAsUnsupported = Boolean(advertisedTypes && !advertisedTypes.some(type => element.canPlayType(type)));
+      let playbackUrl = url;
+      let storageBlob = file;
+      let mimeNormalized = false;
+      let native = codecAdvertisedAsUnsupported ? null : await probeElementMetadataV2(element, isoVideo ? 6500 : 12000, playbackUrl, kind);
+      if (!native && !codecAdvertisedAsUnsupported && kind === "video" && (extension === "mov" || extension === "qt")) {
+        const normalizedBlob = file.slice(0, file.size, "video/mp4");
+        const normalizedUrl = URL.createObjectURL(normalizedBlob);
+        native = await probeElementMetadataV2(element, 4500, normalizedUrl, kind);
+        if (native) {
+          URL.revokeObjectURL(playbackUrl);
+          playbackUrl = normalizedUrl;
+          storageBlob = normalizedBlob;
+          mimeNormalized = true;
+        } else URL.revokeObjectURL(normalizedUrl);
       }
+      element.removeAttribute("src");
+      element.load();
+      const estimate = kind === "audio"
+        ? clampV2(file.size / 16000, 1, 7200)
+        : clampV2(file.size / 3000000, 1, 7200);
+      const metadata = native || container || {};
+      return {
+        asset: {
+          id: flUid("asset"),
+          kind,
+          name: file.name || (kind === "video" ? "Untitled video" : "Untitled audio"),
+          mime: file.type || (extension === "mov" || extension === "qt" ? "video/quicktime" : ""),
+          extension,
+          codec: container && container.codec || "",
+          size: file.size || 0,
+          duration: Math.max(.1, Number(metadata.duration) || estimate),
+          width: kind === "video" ? Number(metadata.width) || 0 : 0,
+          height: kind === "video" ? Number(metadata.height) || 0 : 0,
+          compatibility: native ? "native" : "unverified",
+          mimeNormalized,
+          provisionalDuration: !native && !(container && container.duration)
+        },
+        url: playbackUrl,
+        storageBlob
+      };
     }
 
-    async function importFilesV2(files, addAudioLayers) {
-      const list = Array.from(files || []).filter(file => mimeKindV2(file));
-      if (!runtime.project || !list.length) return;
+    async function importFilesV2(files, addAudioLayers, placement) {
+      const allFiles = Array.from(files || []);
+      const list = allFiles.filter(file => mimeKindV2(file));
+      if (!runtime.project) return;
+      if (!list.length) {
+        if (allFiles.length) toastV2("Choose a video or audio file. MOV, MP4, M4V and WebM are supported.", "error");
+        return;
+      }
       const before = projectSnapshotV2();
       let imported = 0;
+      let firstClipId = null;
+      let insertionIndex = placement && Number.isInteger(placement.clipIndex) ? clampV2(placement.clipIndex, 0, runtime.project.clips.length) : null;
+      const importButton = fl("flImportBtn");
+      importButton.disabled = true;
+      importButton.textContent = "Reading media…";
       for (const file of list) {
         try {
+          importButton.textContent = "Reading " + (file.name || "media") + "…";
           const result = await probeFileV2(file);
           const asset = result.asset;
           runtime.urls.set(asset.id, result.url);
           runtime.project.assets.push(asset);
-          await idbPutV2("blobs", { id: asset.id, projectId: runtime.project.id, blob: file });
+          asset.persisted = null;
+          idbPutV2("blobs", { id: asset.id, projectId: runtime.project.id, blob: result.storageBlob || file }).then(() => {
+            asset.persisted = true;
+            scheduleSaveV2();
+          }).catch(() => {
+            asset.persisted = false;
+            scheduleSaveV2();
+            renderMediaV2();
+            toastV2(asset.name + " was added, but the browser could not retain this large file. You may need to reselect it after reopening.", "error");
+          });
           if (asset.kind === "video") {
-            runtime.project.clips.push({
+            const clip = {
               id: flUid("clip"), assetId: asset.id, sourceStart: 0, sourceEnd: asset.duration,
               holeId: null, volume: 1, muted: false
-            });
-          } else if (addAudioLayers) {
+            };
+            if (insertionIndex == null) runtime.project.clips.push(clip);
+            else {
+              runtime.project.clips.splice(insertionIndex, 0, clip);
+              insertionIndex++;
+            }
+            if (!firstClipId) firstClipId = clip.id;
+          } else if (addAudioLayers || placement) {
             runtime.project.audioLayers.push({
-              id: flUid("audio"), assetId: asset.id, timelineStart: runtime.playhead,
+              id: flUid("audio"), assetId: asset.id, timelineStart: Math.max(0, Number(placement && placement.timelineTime != null ? placement.timelineTime : runtime.playhead)),
               sourceStart: 0, sourceEnd: asset.duration, volume: .8, muted: false, role: "music"
             });
           }
@@ -5290,10 +5513,15 @@
           toastV2((file.name || "Media") + " could not be imported: " + error.message, "error");
         }
       }
+      importButton.disabled = false;
+      importButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 14v5h16v-5"/></svg>Import media';
       if (!imported) return;
       runtime.project.updatedAt = Date.now();
       pushHistoryV2(before, "import media");
-      if (!runtime.selectedClipId && runtime.project.clips[0]) runtime.selectedClipId = runtime.project.clips[0].id;
+      if (firstClipId) {
+        runtime.selectedClipId = firstClipId;
+        runtime.selectedItem = null;
+      } else if (!runtime.selectedClipId && runtime.project.clips[0]) runtime.selectedClipId = runtime.project.clips[0].id;
       scheduleSaveV2();
       renderAllV2();
       if (runtime.project.clips.length && videoDurationV2() > 0) {
@@ -5628,6 +5856,36 @@
       }
     }
 
+    function timelineDropPointV2(event) {
+      let time = runtime.playhead;
+      if (event.target.closest("#flTimelineScroll")) {
+        const rect = domV2.timelineScroll.getBoundingClientRect();
+        const x = Math.max(0, event.clientX - rect.left + domV2.timelineScroll.scrollLeft);
+        time = x / runtime.timelinePixels;
+      }
+      const layout = timelineLayoutV2();
+      let clipIndex = layout.findIndex(item => time < item.start + item.duration / 2);
+      if (clipIndex < 0) clipIndex = layout.length;
+      return { timelineTime: Math.max(0, time), clipIndex };
+    }
+
+    function moveClipToIndexV2(sourceId, destinationIndex) {
+      if (!runtime.project) return;
+      const sourceIndex = runtime.project.clips.findIndex(clip => clip.id === sourceId);
+      if (sourceIndex < 0) return;
+      let targetIndex = clampV2(destinationIndex, 0, runtime.project.clips.length);
+      if (sourceIndex < targetIndex) targetIndex--;
+      if (sourceIndex === targetIndex) return;
+      mutateProjectV2("reorder clips", project => {
+        const moved = project.clips.splice(sourceIndex, 1)[0];
+        project.clips.splice(clampV2(targetIndex, 0, project.clips.length), 0, moved);
+        runtime.selectedClipId = moved.id;
+        runtime.selectedItem = null;
+      });
+      const item = clipLayoutByIdV2(sourceId);
+      if (item) seekProjectV2(item.start, false);
+    }
+
     function reorderClipV2(sourceId, targetId, after) {
       if (!runtime.project || sourceId === targetId) return;
       mutateProjectV2("reorder clips", project => {
@@ -5812,6 +6070,7 @@
       const card = event.target.closest("[data-fl-asset]");
       if (card && event.dataTransfer) {
         event.dataTransfer.setData("application/x-flightline-asset", card.dataset.flAsset);
+        event.dataTransfer.setData("text/plain", "asset:" + card.dataset.flAsset);
         event.dataTransfer.effectAllowed = "copy";
       }
     });
@@ -5900,53 +6159,71 @@
       const audio = event.target.closest("[data-fl-audio]");
       if (clip && event.dataTransfer) {
         event.dataTransfer.setData("application/x-flightline-clip", clip.dataset.flClip);
+        event.dataTransfer.setData("text/plain", "clip:" + clip.dataset.flClip);
         event.dataTransfer.effectAllowed = "move";
         clip.classList.add("dragging");
       } else if (audio && event.dataTransfer) {
         event.dataTransfer.setData("application/x-flightline-audio", audio.dataset.flAudio);
+        event.dataTransfer.setData("text/plain", "audio:" + audio.dataset.flAudio);
         event.dataTransfer.effectAllowed = "move";
       }
     });
-    domV2.timelineCanvas.addEventListener("dragend", () => document.querySelectorAll(".fl-clip.dragging").forEach(element => element.classList.remove("dragging")));
-    domV2.timelineCanvas.addEventListener("dragover", event => {
-      event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = event.dataTransfer.types.includes("application/x-flightline-asset") ? "copy" : "move";
+    domV2.timelineCanvas.addEventListener("dragend", () => {
+      document.querySelectorAll(".fl-clip.dragging").forEach(element => element.classList.remove("dragging"));
+      domV2.timeline.classList.remove("fl-dragover");
     });
-    domV2.timelineCanvas.addEventListener("drop", event => {
+    domV2.timeline.addEventListener("dragenter", event => {
+      const types = Array.from(event.dataTransfer && event.dataTransfer.types || []);
+      if (types.includes("Files") || types.some(type => type.startsWith("application/x-flightline")) || types.includes("text/plain")) {
+        event.preventDefault();
+        domV2.timeline.classList.add("fl-dragover");
+      }
+    });
+    domV2.timeline.addEventListener("dragover", event => {
+      const types = Array.from(event.dataTransfer && event.dataTransfer.types || []);
+      const recognized = types.includes("Files") || types.some(type => type.startsWith("application/x-flightline")) || types.includes("text/plain");
+      if (!recognized) return;
       event.preventDefault();
+      domV2.timeline.classList.add("fl-dragover");
+      if (event.dataTransfer) event.dataTransfer.dropEffect = types.includes("Files") || types.includes("application/x-flightline-asset") ? "copy" : "move";
+    });
+    domV2.timeline.addEventListener("dragleave", event => {
+      if (!event.relatedTarget || !domV2.timeline.contains(event.relatedTarget)) domV2.timeline.classList.remove("fl-dragover");
+    });
+    domV2.timeline.addEventListener("drop", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      domV2.timeline.classList.remove("fl-dragover");
+      const point = timelineDropPointV2(event);
       if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
-        importFilesV2(event.dataTransfer.files, false);
+        importFilesV2(event.dataTransfer.files, false, point);
         return;
       }
-      const rect = domV2.timelineScroll.getBoundingClientRect();
-      const time = Math.max(0, (event.clientX - rect.left + domV2.timelineScroll.scrollLeft) / runtime.timelinePixels);
-      const target = event.target.closest("[data-fl-clip]");
-      const assetId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-asset");
+      const fallback = event.dataTransfer && event.dataTransfer.getData("text/plain") || "";
+      const assetId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-asset") || (fallback.startsWith("asset:") ? fallback.slice(6) : "");
       if (assetId) {
-        const index = target ? runtime.project.clips.findIndex(clip => clip.id === target.dataset.flClip) : runtime.project.clips.length;
-        addAssetToTimelineV2(assetId, index, time);
+        addAssetToTimelineV2(assetId, point.clipIndex, point.timelineTime);
         return;
       }
-      const clipId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-clip");
-      if (clipId && target) {
-        const bounds = target.getBoundingClientRect();
-        reorderClipV2(clipId, target.dataset.flClip, event.clientX > bounds.left + bounds.width / 2);
+      const clipId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-clip") || (fallback.startsWith("clip:") ? fallback.slice(5) : "");
+      if (clipId) {
+        moveClipToIndexV2(clipId, point.clipIndex);
         return;
       }
-      const audioId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-audio");
+      const audioId = event.dataTransfer && event.dataTransfer.getData("application/x-flightline-audio") || (fallback.startsWith("audio:") ? fallback.slice(6) : "");
       if (audioId) {
         const layer = runtime.project.audioLayers.find(item => item.id === audioId);
         if (!layer) return;
-        mutateProjectV2("move audio", () => { layer.timelineStart = time; });
+        mutateProjectV2("move audio", () => { layer.timelineStart = point.timelineTime; });
       }
     });
-    domV2.timelineCanvas.addEventListener("dragenter", event => event.preventDefault());
 
     window.addEventListener("dragover", event => {
       if (event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files")) event.preventDefault();
     });
     window.addEventListener("drop", event => {
-      if (!event.target.closest("#flTimeline") && event.dataTransfer && event.dataTransfer.files.length) {
+      if (event.defaultPrevented) return;
+      if (event.dataTransfer && event.dataTransfer.files.length) {
         event.preventDefault();
         importFilesV2(event.dataTransfer.files, false);
       }
