@@ -8,16 +8,14 @@
      3. Helpers
      4. Filter bubbles
      5. Photo measuring
-     6. Collage layout
+     6. Center-out cluster layout
      7. Filtering and transitions
-     8. Lightbox
-     9. Start up
+     8. Pan, zoom, and fitting
+     9. Lightbox
+    10. Start up
 
-   Why no layout library: Masonry.js and similar tools place photos well,
-   but they do not handle the enter, leave, and glide animations this site
-   needs, and they would still need custom code for the organic offsets.
-   The hand built layout in section 6 is about 50 lines, has no outside
-   dependency, and works offline from a local folder.
+   The layout and gestures are hand built so the gallery stays deterministic,
+   dependency-free, and usable when opened straight from a local folder.
    ========================================================================== */
 
 (function () {
@@ -29,14 +27,24 @@
     full: "images/full/",
   };
 
-  // Columns by collage width in pixels. Phones always get two.
-  const COLUMN_STEPS = [
-    { minWidth: 1180, columns: 4 },
-    { minWidth: 760, columns: 3 },
-    { minWidth: 0, columns: 2 },
-  ];
+  // The cluster lives in its own fixed coordinate system. Because these
+  // values never depend on the viewport, resizing the window cannot reshuffle
+  // photos and adding a regular photo at the end cannot move earlier ones.
+  const LAYOUT = {
+    gap: 24,
+    regularEdge: 232,     // square root of a regular tile's approximate area
+    featuredEdge: 328,    // about twice the area of a regular tile
+    sizeJitter: 0.08,
+  };
 
-  const GAP = { desktop: 22, phone: 12 };
+  const VIEW = {
+    paddingDesktop: 32,
+    paddingPhone: 18,
+    maxZoom: 6,
+    wheelSpeed: 0.0015,
+    clickSlop: 5,
+    hoverScale: 1.08,
+  };
 
   // Keep these in step with --t-leave and --t-fade in styles.css.
   const TIMING = {
@@ -71,6 +79,8 @@
       width: Number(p.width) || 0,
       height: Number(p.height) || 0,
       ratio: 0,   // height divided by width, filled in by section 5
+      thumbWidth: 0,
+      thumbHeight: 0,
     }));
 
 
@@ -87,7 +97,7 @@
   const fullSrc = (photo) => PATHS.full + encodeURIComponent(photo.file);
 
   // Repeatable "random" number between 0 and 1 based on a word. The same
-  // photo always gets the same offset, so the collage stays put between visits.
+  // photo always gets the same choices, so the cluster stays put between visits.
   function seeded(text, salt) {
     let h = 2166136261;
     const s = text + "|" + salt;
@@ -107,6 +117,7 @@
   // A filter looks like { type: "all" } or { type: "featured" } or
   // { type: "category", category: "Sessions", sub: "Grad" }.
   let activeFilter = null;
+  let filterLayoutPending = false;
 
   function categoryList() {
     const seen = [];
@@ -219,13 +230,17 @@
     if (same) return;
     activeFilter = filter;
     updateFilterStates();
+    updateGalleryHeight();
+    // showPhotos owns the refit while its image measurements are pending.
+    // This prevents a header-height ResizeObserver from fitting the old set.
+    filterLayoutPending = true;
     showPhotos(filter);
   }
 
 
   /* 5. PHOTO MEASURING =====================================================
-     A collage with no gaps and no cropping needs each photo's shape before
-     placing it. If photos.js lists width and height, the page uses those.
+     A cluster with no cropping needs each photo's shape before placing it.
+     If photos.js lists width and height, the page uses those.
      Otherwise it loads the small thumbnail once to read its shape. The
      browser then reuses that download for the collage itself. */
   const measuring = new Map();
@@ -234,6 +249,8 @@
     if (photo.ratio) return Promise.resolve(photo.ratio);
     if (photo.width > 0 && photo.height > 0) {
       photo.ratio = photo.height / photo.width;
+      photo.thumbWidth = photo.width;
+      photo.thumbHeight = photo.height;
       return Promise.resolve(photo.ratio);
     }
     if (measuring.has(photo.file)) return measuring.get(photo.file);
@@ -241,6 +258,8 @@
     const job = new Promise((resolve) => {
       const probe = new Image();
       probe.onload = () => {
+        photo.thumbWidth = probe.naturalWidth;
+        photo.thumbHeight = probe.naturalHeight;
         photo.ratio = probe.naturalWidth ? probe.naturalHeight / probe.naturalWidth : 1;
         resolve(photo.ratio);
       };
@@ -256,51 +275,144 @@
   }
 
 
-  /* 6. COLLAGE LAYOUT ======================================================
-     Masonry: each photo drops into the shortest column. For an organic,
-     curated feel each photo gets a slightly different size and offset
-     inside its column. Featured photos fill their column, so they read
-     larger. Offsets stay small, so no gaps open up. */
-  const collageEl = $("#collage");
+  /* 6. CENTER-OUT CLUSTER LAYOUT ===========================================
+     Photos use a fixed visual area while preserving their true aspect ratio.
+     Featured photos are placed first and are larger; each group retains its
+     photos.js order. Every new rectangle takes the available position whose
+     center is closest to the origin.
 
-  function columnCount(width) {
-    return COLUMN_STEPS.find((step) => width >= step.minWidth).columns;
+     For an axis-aligned rectangle, the nearest free position must sit either
+     on the center axis or on one of the exclusion boundaries made by an
+     earlier rectangle. Trying every X boundary with every Y boundary therefore
+     finds the nearest spot exactly, rather than sampling a loose spiral. */
+  const collageEl = $("#collage");
+  const worldEl = $("#cluster-world");
+  const layoutCache = new Map();
+
+  function tileSize(photo) {
+    const base = photo.featured ? LAYOUT.featuredEdge : LAYOUT.regularEdge;
+    const edge = base * (1 - LAYOUT.sizeJitter / 2 + seeded(photo.file, "size") * LAYOUT.sizeJitter);
+    const rootRatio = Math.sqrt(photo.ratio || 1);
+    return { w: edge / rootRatio, h: edge * rootRatio };
+  }
+
+  function uniqueNumbers(values) {
+    const seen = new Set();
+    return values.filter((value) => {
+      const key = value.toFixed(6);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function overlapsWithGap(rect, other) {
+    const epsilon = 0.000001;
+    return rect.x < other.x + other.w + LAYOUT.gap - epsilon &&
+      rect.x + rect.w > other.x - LAYOUT.gap + epsilon &&
+      rect.y < other.y + other.h + LAYOUT.gap - epsilon &&
+      rect.y + rect.h > other.y - LAYOUT.gap + epsilon;
+  }
+
+  function scorePlacement(rect, bounds, preferredAngle) {
+    const cx = rect.x + rect.w / 2;
+    const cy = rect.y + rect.h / 2;
+    const minX = Math.min(bounds.minX, rect.x);
+    const minY = Math.min(bounds.minY, rect.y);
+    const maxX = Math.max(bounds.maxX, rect.x + rect.w);
+    const maxY = Math.max(bounds.maxY, rect.y + rect.h);
+    const angle = Math.atan2(cy, cx);
+    const angleDelta = Math.abs(Math.atan2(
+      Math.sin(angle - preferredAngle),
+      Math.cos(angle - preferredAngle)
+    ));
+
+    return [
+      cx * cx + cy * cy,
+      Math.max(Math.abs(minX), Math.abs(minY), Math.abs(maxX), Math.abs(maxY)),
+      (maxX - minX) * (maxY - minY),
+      Math.pow(minX + maxX, 2) + Math.pow(minY + maxY, 2),
+      angleDelta,
+      rect.y,
+      rect.x,
+    ];
+  }
+
+  function scoreIsBetter(score, bestScore) {
+    if (!bestScore) return true;
+    for (let i = 0; i < score.length; i++) {
+      if (score[i] < bestScore[i] - 0.000001) return true;
+      if (score[i] > bestScore[i] + 0.000001) return false;
+    }
+    return false;
   }
 
   function computeLayout(list) {
-    const width = collageEl.clientWidth;
-    const columns = columnCount(width);
-    const phone = columns <= 2;
-    const gap = phone ? GAP.phone : GAP.desktop;
-    const columnWidth = (width - gap * (columns - 1)) / columns;
-    const heights = new Array(columns).fill(0);
-    const featuredOnly = list.length > 0 && list.every((p) => p.featured);
+    const cacheKey = list.map((photo) => photo.file).join("\u001f");
+    if (layoutCache.has(cacheKey)) return layoutCache.get(cacheKey);
 
-    const positions = list.map((photo) => {
-      const rSize = seeded(photo.file, "size");
-      const rX = seeded(photo.file, "x");
-      const rY = seeded(photo.file, "y");
+    const ordered = list.filter((photo) => photo.featured)
+      .concat(list.filter((photo) => !photo.featured));
+    const positions = new Map();
+    const placed = [];
+    let bounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
 
-      // Size as a share of the column width.
-      let scale;
-      if (featuredOnly) scale = phone ? 0.92 + rSize * 0.08 : 0.86 + rSize * 0.14;
-      else if (photo.featured) scale = 1;
-      else scale = phone ? 0.84 + rSize * 0.1 : 0.74 + rSize * 0.16;
+    ordered.forEach((photo, index) => {
+      const size = tileSize(photo);
+      let best = null;
+      let bestScore = null;
 
-      const w = columnWidth * scale;
-      const h = w * (photo.ratio || 1);
+      if (!index) {
+        best = { x: -size.w / 2, y: -size.h / 2, w: size.w, h: size.h };
+      } else {
+        const xs = [-size.w / 2];
+        const ys = [-size.h / 2];
+        placed.forEach((other) => {
+          xs.push(other.x - LAYOUT.gap - size.w, other.x + other.w + LAYOUT.gap);
+          ys.push(other.y - LAYOUT.gap - size.h, other.y + other.h + LAYOUT.gap);
+        });
 
-      let col = 0;
-      for (let i = 1; i < columns; i++) if (heights[i] < heights[col] - 0.5) col = i;
+        const candidateXs = uniqueNumbers(xs);
+        const candidateYs = uniqueNumbers(ys);
+        const preferredAngle = seeded(photo.file, "direction") * Math.PI * 2 - Math.PI;
 
-      const x = col * (columnWidth + gap) + (columnWidth - w) * rX;
-      const y = heights[col] + rY * gap * 1.2;
-      heights[col] = y + h + gap;
+        candidateXs.forEach((x) => {
+          candidateYs.forEach((y) => {
+            const candidate = { x, y, w: size.w, h: size.h };
+            if (placed.some((other) => overlapsWithGap(candidate, other))) return;
+            const score = scorePlacement(candidate, bounds, preferredAngle);
+            if (scoreIsBetter(score, bestScore)) {
+              best = candidate;
+              bestScore = score;
+            }
+          });
+        });
+      }
 
-      return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+      // Boundary candidates always include a free outer corner. Keep a simple
+      // fallback so a malformed dimension can never prevent the gallery loading.
+      if (!best) {
+        best = { x: bounds.maxX + LAYOUT.gap, y: -size.h / 2, w: size.w, h: size.h };
+      }
+
+      positions.set(photo.file, best);
+      placed.push(best);
+      bounds = index ? {
+        minX: Math.min(bounds.minX, best.x),
+        minY: Math.min(bounds.minY, best.y),
+        maxX: Math.max(bounds.maxX, best.x + best.w),
+        maxY: Math.max(bounds.maxY, best.y + best.h),
+      } : {
+        minX: best.x,
+        minY: best.y,
+        maxX: best.x + best.w,
+        maxY: best.y + best.h,
+      };
     });
 
-    return { positions, height: Math.max(0, Math.round(Math.max(...heights) - gap)) };
+    const layout = { positions, bounds };
+    layoutCache.set(cacheKey, layout);
+    return layout;
   }
 
 
@@ -308,6 +420,7 @@
   const tiles = new Map();   // file name to its tile
   let visibleList = [];      // photos currently showing, in order
   let filterRun = 0;         // ignores slow measurements from an older click
+  let currentLayout = null;
 
   // One tile per photo, built once, in photos.js order, so keyboard Tab
   // order follows the collage.
@@ -329,12 +442,17 @@
       }
 
       img.addEventListener("load", () => tile.classList.add("is-loaded"));
-      btn.addEventListener("click", () => openLightbox(photo));
+      // Pointer clicks are handled by the gesture code after it proves that
+      // the pointer barely moved. A detail of zero is keyboard/assistive-tech
+      // activation and should retain the button's native behavior.
+      btn.addEventListener("click", (event) => {
+        if (event.detail === 0) openLightbox(photo);
+      });
 
       btn.appendChild(img);
       anim.appendChild(btn);
       tile.appendChild(anim);
-      collageEl.appendChild(tile);
+      worldEl.appendChild(tile);
 
       tiles.set(photo.file, { photo, tile, btn, img, visible: false, timer: 0 });
     });
@@ -397,33 +515,562 @@
       if (entry.visible && !keep.has(entry.photo.file)) leave(entry);
     });
 
-    const { positions, height } = computeLayout(list);
+    const layout = computeLayout(list);
+    currentLayout = layout;
     let order = 0;
-    list.forEach((photo, i) => {
+    list.forEach((photo) => {
       const entry = tiles.get(photo.file);
-      if (entry.visible) place(entry, positions[i]);
-      else enter(entry, positions[i], order++);
+      const position = layout.positions.get(photo.file);
+      if (entry.visible) place(entry, position);
+      else enter(entry, position, order++);
     });
-    collageEl.style.height = height + "px";
+    fitCluster(layout, list, camera.hasFit);
+    filterLayoutPending = false;
   }
 
-  // Re-flow on resize without animation, so photos do not trail the window.
-  let lastWidth = 0;
+
+  /* 8. PAN, ZOOM, AND FITTING ============================================== */
+  const siteMain = $(".site-main");
+  const siteHeader = $(".site-header");
+  const camera = {
+    x: 0,
+    y: 0,
+    scale: 1,
+    minScale: 1,
+    maxScale: VIEW.maxZoom,
+    bounds: null,
+    hasFit: false,
+  };
+  const pointers = new Map();
+  let gesture = null;
+  let resizeFrame = 0;
   let resizeTimer = 0;
-  function relayout() {
-    const width = collageEl.clientWidth;
-    if (!visibleList.length || width === lastWidth) return;
-    lastWidth = width;
-    collageEl.classList.add("is-resizing");
-    const { positions, height } = computeLayout(visibleList);
-    visibleList.forEach((photo, i) => place(tiles.get(photo.file), positions[i]));
-    collageEl.style.height = height + "px";
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => collageEl.classList.remove("is-resizing"), 150);
+  let lastViewportWidth = 0;
+  let lastViewportHeight = 0;
+  let lastDevicePixelRatio = 0;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  function viewportPadding() {
+    return collageEl.clientWidth <= 640 ? VIEW.paddingPhone : VIEW.paddingDesktop;
   }
 
+  function readRenderedCamera() {
+    const transform = getComputedStyle(worldEl).transform;
+    if (!transform || transform === "none") {
+      return { x: camera.x, y: camera.y, scale: camera.scale };
+    }
 
-  /* 8. LIGHTBOX =========================================================== */
+    try {
+      const Matrix = window.DOMMatrixReadOnly || window.DOMMatrix || window.WebKitCSSMatrix;
+      const matrix = new Matrix(transform);
+      return { x: matrix.e, y: matrix.f, scale: matrix.a };
+    } catch (error) {
+      return { x: camera.x, y: camera.y, scale: camera.scale };
+    }
+  }
+
+  function sharpZoomLimit(layout, list) {
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    let limit = VIEW.maxZoom;
+
+    list.forEach((photo) => {
+      const pos = layout.positions.get(photo.file);
+      if (!pos || !photo.thumbWidth || !photo.thumbHeight) return;
+      limit = Math.min(
+        limit,
+        photo.thumbWidth / (pos.w * dpr * VIEW.hoverScale),
+        photo.thumbHeight / (pos.h * dpr * VIEW.hoverScale)
+      );
+    });
+
+    return Math.max(0.01, limit);
+  }
+
+  function clampCamera() {
+    if (!camera.bounds) return;
+    const width = collageEl.clientWidth;
+    const height = collageEl.clientHeight;
+    const padding = viewportPadding();
+    const bounds = camera.bounds;
+    const scaledWidth = (bounds.maxX - bounds.minX) * camera.scale;
+    const scaledHeight = (bounds.maxY - bounds.minY) * camera.scale;
+
+    if (scaledWidth <= width - padding * 2) {
+      camera.x = width / 2 - (bounds.minX + bounds.maxX) * camera.scale / 2;
+    } else {
+      camera.x = clamp(
+        camera.x,
+        width - padding - bounds.maxX * camera.scale,
+        padding - bounds.minX * camera.scale
+      );
+    }
+
+    if (scaledHeight <= height - padding * 2) {
+      camera.y = height / 2 - (bounds.minY + bounds.maxY) * camera.scale / 2;
+    } else {
+      camera.y = clamp(
+        camera.y,
+        height - padding - bounds.maxY * camera.scale,
+        padding - bounds.minY * camera.scale
+      );
+    }
+  }
+
+  function updateAtFitState() {
+    const rendered = readRenderedCamera();
+    const epsilon = 0.01;
+    const isSettledAtFit = Boolean(camera.bounds) &&
+      Math.abs(camera.scale - camera.minScale) <= 0.000001 &&
+      Math.abs(rendered.scale - camera.scale) <= 0.00001 &&
+      Math.abs(rendered.x - camera.x) <= epsilon &&
+      Math.abs(rendered.y - camera.y) <= epsilon;
+    collageEl.classList.toggle("is-at-fit", isSettledAtFit);
+  }
+
+  let noTransitionFrame = 0;
+
+  function renderCamera(animate) {
+    const rendered = readRenderedCamera();
+    const targetChanged =
+      Math.abs(rendered.scale - camera.scale) > 0.00001 ||
+      Math.abs(rendered.x - camera.x) > 0.01 ||
+      Math.abs(rendered.y - camera.y) > 0.01;
+    let willAnimate = false;
+
+    cancelAnimationFrame(noTransitionFrame);
+    if (animate) {
+      // An immediate gesture update may have left this helper class in place
+      // until the next frame. Remove and commit it before setting an animated
+      // target so a quick reset/filter click still gets its glide.
+      worldEl.classList.remove("no-transition");
+      void worldEl.offsetWidth;
+      willAnimate = targetChanged && getComputedStyle(worldEl).transitionDuration
+        .split(",")
+        .some((duration) => parseFloat(duration) > 0);
+    } else {
+      worldEl.classList.add("no-transition");
+    }
+    worldEl.style.transform = "translate3d(" + camera.x.toFixed(3) + "px," +
+      camera.y.toFixed(3) + "px,0) scale(" + camera.scale.toFixed(6) + ")";
+
+    if (!animate) {
+      // Commit both the no-transition rule and this transform together. A
+      // style flush prevents browsers from coalescing the class removal and
+      // accidentally animating an interaction that should track instantly.
+      void worldEl.offsetWidth;
+      noTransitionFrame = requestAnimationFrame(() => worldEl.classList.remove("no-transition"));
+      updateAtFitState();
+    } else if (willAnimate) {
+      // Keep one-finger gestures owned by the collage until an animated refit
+      // has visibly reached its fit scale, not merely when its target changes.
+      collageEl.classList.remove("is-at-fit");
+    } else {
+      // A parent interaction class can temporarily disable transitions even
+      // when the caller requested one. Commit that immediate target before
+      // deciding whether the viewport is back at fit.
+      void worldEl.offsetWidth;
+      updateAtFitState();
+    }
+  }
+
+  function settleCameraTransition(event) {
+    if (event.target === worldEl && event.propertyName === "transform") updateAtFitState();
+  }
+
+  worldEl.addEventListener("transitionend", settleCameraTransition);
+  worldEl.addEventListener("transitioncancel", settleCameraTransition);
+
+  function syncCameraToRendered() {
+    const rendered = readRenderedCamera();
+    camera.x = rendered.x;
+    camera.y = rendered.y;
+    // A filter can animate from an old fit scale that is outside the new
+    // layout's legal range. If an interaction interrupts that glide, land on
+    // the nearest valid scale instead of freezing below fit or above sharpness.
+    camera.scale = clamp(rendered.scale, camera.minScale, camera.maxScale);
+    clampCamera();
+    renderCamera(false);
+  }
+
+  function fitCluster(layout, list, animate) {
+    const width = collageEl.clientWidth;
+    const height = collageEl.clientHeight;
+    const bounds = layout.bounds;
+    const boundsWidth = Math.max(1, bounds.maxX - bounds.minX);
+    const boundsHeight = Math.max(1, bounds.maxY - bounds.minY);
+    const padding = viewportPadding();
+    const fitScale = Math.min(
+      Math.max(1, width - padding * 2) / boundsWidth,
+      Math.max(1, height - padding * 2) / boundsHeight
+    );
+    const sharpLimit = sharpZoomLimit(layout, list);
+    const targetScale = Math.min(fitScale, sharpLimit);
+    const renderedScale = readRenderedCamera().scale;
+    const shouldAnimate = Boolean(animate) &&
+      !reducedMotion() &&
+      renderedScale <= sharpLimit + 0.000001;
+
+    camera.bounds = bounds;
+    camera.minScale = targetScale;
+    camera.maxScale = Math.max(targetScale, sharpLimit);
+    camera.scale = targetScale;
+    camera.x = width / 2 - (bounds.minX + bounds.maxX) * targetScale / 2;
+    camera.y = height / 2 - (bounds.minY + bounds.maxY) * targetScale / 2;
+    clampCamera();
+    renderCamera(shouldAnimate);
+    camera.hasFit = true;
+    lastViewportWidth = width;
+    lastViewportHeight = height;
+    lastDevicePixelRatio = window.devicePixelRatio || 1;
+    if (gesture && pointers.size) resetGestureBaseline();
+  }
+
+  function updateGalleryHeight() {
+    const top = siteMain.getBoundingClientRect().top + window.scrollY;
+    const height = Math.max(1, window.innerHeight - top);
+    const value = height.toFixed(3) + "px";
+    if (siteMain.style.getPropertyValue("--gallery-height") !== value) {
+      siteMain.style.setProperty("--gallery-height", value);
+    }
+  }
+
+  function handleViewportResize() {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => {
+      const width = collageEl.clientWidth;
+      const height = collageEl.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      if (width === lastViewportWidth &&
+          height === lastViewportHeight &&
+          dpr === lastDevicePixelRatio) return;
+      if (!currentLayout || !visibleList.length) return;
+      if (filterLayoutPending) return;
+
+      collageEl.classList.add("is-resizing");
+      fitCluster(currentLayout, visibleList, false);
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => collageEl.classList.remove("is-resizing"), 120);
+    });
+  }
+
+  function zoomAt(nextScale, localX, localY) {
+    const scale = clamp(nextScale, camera.minScale, camera.maxScale);
+    if (Math.abs(scale - camera.scale) < 0.000001) return;
+    const worldX = (localX - camera.x) / camera.scale;
+    const worldY = (localY - camera.y) / camera.scale;
+    camera.scale = scale;
+    camera.x = localX - worldX * scale;
+    camera.y = localY - worldY * scale;
+    clampCamera();
+    renderCamera(false);
+  }
+
+  let wheelTimer = 0;
+  collageEl.addEventListener("wheel", (event) => {
+    if (!camera.bounds) return;
+    const rect = collageEl.getBoundingClientRect();
+    let delta = event.deltaY;
+    if (event.deltaMode === 1) delta *= 16;
+    else if (event.deltaMode === 2) delta *= collageEl.clientHeight;
+    delta = clamp(delta, -400, 400);
+
+    // Once fully zoomed out, let another downward scroll continue to the
+    // footer instead of trapping the document inside the gallery.
+    const rendered = readRenderedCamera();
+    if (delta > 0 && rendered.scale <= camera.minScale + 0.000001) return;
+    if (delta < 0 && rendered.scale >= camera.maxScale - 0.000001) return;
+
+    event.preventDefault();
+    if (!collageEl.classList.contains("is-gesturing")) syncCameraToRendered();
+
+    collageEl.classList.add("is-gesturing");
+    zoomAt(
+      camera.scale * Math.exp(-delta * VIEW.wheelSpeed),
+      event.clientX - rect.left,
+      event.clientY - rect.top
+    );
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => collageEl.classList.remove("is-gesturing"), 120);
+  }, { passive: false });
+
+  function localPoint(event) {
+    const rect = collageEl.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function captureActivePointers() {
+    pointers.forEach((point, id) => {
+      if (!collageEl.hasPointerCapture(id)) {
+        try { collageEl.setPointerCapture(id); } catch (error) { /* pointer already ended */ }
+      }
+    });
+  }
+
+  function markDragged(syncRendered = true) {
+    if (!gesture) return;
+    if (!gesture.moved && syncRendered) {
+      syncCameraToRendered();
+      if (gesture.baseline && gesture.baseline.type === "pan") {
+        gesture.baseline.cameraX = camera.x;
+        gesture.baseline.cameraY = camera.y;
+      }
+    }
+    gesture.moved = true;
+    collageEl.classList.add("is-dragging", "is-gesturing");
+    captureActivePointers();
+  }
+
+  function resetGestureBaseline() {
+    if (!gesture || !pointers.size) return;
+    const active = Array.from(pointers.entries());
+
+    if (active.length === 1) {
+      const point = active[0][1];
+      gesture.baseline = {
+        type: "pan",
+        id: active[0][0],
+        x: point.x,
+        y: point.y,
+        cameraX: camera.x,
+        cameraY: camera.y,
+      };
+      return;
+    }
+
+    const first = active[0][1];
+    const second = active[1][1];
+    const centerX = (first.x + second.x) / 2;
+    const centerY = (first.y + second.y) / 2;
+    if (!gesture.moved) syncCameraToRendered();
+    gesture.baseline = {
+      type: "pinch",
+      ids: [active[0][0], active[1][0]],
+      distance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
+      scale: camera.scale,
+      worldX: (centerX - camera.x) / camera.scale,
+      worldY: (centerY - camera.y) / camera.scale,
+    };
+    gesture.hadMultiplePointers = true;
+    markDragged(false);
+  }
+
+  function updatePointer(event) {
+    const point = pointers.get(event.pointerId);
+    if (!point) return null;
+    const local = localPoint(event);
+    point.x = local.x;
+    point.y = local.y;
+    point.maxDistance = Math.max(
+      point.maxDistance,
+      Math.hypot(point.x - point.startX, point.y - point.startY)
+    );
+    if (point.maxDistance > VIEW.clickSlop) markDragged();
+    return point;
+  }
+
+  function applyGesture() {
+    if (!gesture || !gesture.moved || !gesture.baseline) return;
+    const baseline = gesture.baseline;
+    let pinchUpdate = null;
+
+    if (baseline.type === "pan") {
+      const point = pointers.get(baseline.id);
+      if (!point) return;
+      camera.x = baseline.cameraX + point.x - baseline.x;
+      camera.y = baseline.cameraY + point.y - baseline.y;
+    } else {
+      const first = pointers.get(baseline.ids[0]);
+      const second = pointers.get(baseline.ids[1]);
+      if (!first || !second) return;
+      const centerX = (first.x + second.x) / 2;
+      const centerY = (first.y + second.y) / 2;
+      const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+      camera.scale = clamp(
+        baseline.scale * distance / baseline.distance,
+        camera.minScale,
+        camera.maxScale
+      );
+      camera.x = centerX - baseline.worldX * camera.scale;
+      camera.y = centerY - baseline.worldY * camera.scale;
+      pinchUpdate = { centerX, centerY, distance };
+    }
+
+    clampCamera();
+    if (pinchUpdate) {
+      baseline.distance = pinchUpdate.distance;
+      baseline.scale = camera.scale;
+      baseline.worldX = (pinchUpdate.centerX - camera.x) / camera.scale;
+      baseline.worldY = (pinchUpdate.centerY - camera.y) / camera.scale;
+    }
+    renderCamera(false);
+  }
+
+  collageEl.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const local = localPoint(event);
+
+    if (!pointers.size) {
+      const button = event.target.closest && event.target.closest(".tile-btn");
+      gesture = {
+        initialPointerId: event.pointerId,
+        clickEntry: button ? Array.from(tiles.values()).find((entry) => entry.btn === button) : null,
+        moved: false,
+        hadMultiplePointers: false,
+        baseline: null,
+      };
+    }
+
+    pointers.set(event.pointerId, {
+      x: local.x,
+      y: local.y,
+      startX: local.x,
+      startY: local.y,
+      maxDistance: 0,
+    });
+    // Touch and pen pointers otherwise receive implicit capture on the image
+    // that was pressed. Own capture at the viewport from the start so moving
+    // off a tile (or the edge of the viewport) cannot strand a gesture.
+    try { collageEl.setPointerCapture(event.pointerId); } catch (error) { /* unsupported pointer */ }
+    resetGestureBaseline();
+  });
+
+  collageEl.addEventListener("pointermove", (event) => {
+    if (!updatePointer(event)) return;
+    applyGesture();
+    if (gesture && gesture.moved && event.cancelable) event.preventDefault();
+  });
+
+  function finishPointer(event, cancelled) {
+    const point = pointers.get(event.pointerId);
+    if (!point || !gesture) return;
+    if (!cancelled) {
+      updatePointer(event);
+      applyGesture();
+    } else {
+      markDragged();
+    }
+
+    const clickEntry = gesture.clickEntry;
+    const canOpen = !cancelled &&
+      pointers.size === 1 &&
+      event.pointerId === gesture.initialPointerId &&
+      !gesture.moved &&
+      !gesture.hadMultiplePointers &&
+      clickEntry;
+
+    pointers.delete(event.pointerId);
+
+    if (pointers.size) {
+      resetGestureBaseline();
+      return;
+    }
+
+    collageEl.classList.remove("is-dragging", "is-gesturing");
+    gesture = null;
+
+    if (canOpen) {
+      const releaseTarget = document.elementFromPoint(event.clientX, event.clientY);
+      if (releaseTarget && clickEntry.btn.contains(releaseTarget)) openLightbox(clickEntry.photo);
+    }
+  }
+
+  collageEl.addEventListener("pointerup", (event) => finishPointer(event, false));
+  collageEl.addEventListener("pointercancel", (event) => finishPointer(event, true));
+  collageEl.addEventListener("lostpointercapture", (event) => {
+    if (event.target === collageEl && pointers.has(event.pointerId)) finishPointer(event, true);
+  });
+
+  // Native pointer clicks still fire after pointerup—even after capture and a
+  // drag in some browsers. All pointer activation is handled above; only
+  // keyboard/programmatic clicks are allowed through to the tile buttons.
+  collageEl.addEventListener("click", (event) => {
+    if (event.detail !== 0 || event.pointerType) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+
+  // The viewport itself is keyboard-operable. Tile buttons keep their own
+  // key handling, while arrows pan the camera and +/- zoom around its center.
+  collageEl.addEventListener("keydown", (event) => {
+    if (event.target !== collageEl || event.altKey || event.ctrlKey || event.metaKey) return;
+    const panStep = 64;
+    let dx = 0;
+    let dy = 0;
+
+    if (event.key === "ArrowLeft") dx = panStep;
+    else if (event.key === "ArrowRight") dx = -panStep;
+    else if (event.key === "ArrowUp") dy = panStep;
+    else if (event.key === "ArrowDown") dy = -panStep;
+
+    if (dx || dy) {
+      syncCameraToRendered();
+      const beforeX = camera.x;
+      const beforeY = camera.y;
+      camera.x += dx;
+      camera.y += dy;
+      clampCamera();
+      if (Math.abs(camera.x - beforeX) > 0.01 || Math.abs(camera.y - beforeY) > 0.01) {
+        event.preventDefault();
+        renderCamera(false);
+      }
+      return;
+    }
+
+    if (event.key === "+" || event.key === "=" || event.key === "-" || event.key === "_") {
+      syncCameraToRendered();
+      const beforeScale = camera.scale;
+      const zoomIn = event.key === "+" || event.key === "=";
+      zoomAt(
+        camera.scale * (zoomIn ? 1.2 : 1 / 1.2),
+        collageEl.clientWidth / 2,
+        collageEl.clientHeight / 2
+      );
+      if (Math.abs(camera.scale - beforeScale) > 0.000001) event.preventDefault();
+    } else if ((event.key === "0" || event.key === "Home") && currentLayout && visibleList.length) {
+      event.preventDefault();
+      fitCluster(currentLayout, visibleList, true);
+    }
+  });
+
+  // After a visitor zooms in, keyboard focus can otherwise move to a tile
+  // beyond the clipped edge. Gently pan only keyboard-visible focus back into
+  // view; pointer focus is left alone so clicking never moves its target.
+  worldEl.addEventListener("focusin", (event) => {
+    const button = event.target.closest && event.target.closest(".tile-btn");
+    if (!button || !button.matches(":focus-visible")) return;
+    const tile = button.closest(".tile");
+    if (!tile || tile.classList.contains("is-hidden")) return;
+
+    const stageRect = collageEl.getBoundingClientRect();
+    const tileRect = tile.getBoundingClientRect();
+    const margin = Math.min(viewportPadding(), 18);
+    const left = stageRect.left + margin;
+    const right = stageRect.right - margin;
+    const top = stageRect.top + margin;
+    const bottom = stageRect.bottom - margin;
+    let dx = 0;
+    let dy = 0;
+
+    if (tileRect.width > right - left) dx = (left + right - tileRect.left - tileRect.right) / 2;
+    else if (tileRect.left < left) dx = left - tileRect.left;
+    else if (tileRect.right > right) dx = right - tileRect.right;
+
+    if (tileRect.height > bottom - top) dy = (top + bottom - tileRect.top - tileRect.bottom) / 2;
+    else if (tileRect.top < top) dy = top - tileRect.top;
+    else if (tileRect.bottom > bottom) dy = bottom - tileRect.bottom;
+
+    if (!dx && !dy) return;
+    syncCameraToRendered();
+    camera.x += dx;
+    camera.y += dy;
+    clampCamera();
+    renderCamera(!reducedMotion());
+  });
+
+
+  /* 9. LIGHTBOX =========================================================== */
   const lb = {
     root: $("#lightbox"),
     img: $("#lightbox .lb-img"),
@@ -560,7 +1207,9 @@
   });
 
 
-  /* 9. START UP =========================================================== */
+  /* 10. START UP ========================================================== */
+  updateGalleryHeight();
+
   if (!photos.length) {
     collageEl.innerHTML = '<p class="notice">No photos yet. Add some in photos.js.</p>';
     return;
@@ -572,8 +1221,13 @@
   const hasFeatured = photos.some((p) => p.featured);
   setFilter(hasFeatured ? { type: "featured" } : { type: "all" });
 
-  if ("ResizeObserver" in window) new ResizeObserver(() => requestAnimationFrame(relayout)).observe(collageEl);
-  else window.addEventListener("resize", relayout);
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(() => updateGalleryHeight()).observe(siteHeader);
+    new ResizeObserver(handleViewportResize).observe(collageEl);
+  }
 
-  lastWidth = collageEl.clientWidth;
+  window.addEventListener("resize", () => {
+    updateGalleryHeight();
+    handleViewportResize();
+  });
 })();

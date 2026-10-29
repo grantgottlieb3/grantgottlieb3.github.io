@@ -156,22 +156,57 @@ button { font: inherit; color: inherit; }
 
 
 /* 5. COLLAGE ===============================================================
-   script.js measures each photo and sets every tile's position and size.
-   Three layers per tile, so the effects never collide:
-     .tile       position on the page (glides when the filter changes)
-     .tile-anim  enter and leave (fade and soft scale)
-     .tile-btn   hover lift (scale and shadow)
+   The collage is a clipped viewport around a movable world. Four layers keep
+   the interactions and effects independent:
+     .cluster-world  visitor pan and zoom / automatic fit
+     .tile           world position (glides when the filter changes)
+     .tile-anim      enter and leave (fade and soft scale)
+     .tile-btn       hover lift (scale and shadow)
    ========================================================================== */
 .site-main {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 var(--page-pad);
+  width: 100%;
+  height: var(--gallery-height, 65vh);
+  height: var(--gallery-height, 65svh);
 }
 
 .collage {
   position: relative;
-  min-height: 40vh;
-  transition: height var(--t-move) var(--ease);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.collage:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -5px;
+}
+
+.collage.is-at-fit {
+  overscroll-behavior: auto;
+  touch-action: pan-y;
+}
+
+.collage.is-dragging,
+.collage.is-dragging .tile-btn { cursor: grabbing; }
+
+.cluster-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform var(--t-move) var(--ease);
+}
+
+.cluster-world.no-transition,
+.collage.is-gesturing .cluster-world,
+.collage.is-resizing .cluster-world {
+  transition: none;
 }
 
 .tile {
@@ -189,8 +224,7 @@ button { font: inherit; color: inherit; }
 .tile.is-hidden { display: none; }
 .tile.is-leaving { pointer-events: none; }
 
-.tile.no-transition,
-.collage.is-resizing .tile { transition: none; }
+.tile.no-transition { transition: none; }
 
 .tile-anim {
   width: 100%;
@@ -238,6 +272,8 @@ button { font: inherit; color: inherit; }
   object-fit: contain;      /* never crop */
   opacity: 0;
   transition: opacity 500ms var(--ease);
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .tile.is-loaded .tile-btn { background: transparent; }
@@ -259,6 +295,15 @@ button { font: inherit; color: inherit; }
     box-shadow:
       0 22px 44px -22px rgba(34, 33, 31, 0.38),
       0 6px 14px -8px rgba(34, 33, 31, 0.18);
+  }
+
+  /* A photo under the pointer must not stay enlarged while the world moves. */
+  .collage.is-dragging .tile:hover { z-index: 1; }
+
+  .collage.is-dragging .tile:not(.is-leaving):hover .tile-btn {
+    transform: none;
+    box-shadow: none;
+    transition: none;
   }
 }
 
@@ -404,7 +449,7 @@ button { font: inherit; color: inherit; }
   .pill { animation: none; }
   .pill--sub { animation: pill-fade 200ms linear both; }
 
-  .collage,
+  .cluster-world,
   .tile { transition: none; }
 
   .tile-anim {

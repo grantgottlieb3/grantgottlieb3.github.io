@@ -29,8 +29,11 @@
 
   <!-- ======================= COLLAGE ====================== -->
   <main class="site-main">
-    <!-- script.js places every photo inside this element. -->
-    <section class="collage" id="collage" aria-label="Photo collage"></section>
+    <!-- The collage is a clipped viewport. script.js places every photo in
+         the inner world, then moves that world when visitors pan and zoom. -->
+    <section class="collage" id="collage" tabindex="0" aria-label="Photo collage. Drag or use arrow keys to pan; scroll, pinch, or use plus and minus to zoom.">
+      <div class="cluster-world" id="cluster-world"></div>
+    </section>
     <noscript><p class="notice">Turn on JavaScript to see the gallery.</p></noscript>
   </main>
 

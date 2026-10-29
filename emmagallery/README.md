@@ -1,6 +1,6 @@
 # Emma's Gallery
 
-A single page photography portfolio. Plain HTML, CSS, and JavaScript. No build step, no backend.
+A single page photography portfolio with a pannable, zoomable photo cluster. Plain HTML, CSS, and JavaScript. No build step, no backend.
 
 ## Files
 
@@ -11,7 +11,7 @@ A single page photography portfolio. Plain HTML, CSS, and JavaScript. No build s
 | `images/full/` | Large copies for the lightbox | Add and remove photos here |
 | `index.html` | Page structure | Rarely |
 | `styles.css` | Look and motion | Rarely |
-| `script.js` | Filters, layout, lightbox | Rarely |
+| `script.js` | Filters, cluster layout, pan and zoom, lightbox | Rarely |
 
 ## Add a photo
 
