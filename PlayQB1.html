@@ -1692,13 +1692,14 @@ function gameSnapshot(where){
 }
 function saveGame(where){
   if (mode !== "game" || !gameOn || gameOver) return;
+  if (olGame){ if (olGame.myTurn) olSave(gameSnapshot(where), false, null, false); return; }
   try { localStorage.setItem(saveKey(), JSON.stringify(gameSnapshot(where))); } catch (e){}
 }
-function clearSave(){ try { localStorage.removeItem(saveKey()); } catch (e){} }
+function clearSave(){ if (olGame) return; try { localStorage.removeItem(saveKey()); } catch (e){} }
 function loadSave(key){
   try { const sv = JSON.parse(localStorage.getItem(key) || "null"); return sv && sv.v === 1 ? sv : null; } catch (e){ return null; }
 }
-function restoreGame(sv){
+function restoreGame(sv, opt){
   $("introTitle").classList.remove("on");
   mp = sv.mp;
   if (mode !== "game") enterMode("game");
@@ -1719,6 +1720,7 @@ function restoreGame(sv){
   shownScore.bScore = stats.pts; shownScore.bOpp = oppPts;
   updateStats();
   updateBoard();
+  if (opt && opt.noView) return;
   if (sv.where === "sideline" && sv.opp){
     Object.assign(opp, sv.opp, {auto:false, replay:null, timer:0});
     showSideline("drive");
@@ -1766,7 +1768,7 @@ function startOT(){
 function otBegin(){
   const t = ot.order[ot.done], shoot = ot.period >= 3;
   const go = () => shoot ? otShootUser() : fadeThrough(() => beginUserDrive(100 - OT_START));
-  if (mp){ if (t === mp.cur) go(); else mpHandoff(t, go); }
+  if (mp){ if (t === mp.cur) go(); else mpHandoff(t, go, shoot ? {otTwo:true} : {user:100 - OT_START}); }
   else if (t === "user") go();
   else if (shoot) otShootCPU();
   else startOppDrive(100 - OT_START);
@@ -3850,6 +3852,7 @@ function placeOppMarkers(){
 }
 function showSideline(view){
   $("introTitle").classList.remove("on");
+  if (!olGame || olGame.myTurn) opp.waiting = false;
   opp.view = view;
   if (view !== "drive"){
     opp.over = view === "final" ? {final:true} : {half:true};
@@ -3944,6 +3947,7 @@ function goNext(n){
   if (n.otDone){ otPossessionDone(); return; }
   if (n.otTwo){ otShootUser(); return; }
   if (n.final) clearSave();
+  if (n.final && olGame && olGame.myTurn){ olGame.myTurn = false; olSave(gameSnapshot("final"), false, null, true); }
   if (n.final){ showSideline("final"); showBreak("final"); }
   else if (n.half){ showSideline("half"); showBreak("half"); }
   else if (n.kick){
@@ -4095,8 +4099,9 @@ function tossBar(kind, data){
   } else {
     $("tbKick").textContent = "It’s " + (data.heads ? "heads" : "tails");
     if (mp) mp.tossWinner = data.win ? 0 : 1;
-    $("tbTitle").textContent = mp ? mp.teams[mp.tossWinner].name + " won the toss" : data.win ? "You won the toss" : "They won the toss and defer";
-    btns.innerHTML = (data.win || mp)
+    $("tbTitle").textContent = olGame && mp.tossWinner !== mp.cur ? mp.teams[mp.tossWinner].name + " won the toss and deferred" :
+      mp ? mp.teams[mp.tossWinner].name + " won the toss" : data.win ? "You won the toss" : "They won the toss and defer";
+    btns.innerHTML = ((data.win || mp) && !(olGame && mp.tossWinner !== mp.cur))
       ? '<button type="button" class="goBtn" data-act="receive">Receive</button><button type="button" class="goBtn alt" data-act="defer">Defer</button>'
       : '<button type="button" class="goBtn" data-act="receive">Take the field</button>';
   }
@@ -4117,10 +4122,12 @@ $("tbBtns").addEventListener("click", e => {
   } else if (mp){
     // The winner chooses; whoever receives takes the controls for the opening drive
     hideTossBar();
-    const w = mp.tossWinner, recv = act === "receive" ? w : 1 - w;
+    const w = mp.tossWinner;
+    let recv = act === "receive" ? w : 1 - w;
+    if (olGame && w !== mp.cur) recv = mp.cur;
     mp.first = recv;
     const go = () => kickoffShot("user", () => beginUserDrive(25));
-    if (recv === mp.cur) go(); else mpHandoff(recv, go);
+    if (recv === mp.cur) go(); else mpHandoff(recv, go, {user:25, kick:true});
     relock();
   } else {
     hideTossBar();
@@ -4550,7 +4557,7 @@ function showBreak(kind, q, after){
   } else if (kind === "final"){
     $("brKick").textContent = "Final";
     $("brTitle").textContent = stats.pts > oppPts ? "You win" : stats.pts < oppPts ? "You lose" : "Tie game";
-    btns = [["Play again", "again"], ["Main menu", "home"]];
+    btns = olGame ? [["Your games", "olgames"], ["Main menu", "home"]] : [["Play again", "again"], ["Main menu", "home"]];
   } else if (kind === "toss"){
     $("brKick").textContent = "Coin toss";
     $("brTitle").textContent = "Call it in the air";
@@ -4587,8 +4594,8 @@ $("brBtns").addEventListener("click", e => {
   } else if (act === "second" && mp){
     cine = null;
     const recv = 1 - mp.first, go = () => kickoffShot("user", () => beginUserDrive(25));
-    mp.seen[recv] = mp.records.length;
-    if (recv === mp.cur) go(); else mpHandoff(recv, go);
+    if (!olGame) mp.seen[recv] = mp.records.length;
+    if (recv === mp.cur) go(); else mpHandoff(recv, go, {user:25, kick:true});
     relock();
   } else if (act === "notice"){
     if (breakNext){ const f = breakNext; breakNext = null; f(); }
@@ -4605,6 +4612,9 @@ $("brBtns").addEventListener("click", e => {
     cine = null;
     newGame();
     relock();
+  } else if (act === "olgames"){
+    goHome();
+    openOnlineHome();
   } else if (act === "home"){
     goHome();
   } else if (act === "heads" || act === "tails"){
@@ -4736,7 +4746,12 @@ function mpLoad(){
   updateBoard();
 }
 function mpSwitchTo(i){ mpSave(); mp.cur = i; mpLoad(); }
-function mpHandoff(idx, after){
+function mpHandoff(idx, after, spec){
+  if (olGame){
+    // Online: no passing the computer. Your friend gets the turn with where to pick up
+    if (idx === mp.cur) after(); else olPassTurn(spec || {user:25, kick:true});
+    return;
+  }
   showBreak("handoff", {idx}, () => { mpSwitchTo(idx); after(); });
 }
 // Every play is saved so the other player can sim it back and both can study film
@@ -4760,6 +4775,7 @@ function mpRecord(main, sub, result){
 }
 // The other player gets the ball: pass the computer, sim back what they missed, then they take the field
 function mpTurnover(n){
+  if (olGame){ olPassTurn({user:n.opp, kick:n.kick, otTwo:n.otTwo}); return; }
   const other = 1 - mp.cur;
   const recs = mp.records.slice(mp.seen[other]).filter(r => r.off !== other);
   if (!recs.length) mp.seen[other] = mp.records.length;
@@ -4868,6 +4884,7 @@ function rr(g, x, y, w, h, r){
   g.closePath();
 }
 function tabletButtonDefs(){
+  if (opp.waiting && !opp.film) return [{label:"Film", act:"film"}, {label:"Main menu", act:"olmenu"}];
   if (opp.film){
     const fb = [{label:"Offense", act:"filmOff"}, {label:"Defense", act:"filmDef"}];
     // Only between drives: once the drive is over you can change how your defense plays
@@ -4885,7 +4902,7 @@ function canDefTimeout(){
     opp.runoff > 0;
 }
 function baseTabletButtons(){
-  if (opp.view === "final") return [{label:"Play again", act:"again"}, {label:"Main menu", act:"home"}];
+  if (opp.view === "final") return olGame ? [{label:"Your games", act:"olgames"}, {label:"Main menu", act:"home"}] : [{label:"Play again", act:"again"}, {label:"Main menu", act:"home"}];
   if (opp.view === "half") return [{label:"Start the second half", act:"second"}];
   if (opp.over) return [{label:opp.over.final ? "End game" : opp.over.half ? "End half" : opp.over.otStart ? "Overtime" : opp.over.otDone ? "Continue" : "Take the field", act:"field"}];
   return [{label:"Sim next play", act:"next"}, {label:opp.auto ? "Simming the drive" : "Sim this drive", act:"drive"}];
@@ -4922,8 +4939,8 @@ function drawTablet(){
     sub = opp.over.final ? "That’s the game" : opp.over.half ? "Halftime is next" : opp.over.otStart ? "Tied after four quarters" :
       opp.over.otDone ? "Overtime possession over" : opp.over.otTwo ? "Your two point try" : "Your ball at " + userYardLabel(opp.over.user);
   } else {
-    title = mp ? awayAbbr() + " ball" : "Opponent ball";
-    sub = oppDownLabel() + " at " + oppYardLabel(opp.yard);
+    title = opp.waiting ? "Waiting on " + awayAbbr() : mp ? awayAbbr() + " ball" : "Opponent ball";
+    sub = opp.waiting ? "Their drive shows up here when it’s done" : oppDownLabel() + " at " + oppYardLabel(opp.yard);
   }
   g.textAlign = "left"; g.fillStyle = "#f2b33d"; g.font = "800 50px " + F;
   g.fillText(title.toUpperCase(), 32, 134);
@@ -4996,6 +5013,7 @@ function tabletAct(act){
     drawTablet();
     return;
   }
+  if (act === "olmenu"){ goHome(); return; }
   // A timeout works even while the teams are still shifting after the play
   if (state === "sideline" && !cine){
   if (act === "defTO" && canDefTimeout()){
@@ -5022,6 +5040,7 @@ function tabletAct(act){
   else if (act === "field" && opp.over) goNext(opp.over);
   else if (act === "again") newGame();
   else if (act === "home") goHome();
+  else if (act === "olgames"){ goHome(); openOnlineHome(); }
 }
 function updateSideline(dt){
   updateOppAnim(dt);
@@ -5093,6 +5112,7 @@ function setPlaying(on){
   }
 }
 function goHome(){
+  if (olGame) leaveMultiplayer();
   hideTossBar();
   started = false;
   cine = null;
@@ -5128,6 +5148,7 @@ function resume(){
   requestLock();
 }
 function freshStart(){
+  if (olGame){ resume(); return; }
   if (mode === "game") newGame();
   started = true;
   setPlaying(true);
@@ -5139,6 +5160,7 @@ $("btnHome").addEventListener("click", () => {
 });
 $("btnLeave").addEventListener("click", () => { gameOn = false; goHome(); });
 function leaveMultiplayer(){
+  if (olGame){ unwatchGame(); olGame = null; }
   if (!mp) return;
   mp = null;
   stats = blankStats();
@@ -5218,7 +5240,7 @@ $("onlineRun").addEventListener("click", runOnlineCheck);
 $("onlineBack").addEventListener("click", () => openOnlineHome());
 
 // ---------- Online (Phase 8b): create, join, and your games ----------
-let olUser = null, olSetup = null, olWatch = null;
+let olUser = null, olSetup = null, olWatch = null, olGame = null;
 function olErr(err){
   const m = (err && err.message) || String(err);
   if (/fetch|network/i.test(m)) return "Couldn’t reach the server. Check your connection, or open the game from your own site.";
@@ -5269,7 +5291,7 @@ $("olGames").addEventListener("click", async e => {
     try { const r = await sb.rpc("forfeit_game", {p_game:c.dataset.olcancel}); if (r.error) throw r.error; loadMyGames(); }
     catch (err){ $("olMsg").textContent = olErr(err); }
   } else if (o){
-    $("olMsg").textContent = "Playing online games arrives in the next update. Your game is saved and ready.";
+    olOpen(o.dataset.olopen);
   }
 });
 
@@ -5388,18 +5410,142 @@ function showOnlineCode(g, created){
   $("olToGames").addEventListener("click", () => { unwatchGame(); openOnlineHome(); });
   showPane("pOnlineCode");
 }
-// Live update: the host hears the moment a friend joins
-function watchGame(id){
+// Live updates: the host hears when a friend joins, and a waiting player hears when it's their turn
+function watchGame(id, handler){
   unwatchGame();
   olWatch = sb.channel("game-" + id)
     .on("postgres_changes", {event:"UPDATE", schema:"public", table:"games", filter:"id=eq." + id}, payload => {
       const g = payload.new;
+      if (handler){ handler(g); return; }
       if (g && g.status === "active" && $("olWait")){
         const guest = (g.teams || [])[1];
-        $("olWait").innerHTML = (guest ? teamPreview(guest) + " " : "Your friend ") + "joined. Playing online games arrives in the next update.";
+        $("olWait").innerHTML = (guest ? teamPreview(guest) + " " : "Your friend ") + "joined. You kick things off.";
+        if (!$("olKick")){
+          const btn = document.createElement("button");
+          btn.type = "button"; btn.className = "primary"; btn.id = "olKick"; btn.textContent = "Kick off";
+          btn.addEventListener("click", () => olOpen(id));
+          $("olCopy").parentElement.prepend(btn);
+        }
       }
     })
     .subscribe();
+}
+async function olFetch(id){
+  const r = await sb.from("games").select("*").eq("id", id).single();
+  if (r.error) throw r.error;
+  return r.data;
+}
+async function olOpen(id){
+  $("olMsg").textContent = "Loading the game…";
+  try {
+    const me = await olReady();
+    const g = await olFetch(id);
+    if (g.status === "forfeit"){ $("olMsg").textContent = "That game was forfeited."; return; }
+    if (!g.state && g.host_id !== me.id){ $("olMsg").textContent = "Waiting for the host to kick off. Check back soon."; return; }
+    unwatchGame();
+    leaveMultiplayer();
+    olGame = {id:g.id, code:g.code, version:g.version, me:g.host_id === me.id ? 0 : 1, myTurn:false};
+    watchGame(g.id, olOnRemote);
+    olEnter(g);
+  } catch (err){
+    $("olMsg").textContent = olErr(err);
+  }
+}
+function olRestore(sv){
+  sv.mp.cur = olGame.me;
+  restoreGame(sv, {noView:true});
+}
+// Decide what you see when a game loads: start it, your turn, waiting, or the final
+function olEnter(g){
+  olGame.version = g.version;
+  const me = olGame.me;
+  if (!g.state){
+    mp = {opts:g.opts, teams:g.teams.map(t => ({name:t.name, p:t.p, s:t.s, plan:t.plan, stats:blankStats(), timeouts:3})),
+      cur:0, records:[], seen:[0, 0], first:0, pre:null, tossWinner:0};
+    olGame.myTurn = true;
+    if (mode !== "game") enterMode("game");
+    newGame();
+    resume();
+    return;
+  }
+  const sv = g.state;
+  if (g.status === "final"){
+    olGame.myTurn = false;
+    olRestore(sv);
+    gameOver = true;
+    showSideline("final");
+    showBreak("final");
+    resume();
+    return;
+  }
+  if (g.turn === olUser.id){
+    olGame.myTurn = true;
+    if (sv.where === "handoff"){
+      olRestore(sv);
+      const recs = mp.records.slice(mp.seen[me]).filter(r => r.off !== me);
+      mpReplay(recs, sv.next);
+      resume();
+    } else {
+      sv.mp.cur = me;
+      restoreGame(sv);
+    }
+  } else {
+    olGame.myTurn = false;
+    olRestore(sv);
+    olShowWaiting(mp.records.filter(r => r.off === me).slice(-6));
+    resume();
+  }
+}
+function olShowWaiting(mine){
+  opp.waiting = true;
+  opp.over = null; opp.replay = null; opp.auto = false; opp.film = null;
+  opp.title = "";
+  opp.log = mine.length ? mine.slice(-6).reverse().map(r => clockTagOf(r) + "   " + r.ctx + ": " + r.text) : ["Your drive is in"];
+  opp.yard = 25; opp.down = 1; opp.toGo = 10;
+  showSideline("drive");
+  opp.waiting = true;
+  drawTablet();
+}
+function clockTagOf(r){ return r.q >= 5 ? "OT" : "Q" + r.q + " " + clockText(r.clock); }
+// Your turn is over: send everything, then wait on the sideline
+async function olPassTurn(next){
+  const other = 1 - mp.cur;
+  const recs = mp.records.slice(mp.seen[other]).filter(r => r.off !== other);
+  const snap = gameSnapshot("handoff");
+  snap.next = next;
+  olGame.myTurn = false;
+  olShowWaiting(recs);
+  await olSave(snap, true, recs, false);
+}
+let olQueue = Promise.resolve();
+function olSave(snap, pass, recs, final){
+  const game = olGame;
+  if (!game) return olQueue;
+  olQueue = olQueue.then(async () => {
+    const r = await sb.rpc("save_turn", {p_game:game.id, p_version:game.version, p_state:snap, p_pass_turn:!!pass, p_records:recs || null, p_final:!!final});
+    if (r.error) throw r.error;
+    game.version = r.data.version;
+  }).catch(async err => {
+    showMsg("Online save failed", olErr(err), "flag", "", 3200);
+    // Someone else moved the game on: reload what the server has
+    if (/stale|not your turn/i.test((err && err.message) || "") && olGame === game){
+      try { olEnter(await olFetch(game.id)); } catch (e){}
+    }
+  });
+  return olQueue;
+}
+// The other player saved: if it's now your turn, or the game ended, load it
+async function olOnRemote(row){
+  if (!olGame || !row || row.id !== olGame.id || row.version === olGame.version) return;
+  if (row.status === "forfeit"){ showMsg("Game over", "Your friend forfeited the game", "flag", "", 4000); return; }
+  // Your own saves echo back too; only react to your friend's
+  if (row.status === "final" && gameOver) return;
+  const mine = row.turn === olUser.id;
+  if ((mine && !olGame.myTurn) || row.status === "final"){
+    try {
+      olEnter(await olFetch(olGame.id));
+    } catch (err){ showMsg("Couldn’t load the game", olErr(err), "flag", "", 3200); }
+  }
 }
 function unwatchGame(){ if (olWatch && sb){ sb.removeChannel(olWatch); olWatch = null; } }
 
