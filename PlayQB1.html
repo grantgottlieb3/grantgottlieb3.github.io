@@ -555,6 +555,7 @@ body:not(.playing) #playMenu{visibility:hidden}
           <button data-pane="pControls" type="button">Controls</button>
           <button id="btnTimeout" type="button" hidden>Call timeout</button>
           <button id="btnNewGame" type="button" hidden>Restart game</button>
+          <button id="btnForfeit" type="button" hidden>Forfeit game</button>
           <button id="btnHome" type="button">Main menu</button>
         </div>
         <p id="touchNote" hidden>This game needs a mouse and keyboard. Open it on a computer.</p>
@@ -624,6 +625,15 @@ body:not(.playing) #playMenu{visibility:hidden}
         <div class="navcol"><button type="button" data-mphome>Back</button></div>
       </div>
       <div id="pMp" class="pane" hidden></div>
+      <div id="pForfeit" class="pane" hidden>
+        <h2>Forfeit this game?</h2>
+        <p class="confirmText">Your friend wins, and the game comes off Your games for both of you. This can’t be undone.</p>
+        <p class="confirmText" id="forfeitMsg" aria-live="polite"></p>
+        <div class="navcol">
+          <button id="btnForfeitYes" class="primary" type="button">Forfeit game</button>
+          <button data-back type="button">Keep playing</button>
+        </div>
+      </div>
       <div id="pConfirm" class="pane" hidden>
         <h2>Leave this game?</h2>
         <p class="confirmText">Leave this game? It’s saved, so you can pick it back up from the main menu.</p>
@@ -5119,7 +5129,7 @@ function showPane(id){
   $("pHome").hidden = id !== "pHome";
   $("pMultiHome").hidden = id !== "pMultiHome";
   $("ovCard").hidden = home;
-  ["pMain", "pSettings", "pControls", "pStats", "pConfirm", "pHow", "pMp", "pAbout", "pSp", "pPlan", "pResume", "pOnline", "pOnlineHome", "pOnlineSetup", "pJoin", "pOnlineCode"].forEach(pn => { $(pn).hidden = pn !== id; });
+  ["pMain", "pSettings", "pControls", "pStats", "pConfirm", "pHow", "pMp", "pAbout", "pSp", "pPlan", "pResume", "pOnline", "pOnlineHome", "pOnlineSetup", "pJoin", "pOnlineCode", "pForfeit"].forEach(pn => { $(pn).hidden = pn !== id; });
   if (id === "pStats"){
     const home = homeAbbr();
     $("psHome").textContent = home;
@@ -5142,7 +5152,8 @@ function setPlaying(on){
     if (started){
       const game = mode === "game";
       $("ovTitle").textContent = game ? "Paused" : "Tutorial paused";
-      $("btnNewGame").hidden = !game;
+      $("btnNewGame").hidden = !game || !!olGame;
+      $("btnForfeit").hidden = !olGame;
       $("btnHome").textContent = game ? "Main menu" : "Leave the tutorial";
       $("btnStats").hidden = !game || !gameOn;
       refreshTimeoutButton();
@@ -5293,6 +5304,26 @@ async function runOnlineCheck(){
   $("onlineRun").disabled = false;
 }
 $("onlineRun").addEventListener("click", runOnlineCheck);
+$("btnForfeit").addEventListener("click", () => { $("forfeitMsg").textContent = ""; showPane("pForfeit"); });
+$("btnForfeitYes").addEventListener("click", async () => {
+  if (!olGame) return;
+  const b = $("btnForfeitYes"), game = olGame, them = awayAbbr();
+  game.forfeiting = true;
+  b.disabled = true;
+  $("forfeitMsg").textContent = "Forfeiting…";
+  try {
+    const r = await sb.rpc("forfeit_game", {p_game:game.id});
+    if (r.error) throw r.error;
+    goHome();
+    openOnlineHome();
+    $("olMsg").textContent = "You forfeited the game against " + them + ".";
+  } catch (err){
+    game.forfeiting = false;
+    $("forfeitMsg").textContent = olErr(err);
+  } finally {
+    b.disabled = false;
+  }
+});
 $("onlineBack").addEventListener("click", () => openOnlineHome());
 
 // ---------- Online (Phase 8b): create, join, and your games ----------
@@ -5345,7 +5376,12 @@ async function loadMyGames(){
       const names = (mine ? mine.name : "You") + " vs " + (theirs ? theirs.name : "waiting for a friend");
       let tag, cls = "", act = "";
       if (g.status === "waiting"){ tag = "Code " + g.code; act = '<button type="button" data-olcancel="' + g.id + '">Cancel</button>'; }
-      else if (g.status === "active"){ const you = g.turn === me.id; tag = you ? "Your turn" : "Their turn"; cls = you ? " you" : ""; act = '<button type="button" data-olopen="' + g.id + '">Open</button>'; }
+      else if (g.status === "active"){
+        const you = g.turn === me.id;
+        tag = !g.state ? (you ? "Your coin toss" : "Their coin toss") : you ? "Your turn" : "Their turn";
+        cls = you ? " you" : "";
+        act = '<button type="button" data-olopen="' + g.id + '">Open</button>';
+      }
       else { tag = "Final"; }
       const when = new Date(g.updated_at).toLocaleDateString(undefined, {month:"short", day:"numeric"});
       return '<li><span class="who">' + names + '<span class="sub">' + (host ? "You created this" : "You joined") + ", " + when + '</span></span><span class="tag' + cls + '">' + tag + '</span>' + act + '</li>';
@@ -5647,15 +5683,27 @@ function olSave(snap, pass, recs, final){
 }
 // The other player saved: if it's now your turn, or the game ended, load it
 async function olOnRemote(row){
-  if (!olGame || !row || row.id !== olGame.id || row.version === olGame.version) return;
-  if (row.status === "forfeit"){ showMsg("Game over", "Your friend forfeited the game", "flag", "", 4000); return; }
+  if (!olGame || !row || row.id !== olGame.id) return;
+  // A forfeit doesn't bump the save version, so check it before anything else
+  if (row.status === "forfeit"){
+    if (gameOver || olGame.forfeiting) return;
+    olGame.myTurn = false;
+    gameOver = true;
+    showBreak("notice", {kick:"Game over", title:awayAbbr() + " forfeited", note:"You win. The game comes off Your games for both of you.", btn:"Your games"},
+      () => { goHome(); openOnlineHome(); });
+    return;
+  }
   // Your own saves echo back too; only react to your friend's
   if (row.status === "final" && gameOver) return;
   const mine = row.turn === olUser.id;
-  if ((mine && !olGame.myTurn) || row.status === "final"){
+  if (((mine && !olGame.myTurn) || row.status === "final") && !olGame.loading){
+    const game = olGame;
+    game.loading = true;
     try {
-      olEnter(await olFetch(olGame.id));
-    } catch (err){ showMsg("Couldn’t load the game", olErr(err), "flag", "", 3200); }
+      const g = await olFetch(game.id);
+      game.loading = false;
+      if (olGame === game) olEnter(g);
+    } catch (err){ game.loading = false; showMsg("Couldn’t load the game", olErr(err), "flag", "", 3200); }
   }
 }
 function unwatchGame(){ if (olWatch && sb){ sb.removeChannel(olWatch); olWatch = null; } }
