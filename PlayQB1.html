@@ -217,6 +217,7 @@ kbd{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;fon
 .infoBtn{position:absolute;right:18px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(12,18,24,.72);color:#ffffff;font:800 26px/1 "Barlow Condensed","Arial Narrow",sans-serif;cursor:pointer;z-index:2;padding:0 0 2px}
 .infoBtn:hover,.infoBtn:focus-visible{border-color:#f2b33d;color:#f2b33d;outline:none}
 #pHome{padding-bottom:46px}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
 .olTop{flex-direction:row;max-width:none;width:100%;flex-wrap:wrap}
 .olTop button{flex:1;min-width:140px}
 .olGames{list-style:none;margin:0 0 8px;padding:0;max-height:34vh;overflow-y:auto}
@@ -3991,7 +3992,7 @@ function newGame(){
   filmPre = null;
   if (mp){
     mp.teams.forEach(t => { t.stats = blankStats(); t.timeouts = 3; });
-    mp.cur = 0; mp.records = []; mp.seen = [0, 0]; mp.pre = null;
+    mp.cur = olGame ? olGame.me : 1 - mpHome(); mp.records = []; mp.seen = [0, 0]; mp.pre = null;
     stats = mp.teams[0].stats;
     replayView = null;
   }
@@ -4114,12 +4115,18 @@ function tossBar(kind, data){
     btns.innerHTML = "";
   } else {
     $("tbKick").textContent = "It’s " + (data.heads ? "heads" : "tails");
-    if (mp) mp.tossWinner = data.win ? 0 : 1;
-    $("tbTitle").textContent = olGame && mp.tossWinner !== mp.cur ? mp.teams[mp.tossWinner].name + " won the toss and deferred" :
-      mp ? mp.teams[mp.tossWinner].name + " won the toss" : data.win ? "You won the toss" : "They won the toss and defer";
-    btns.innerHTML = ((data.win || mp) && !(olGame && mp.tossWinner !== mp.cur))
-      ? '<button type="button" class="goBtn" data-act="receive">Receive</button><button type="button" class="goBtn alt" data-act="defer">Defer</button>'
-      : '<button type="button" class="goBtn" data-act="receive">Take the field</button>';
+    if (mp){
+      // Whoever called it, the winner's receive or defer choice from team setup applies
+      mp.tossWinner = data.win ? mp.cur : 1 - mp.cur;
+      const pref = mp.teams[mp.tossWinner].toss === "receive" ? "receive" : "defer";
+      $("tbTitle").textContent = mp.teams[mp.tossWinner].name + " won the toss and " + (pref === "receive" ? "elected to receive" : "deferred");
+      btns.innerHTML = '<button type="button" class="goBtn" data-act="' + pref + '">Continue</button>';
+    } else {
+      $("tbTitle").textContent = data.win ? "You won the toss" : "They won the toss and defer";
+      btns.innerHTML = data.win
+        ? '<button type="button" class="goBtn" data-act="receive">Receive</button><button type="button" class="goBtn alt" data-act="defer">Defer</button>'
+        : '<button type="button" class="goBtn" data-act="receive">Take the field</button>';
+    }
   }
   const first = btns.querySelector("button");
   if (first) first.focus();
@@ -4139,8 +4146,7 @@ $("tbBtns").addEventListener("click", e => {
     // The winner chooses; whoever receives takes the controls for the opening drive
     hideTossBar();
     const w = mp.tossWinner;
-    let recv = act === "receive" ? w : 1 - w;
-    if (olGame && w !== mp.cur) recv = mp.cur;
+    const recv = act === "receive" ? w : 1 - w;
     mp.first = recv;
     const go = () => kickoffShot("user", () => beginUserDrive(25));
     if (recv === mp.cur) go(); else mpHandoff(recv, go, {user:25, kick:true});
@@ -4667,6 +4673,7 @@ function renderMp(){
   const st = mpSetup, el = $("pMp");
   if (st.step === "game"){
     let h = '<h2>Game settings</h2><p class="hintline" style="margin:0 0 6px">The host sets up the game. These apply to both players and don’t change your saved single player settings.</p>';
+    normOpts(st.opts);
     GAME_OPTS.forEach(([key, label, opts]) => {
       h += '<div class="setting"><span>' + label + '</span><div class="seg">' + opts.map(([v, t]) =>
         '<button type="button" data-opt="' + key + '" data-v="' + v + '" class="' + (st.opts[key] === v ? 'on' : '') + '">' + t + '</button>').join("") + '</div></div>';
@@ -4684,7 +4691,8 @@ function renderMp(){
   const i = st.step - 1, me = st.teams[i], other = st.teams[1 - i];
   let h = '<h2 class="setHead" style="font-size:30px">Player ' + st.step + ' ' + teamPreview(me) + '</h2>';
   h += nameRow("Team name", "mp", me.name) + swatchRow("Primary", "mp", "p", me.p, i === 1 ? other.p : undefined) + swatchRow("Secondary", "mp", "s", me.s);
-  h += '<p class="hintline" style="margin:12px 0 2px">Defensive game plan. Your friend’s offense faces it all game, and it can’t be changed later.</p>';
+  h += tossRow(me.toss);
+  h += '<p class="hintline" style="margin:12px 0 2px">Defensive game plan. Your friend’s offense faces it all game; you can adjust it between their drives.</p>';
   PLAN_OPTS.forEach(([key, label, opts]) => {
     h += '<div class="setting"><span>' + label + '</span><div class="seg">' + opts.map(([v, t]) =>
       '<button type="button" data-plan="' + key + '" data-v="' + v + '" class="' + (String(me.plan[key]) === String(v) ? 'on' : '') + '">' + t + '</button>').join("") + '</div></div>';
@@ -4698,6 +4706,7 @@ $("pMp").addEventListener("click", e => {
   if (!b || b.disabled || !mpSetup) return;
   const st = mpSetup, i = typeof st.step === "number" ? st.step - 1 : 0;
   if (b.dataset.opt){ const v = b.dataset.v; st.opts[b.dataset.opt] = v === "true" ? true : v === "false" ? false : +v; renderMp(); return; }
+  if (b.dataset.toss){ st.teams[i].toss = b.dataset.toss; renderMp(); return; }
   if (b.dataset.color){ st.teams[i][b.dataset.key] = +b.dataset.color; renderMp(); return; }
   if (b.dataset.plan){ const v = b.dataset.v; st.teams[i].plan[b.dataset.plan] = isNaN(+v) ? v : +v; renderMp(); return; }
   const a = b.dataset.mp;
@@ -4735,7 +4744,7 @@ function startLocalGame(){
   const st = mpSetup;
   if (st.teams[0].p === st.teams[1].p) st.teams[1].p = PALETTE.find(c => c !== st.teams[0].p);
   if (st.teams[0].name === st.teams[1].name) st.teams[1].name = st.teams[1].name.slice(0, 3) + "2";
-  mp = {opts:Object.assign({}, st.opts), teams:st.teams.map(t => ({name:t.name, p:t.p, s:t.s, plan:t.plan, stats:blankStats(), timeouts:3})), cur:0, records:[], seen:[0, 0], first:0, pre:null, tossWinner:0};
+  mp = {opts:Object.assign({}, st.opts), teams:st.teams.map(t => ({name:t.name, p:t.p, s:t.s, plan:t.plan, toss:t.toss || "defer", stats:blankStats(), timeouts:3})), cur:0, records:[], seen:[0, 0], first:0, pre:null, tossWinner:0};
   mpSetup = null;
   if (mode !== "game") enterMode("game");
   newGame();
@@ -5159,7 +5168,14 @@ function startTutorial(){
   $("tutModal").hidden = false;
   $("tutGo").focus();
 }
+let relockArmed = false;
 function enableFallback(){
+  // Browsers briefly refuse to recapture the mouse right after Esc. Keep playing and grab it on the next click
+  if (canvas.requestPointerLock){
+    relockArmed = true;
+    setPlaying(true);
+    return;
+  }
   fallbackLook = true;
   setPlaying(true);
 }
@@ -5174,6 +5190,8 @@ function requestLock(){
 }
 function resume(){
   started = true;
+  // Still holding the mouse (Safari's first Esc only clears its banner): just close the menu
+  if (document.pointerLockElement === canvas){ fallbackLook = false; relockArmed = false; setPlaying(true); return; }
   requestLock();
 }
 function freshStart(){
@@ -5343,7 +5361,7 @@ $("olGames").addEventListener("click", async e => {
 // Host and guest set up the same way: the host also picks the game settings
 function olTeamDefault(blockP){
   const m = settings.my;
-  const t = {name:m.name, p:m.p, s:m.s, plan:Object.assign({}, myPlan())};
+  const t = {name:m.name, p:m.p, s:m.s, toss:"defer", plan:Object.assign({}, myPlan())};
   if (blockP !== undefined && t.p === blockP) t.p = PALETTE.find(c => c !== blockP && c !== t.s);
   return t;
 }
@@ -5351,7 +5369,7 @@ function renderOnlineSetup(){
   const st = olSetup, el = $("pOnlineSetup");
   if (st.step === "game"){
     el.innerHTML = '<h2>Game settings</h2><p class="hintline" style="margin:0 0 6px">You’re the host. These apply to both of you. Player 1 is you, Player 2 is your friend.</p>' +
-      optRows(GAME_OPTS, st.opts) +
+      optRows(GAME_OPTS, normOpts(st.opts)) +
       '<div class="navcol olTop" style="margin-top:16px"><button class="primary" type="button" data-ol="team">Next: your team</button><button type="button" data-ol="cancel">Cancel</button></div>';
     return;
   }
@@ -5359,6 +5377,7 @@ function renderOnlineSetup(){
   let h = '<h2 class="setHead" style="font-size:30px">Your team ' + teamPreview(t) + '</h2>';
   if (st.host) h += '<p class="hintline" style="margin:0 0 6px">You’re joining ' + teamPreview(st.host) + '. Pick a different primary color.</p>';
   h += nameRow("Team name", "ol", t.name) + swatchRow("Primary", "ol", "p", t.p, blockP) + swatchRow("Secondary", "ol", "s", t.s);
+  h += tossRow(t.toss);
   h += '<p class="hintline" style="margin:12px 0 2px">Defensive game plan. Your friend’s offense faces it all game; you can adjust it between their drives.</p>' + planRows(t.plan);
   h += '<p class="confirmText" id="olSetupMsg" aria-live="polite"></p>';
   h += '<div class="navcol olTop" style="margin-top:12px"><button class="primary" type="button" data-ol="' + (st.role === "host" ? "create" : "join") + '">' +
@@ -5376,6 +5395,7 @@ $("pOnlineSetup").addEventListener("click", async e => {
   if (!b || b.disabled || !olSetup) return;
   const st = olSetup;
   if (b.dataset.opt){ st.opts[b.dataset.opt] = parseV(b.dataset.v); renderOnlineSetup(); return; }
+  if (b.dataset.toss){ st.team.toss = b.dataset.toss; renderOnlineSetup(); return; }
   if (b.dataset.color){ st.team[b.dataset.key] = +b.dataset.color; renderOnlineSetup(); return; }
   if (b.dataset.plan){ st.team.plan[b.dataset.plan] = parseV(b.dataset.v); renderOnlineSetup(); return; }
   const a = b.dataset.ol;
@@ -5449,8 +5469,12 @@ function showOnlineCode(g, created){
     });
     watchGame(g.id);
   } else {
-    el.innerHTML = '<h2>You’re in</h2><p class="confirmText">You joined game ' + g.code + '. The host kicks things off; you’ll see it under Your games.</p>' +
-      '<div class="navcol olTop"><button class="primary" type="button" id="olToGames">Your games</button></div>';
+    const youCall = olUser && g.turn === olUser.id;
+    el.innerHTML = '<h2>You’re in</h2><p class="confirmText">You joined game ' + g.code + '. ' +
+      (youCall ? "You’re the away team, so you call the coin toss." : "The host is the away team and calls the coin toss. You’ll see the game under Your games after that.") + '</p>' +
+      '<div class="navcol olTop">' + (youCall ? '<button class="primary" type="button" id="olCall">Call the coin toss</button>' : '') +
+      '<button' + (youCall ? '' : ' class="primary"') + ' type="button" id="olToGames">Your games</button></div>';
+    if (youCall) $("olCall").addEventListener("click", () => olOpen(g.id));
   }
   $("olToGames").addEventListener("click", () => { unwatchGame(); openOnlineHome(); });
   showPane("pOnlineCode");
@@ -5464,10 +5488,12 @@ function watchGame(id, handler){
       if (handler){ handler(g); return; }
       if (g && g.status === "active" && $("olWait")){
         const guest = (g.teams || [])[1];
-        $("olWait").innerHTML = (guest ? teamPreview(guest) + " " : "Your friend ") + "joined. You kick things off.";
-        if (!$("olKick")){
+        const hostCalls = g.turn === g.host_id;
+        $("olWait").innerHTML = (guest ? teamPreview(guest) + " " : "Your friend ") + "joined. " +
+          (hostCalls ? "You’re the away team, so you call the coin toss." : "They’re the away team, so they call the coin toss. You’ll get the game after that.");
+        if (hostCalls && !$("olKick")){
           const btn = document.createElement("button");
-          btn.type = "button"; btn.className = "primary"; btn.id = "olKick"; btn.textContent = "Kick off";
+          btn.type = "button"; btn.className = "primary"; btn.id = "olKick"; btn.textContent = "Call the coin toss";
           btn.addEventListener("click", () => olOpen(id));
           $("olCopy").parentElement.prepend(btn);
         }
@@ -5489,7 +5515,11 @@ async function olOpen(id){
     const me = await olReady();
     const g = await olFetch(id);
     if (g.status === "forfeit"){ $("olMsg").textContent = "That game was forfeited."; return; }
-    if (!g.state && g.host_id !== me.id){ $("olMsg").textContent = "Waiting for the host to kick off. Check back soon."; return; }
+    if (!g.state && g.turn !== me.id){
+      const away = (g.teams || [])[1 - ((g.opts && g.opts.home) || 0)];
+      $("olMsg").textContent = "Waiting for " + (away ? away.name : "the away team") + " to call the coin toss. You can open the game once it’s done.";
+      return;
+    }
     unwatchGame();
     leaveMultiplayer();
     olGame = {id:g.id, code:g.code, version:g.version, me:g.host_id === me.id ? 0 : 1, myTurn:false};
@@ -5513,7 +5543,7 @@ function olEnter(g){
   olGame.version = g.version;
   const me = olGame.me;
   if (!g.state){
-    mp = {opts:g.opts, teams:g.teams.map(t => ({name:t.name, p:t.p, s:t.s, plan:t.plan, stats:blankStats(), timeouts:3})),
+    mp = {opts:g.opts, teams:g.teams.map(t => ({name:t.name, p:t.p, s:t.s, plan:t.plan, toss:t.toss || "defer", stats:blankStats(), timeouts:3})),
       cur:0, records:[], seen:[0, 0], first:0, pre:null, tossWinner:0};
     olGame.myTurn = true;
     if (mode !== "game") enterMode("game");
@@ -5628,9 +5658,16 @@ const SP_OPTS = [
   ["shake", "Crowd shake", [[true, "On"], [false, "Off"]]]
 ];
 let spStep = "game", spPlanOpen = false;
+function tossRow(val){
+  return '<div class="setting"><span>If you win the toss</span><div class="seg">' +
+    [["receive", "Receive"], ["defer", "Defer"]].map(([v, t]) => '<button type="button" data-toss="' + v + '" class="' + ((val || "defer") === v ? 'on' : '') + '">' + t + '</button>').join("") + '</div></div>';
+}
+// Two minute quarters can't have a two minute warning
+function normOpts(o){ if (o.qlen <= 120 && o.warn === 120) o.warn = 60; return o; }
 function optRows(list, vals){
   return list.map(([key, label, opts]) => '<div class="setting"><span>' + label + '</span><div class="seg">' + opts.map(([v, t]) =>
-    '<button type="button" data-opt="' + key + '" data-v="' + v + '" class="' + (vals[key] === v ? 'on' : '') + '">' + t + '</button>').join("") + '</div></div>').join("");
+    '<button type="button" data-opt="' + key + '" data-v="' + v + '" class="' + (vals[key] === v ? 'on' : '') + '"' +
+    (key === "warn" && v === 120 && vals.qlen <= 120 ? ' disabled title="Not available with 2 minute quarters"' : '') + '>' + t + '</button>').join("") + '</div></div>').join("");
 }
 function planRows(P){
   return PLAN_OPTS.map(([key, label, opts]) => '<div class="setting"><span>' + label + '</span><div class="seg">' + opts.map(([v, t]) =>
@@ -5640,6 +5677,7 @@ function parseV(v){ return v === "true" ? true : v === "false" ? false : isNaN(+
 function renderSp(){
   const el = $("pSp"), m = settings.my, o = settings.opp;
   if (spStep === "game"){
+    normOpts(settings);
     el.innerHTML = '<h2>Game settings</h2>' + optRows(SP_OPTS, settings) +
       '<div class="navcol" style="margin-top:16px"><button class="primary" type="button" data-sp="plan">Next: teams and game plan</button><button type="button" data-sp="cancel">Cancel</button></div>';
   } else {
@@ -5747,6 +5785,7 @@ applyAwayTeam(makeTeam(settings.opp));
 document.addEventListener("pointerlockchange", () => {
   if (document.pointerLockElement === canvas){
     fallbackLook = false;
+    relockArmed = false;
     setPlaying(true);
   } else if (!fallbackLook && playing){
     // The game never lets go of the mouse on its own, so losing the lock means you pressed Esc: pause
@@ -5764,6 +5803,7 @@ document.addEventListener("mousemove", e => {
   pitch = clamp(pitch - (e.movementY || 0) * s * (settings.invert ? -1 : 1), -1.35, 1.35);
 });
 canvas.addEventListener("mousedown", e => {
+  if (relockArmed && !document.pointerLockElement){ requestLock(); return; }
   if (vc.on){ if (e.button === 0) vClick(); return; }
   if (!playing){ requestLock(); return; }
   if (e.button !== 0) return;
