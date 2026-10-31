@@ -217,6 +217,17 @@ kbd{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;fon
 .infoBtn{position:absolute;right:18px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(12,18,24,.72);color:#ffffff;font:800 26px/1 "Barlow Condensed","Arial Narrow",sans-serif;cursor:pointer;z-index:2;padding:0 0 2px}
 .infoBtn:hover,.infoBtn:focus-visible{border-color:#f2b33d;color:#f2b33d;outline:none}
 #pHome{padding-bottom:46px}
+.olTop{flex-direction:row;max-width:none;width:100%;flex-wrap:wrap}
+.olTop button{flex:1;min-width:140px}
+.olGames{list-style:none;margin:0 0 8px;padding:0;max-height:34vh;overflow-y:auto}
+.olGames li{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(19,35,26,.12)}
+.olGames .who{flex:1;font-weight:700;font-size:18px}
+.olGames .sub{display:block;font-weight:500;font-size:15px;color:#56636c}
+.olGames .tag{font-size:14px;font-weight:800;border-radius:5px;padding:2px 8px;background:#e1e6ea;color:#13231a;white-space:nowrap}
+.olGames .tag.you{background:#f2b33d}
+.olGames button{font:700 15px "Barlow Condensed","Arial Narrow",sans-serif;padding:4px 10px;border-radius:6px;border:2px solid rgba(19,35,26,.25);background:#ffffff;color:#13231a;cursor:pointer}
+.codeInput{width:150px;letter-spacing:.12em}
+.bigCode{font:800 54px/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.08em;text-align:center;margin:10px 0 6px;user-select:all}
 .checkList{list-style:none;margin:0 0 8px;padding:0}
 .checkList li{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(19,35,26,.12);font-size:17px}
 .checkList .mark{width:22px;flex:none;font-weight:800;text-align:center}
@@ -521,7 +532,7 @@ body:not(.playing) #playMenu{visibility:hidden}
             <rect width="320" height="180" fill="#1b2633"/>
             <g fill="none" stroke="#7fb2e5" stroke-width="4" opacity=".75"><circle cx="160" cy="84" r="52"/><ellipse cx="160" cy="84" rx="22" ry="52"/><line x1="108" y1="84" x2="212" y2="84"/><path d="M116 58 H204 M116 110 H204"/></g>
           </svg>
-          <span class="tileText"><span class="tileLabel">Online with a friend</span><span class="tileSub">Coming soon. Run the connection check.</span></span>
+          <span class="tileText"><span class="tileLabel">Online with a friend</span><span class="tileSub">Create a game or join a friend’s with a code.</span></span>
         </button>
         <button class="tile" id="mpHow" type="button">
           <svg class="art" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -579,6 +590,23 @@ body:not(.playing) #playMenu{visibility:hidden}
         <p class="confirmText" id="onlineResult" aria-live="polite"></p>
         <div class="navcol"><button class="primary" type="button" id="onlineRun">Run the check</button><button type="button" id="onlineBack">Back</button></div>
       </div>
+      <div id="pOnlineHome" class="pane" hidden>
+        <h2>Online with a friend</h2>
+        <div class="navcol olTop"><button class="primary" type="button" id="olCreate">Create game</button><button type="button" id="olJoin">Join game</button></div>
+        <h3 class="setHead">Your games</h3>
+        <ul class="olGames" id="olGames"></ul>
+        <p class="confirmText" id="olMsg" aria-live="polite"></p>
+        <div class="navcol olTop"><button type="button" id="olRefresh">Refresh</button><button type="button" id="olCheck">Connection check</button><button type="button" id="olBack">Back</button></div>
+      </div>
+      <div id="pOnlineSetup" class="pane" hidden></div>
+      <div id="pJoin" class="pane" hidden>
+        <h2>Join a game</h2>
+        <p class="hintline" style="margin:0 0 8px">Enter the code your friend sent you.</p>
+        <div class="setting"><span>Game code</span><input id="joinCode" class="teamName codeInput" type="text" maxlength="9" spellcheck="false" autocomplete="off" aria-label="Game code" placeholder="ABCD-1234"></div>
+        <p class="confirmText" id="joinMsg" aria-live="polite"></p>
+        <div class="navcol olTop"><button class="primary" type="button" id="joinNext">Next</button><button type="button" id="joinBack">Back</button></div>
+      </div>
+      <div id="pOnlineCode" class="pane" hidden></div>
       <div id="pPlan" class="pane" hidden></div>
       <div id="pHow" class="pane" hidden>
         <h2>How multiplayer works</h2>
@@ -5034,7 +5062,7 @@ function showPane(id){
   $("pHome").hidden = id !== "pHome";
   $("pMultiHome").hidden = id !== "pMultiHome";
   $("ovCard").hidden = home;
-  ["pMain", "pSettings", "pControls", "pStats", "pConfirm", "pHow", "pMp", "pAbout", "pSp", "pPlan", "pResume", "pOnline"].forEach(pn => { $(pn).hidden = pn !== id; });
+  ["pMain", "pSettings", "pControls", "pStats", "pConfirm", "pHow", "pMp", "pAbout", "pSp", "pPlan", "pResume", "pOnline", "pOnlineHome", "pOnlineSetup", "pJoin", "pOnlineCode"].forEach(pn => { $(pn).hidden = pn !== id; });
   if (id === "pStats"){
     const home = homeAbbr();
     $("psHome").textContent = home;
@@ -5186,9 +5214,194 @@ async function runOnlineCheck(){
   $("onlineResult").textContent = ok ? "Everything works. Online play is ready to build." : "Something failed. Send me the message next to the red mark.";
   $("onlineRun").disabled = false;
 }
-$("mpOnline").addEventListener("click", () => { renderChecks([]); $("onlineResult").textContent = ""; showPane("pOnline"); });
 $("onlineRun").addEventListener("click", runOnlineCheck);
-$("onlineBack").addEventListener("click", () => showPane("pMultiHome"));
+$("onlineBack").addEventListener("click", () => openOnlineHome());
+
+// ---------- Online (Phase 8b): create, join, and your games ----------
+let olUser = null, olSetup = null, olWatch = null;
+function olErr(err){
+  const m = (err && err.message) || String(err);
+  if (/fetch|network/i.test(m)) return "Couldn’t reach the server. Check your connection, or open the game from your own site.";
+  return m.charAt(0).toUpperCase() + m.slice(1) + ".";
+}
+async function olReady(){ if (!olUser) olUser = await sbSignIn(); return olUser; }
+function openOnlineHome(){
+  showPane("pOnlineHome");
+  loadMyGames();
+}
+function normCode(v){
+  const c = String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  return c.length > 4 ? c.slice(0, 4) + "-" + c.slice(4) : c;
+}
+async function loadMyGames(){
+  $("olMsg").textContent = "";
+  $("olGames").innerHTML = '<li><span class="who">Loading your games…</span></li>';
+  try {
+    const me = await olReady();
+    const r = await sb.from("games").select("id, code, status, turn, host_id, guest_id, teams, opts, state, updated_at")
+      .or("host_id.eq." + me.id + ",guest_id.eq." + me.id).order("updated_at", {ascending:false}).limit(25);
+    if (r.error) throw r.error;
+    const games = (r.data || []).filter(g => !(g.opts && g.opts.test) && g.status !== "forfeit");
+    if (!games.length){ $("olGames").innerHTML = '<li><span class="who">No games yet<span class="sub">Create one, or join with a friend’s code.</span></span></li>'; return; }
+    $("olGames").innerHTML = games.map(g => {
+      const T = g.teams || [], host = g.host_id === me.id;
+      const mine = T[host ? 0 : 1], theirs = T[host ? 1 : 0];
+      const names = (mine ? mine.name : "You") + " vs " + (theirs ? theirs.name : "waiting for a friend");
+      let tag, cls = "", act = "";
+      if (g.status === "waiting"){ tag = "Code " + g.code; act = '<button type="button" data-olcancel="' + g.id + '">Cancel</button>'; }
+      else if (g.status === "active"){ const you = g.turn === me.id; tag = you ? "Your turn" : "Their turn"; cls = you ? " you" : ""; act = '<button type="button" data-olopen="' + g.id + '">Open</button>'; }
+      else { tag = "Final"; }
+      const when = new Date(g.updated_at).toLocaleDateString(undefined, {month:"short", day:"numeric"});
+      return '<li><span class="who">' + names + '<span class="sub">' + (host ? "You created this" : "You joined") + ", " + when + '</span></span><span class="tag' + cls + '">' + tag + '</span>' + act + '</li>';
+    }).join("");
+  } catch (err){
+    $("olGames").innerHTML = "";
+    $("olMsg").textContent = olErr(err);
+  }
+}
+$("mpOnline").addEventListener("click", openOnlineHome);
+$("olRefresh").addEventListener("click", loadMyGames);
+$("olCheck").addEventListener("click", () => { renderChecks([]); $("onlineResult").textContent = ""; showPane("pOnline"); });
+$("olBack").addEventListener("click", () => showPane("pMultiHome"));
+$("olGames").addEventListener("click", async e => {
+  const c = e.target.closest("button[data-olcancel]"), o = e.target.closest("button[data-olopen]");
+  if (c){
+    try { const r = await sb.rpc("forfeit_game", {p_game:c.dataset.olcancel}); if (r.error) throw r.error; loadMyGames(); }
+    catch (err){ $("olMsg").textContent = olErr(err); }
+  } else if (o){
+    $("olMsg").textContent = "Playing online games arrives in the next update. Your game is saved and ready.";
+  }
+});
+
+// Host and guest set up the same way: the host also picks the game settings
+function olTeamDefault(blockP){
+  const m = settings.my;
+  const t = {name:m.name, p:m.p, s:m.s, plan:Object.assign({}, myPlan())};
+  if (blockP !== undefined && t.p === blockP) t.p = PALETTE.find(c => c !== blockP && c !== t.s);
+  return t;
+}
+function renderOnlineSetup(){
+  const st = olSetup, el = $("pOnlineSetup");
+  if (st.step === "game"){
+    el.innerHTML = '<h2>Game settings</h2><p class="hintline" style="margin:0 0 6px">You’re the host. These apply to both of you. Player 1 is you, Player 2 is your friend.</p>' +
+      optRows(GAME_OPTS, st.opts) +
+      '<div class="navcol olTop" style="margin-top:16px"><button class="primary" type="button" data-ol="team">Next: your team</button><button type="button" data-ol="cancel">Cancel</button></div>';
+    return;
+  }
+  const t = st.team, blockP = st.host ? st.host.p : undefined;
+  let h = '<h2 class="setHead" style="font-size:30px">Your team ' + teamPreview(t) + '</h2>';
+  if (st.host) h += '<p class="hintline" style="margin:0 0 6px">You’re joining ' + teamPreview(st.host) + '. Pick a different primary color.</p>';
+  h += nameRow("Team name", "ol", t.name) + swatchRow("Primary", "ol", "p", t.p, blockP) + swatchRow("Secondary", "ol", "s", t.s);
+  h += '<p class="hintline" style="margin:12px 0 2px">Defensive game plan. Your friend’s offense faces it all game; you can adjust it between their drives.</p>' + planRows(t.plan);
+  h += '<p class="confirmText" id="olSetupMsg" aria-live="polite"></p>';
+  h += '<div class="navcol olTop" style="margin-top:12px"><button class="primary" type="button" data-ol="' + (st.role === "host" ? "create" : "join") + '">' +
+    (st.role === "host" ? "Create game" : "Join game") + '</button><button type="button" data-ol="' + (st.role === "host" ? "game" : "cancel") + '">Back</button></div>';
+  el.innerHTML = h;
+}
+$("olCreate").addEventListener("click", () => {
+  olSetup = {role:"host", step:"game", opts:{qlen:settings.qlen, home:0, diff:settings.diff, chew:settings.chew !== false, shake:settings.shake !== false,
+    warn:settings.warn === undefined ? 120 : settings.warn, autoTO:true}, team:olTeamDefault()};
+  renderOnlineSetup();
+  showPane("pOnlineSetup");
+});
+$("pOnlineSetup").addEventListener("click", async e => {
+  const b = e.target.closest("button");
+  if (!b || b.disabled || !olSetup) return;
+  const st = olSetup;
+  if (b.dataset.opt){ st.opts[b.dataset.opt] = parseV(b.dataset.v); renderOnlineSetup(); return; }
+  if (b.dataset.color){ st.team[b.dataset.key] = +b.dataset.color; renderOnlineSetup(); return; }
+  if (b.dataset.plan){ st.team.plan[b.dataset.plan] = parseV(b.dataset.v); renderOnlineSetup(); return; }
+  const a = b.dataset.ol;
+  if (a === "team" || a === "game"){ st.step = a; renderOnlineSetup(); $("ovCard").scrollTop = 0; return; }
+  if (a === "cancel"){ olSetup = null; openOnlineHome(); return; }
+  if (a === "create" || a === "join"){
+    b.disabled = true;
+    $("olSetupMsg").textContent = a === "create" ? "Creating your game…" : "Joining…";
+    try {
+      await olReady();
+      const r = a === "create"
+        ? await sb.rpc("create_game", {p_opts:st.opts, p_team:st.team})
+        : await sb.rpc("join_game", {p_code:st.code, p_team:st.team});
+      if (r.error) throw r.error;
+      showOnlineCode(r.data, a === "create");
+    } catch (err){
+      $("olSetupMsg").textContent = olErr(err);
+      b.disabled = false;
+    }
+  }
+});
+$("pOnlineSetup").addEventListener("input", e => {
+  const inp = e.target.closest("input.teamName");
+  if (!inp || !olSetup) return;
+  inp.value = String(inp.value).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  olSetup.team.name = cleanName(inp.value, olSetup.role === "host" ? "HOME" : "AWAY");
+  const head = $("pOnlineSetup").querySelector("h2");
+  if (head) head.innerHTML = "Your team " + teamPreview(olSetup.team);
+});
+
+// Joining: look up the code first so you can see who you're playing and avoid their color
+$("olJoin").addEventListener("click", () => { $("joinCode").value = ""; $("joinMsg").textContent = ""; showPane("pJoin"); setTimeout(() => $("joinCode").focus(), 50); });
+$("joinBack").addEventListener("click", openOnlineHome);
+$("joinCode").addEventListener("input", e => { const v = normCode(e.target.value); if (v !== e.target.value) e.target.value = v; });
+$("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") $("joinNext").click(); });
+$("joinNext").addEventListener("click", async () => {
+  const code = normCode($("joinCode").value);
+  if (code.length !== 9){ $("joinMsg").textContent = "Codes look like ABCD-1234."; return; }
+  $("joinNext").disabled = true;
+  $("joinMsg").textContent = "Looking up the game…";
+  try {
+    await olReady();
+    const r = await sb.rpc("peek_game", {p_code:code});
+    if (r.error) throw r.error;
+    const g = r.data;
+    if (g.mine){ $("joinMsg").textContent = "You’re already in this game. Find it under Your games."; return; }
+    if (g.full || g.status !== "waiting"){ $("joinMsg").textContent = "That game already has two players."; return; }
+    const host = {name:g.host.name, p:+g.host.p, s:+g.host.s};
+    olSetup = {role:"guest", step:"team", code, host, opts:g.opts, team:olTeamDefault(host.p)};
+    renderOnlineSetup();
+    showPane("pOnlineSetup");
+  } catch (err){
+    $("joinMsg").textContent = olErr(err);
+  } finally {
+    $("joinNext").disabled = false;
+  }
+});
+
+// After creating: show the code and wait for the friend; after joining: confirm
+function showOnlineCode(g, created){
+  olSetup = null;
+  const el = $("pOnlineCode");
+  if (created){
+    el.innerHTML = '<h2>Game created</h2><p class="hintline" style="margin:0">Send this code to your friend:</p>' +
+      '<div class="bigCode" id="olCode">' + g.code + '</div>' +
+      '<p class="confirmText" id="olWait" aria-live="polite">Waiting for your friend to join…</p>' +
+      '<div class="navcol olTop"><button class="primary" type="button" id="olCopy">Copy code</button><button type="button" id="olToGames">Your games</button></div>';
+    $("olCopy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(g.code); $("olCopy").textContent = "Copied"; }
+      catch (err){ $("olCopy").textContent = "Select the code to copy"; }
+    });
+    watchGame(g.id);
+  } else {
+    el.innerHTML = '<h2>You’re in</h2><p class="confirmText">You joined game ' + g.code + '. The host kicks things off; you’ll see it under Your games.</p>' +
+      '<div class="navcol olTop"><button class="primary" type="button" id="olToGames">Your games</button></div>';
+  }
+  $("olToGames").addEventListener("click", () => { unwatchGame(); openOnlineHome(); });
+  showPane("pOnlineCode");
+}
+// Live update: the host hears the moment a friend joins
+function watchGame(id){
+  unwatchGame();
+  olWatch = sb.channel("game-" + id)
+    .on("postgres_changes", {event:"UPDATE", schema:"public", table:"games", filter:"id=eq." + id}, payload => {
+      const g = payload.new;
+      if (g && g.status === "active" && $("olWait")){
+        const guest = (g.teams || [])[1];
+        $("olWait").innerHTML = (guest ? teamPreview(guest) + " " : "Your friend ") + "joined. Playing online games arrives in the next update.";
+      }
+    })
+    .subscribe();
+}
+function unwatchGame(){ if (olWatch && sb){ sb.removeChannel(olWatch); olWatch = null; } }
 
 function openSpSetup(){ spStep = "game"; renderSp(); showPane("pSp"); }
 $("tPlay").addEventListener("click", () => {
