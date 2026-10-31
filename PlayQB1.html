@@ -5147,6 +5147,7 @@ function setPlaying(on){
       $("btnStats").hidden = !game || !gameOn;
       refreshTimeoutButton();
     }
+    updateResumeButton();
   }
 }
 function goHome(){
@@ -5168,32 +5169,40 @@ function startTutorial(){
   $("tutModal").hidden = false;
   $("tutGo").focus();
 }
-let relockArmed = false;
-function enableFallback(){
-  // Browsers briefly refuse to recapture the mouse right after Esc. Keep playing and grab it on the next click
-  if (canvas.requestPointerLock){
-    relockArmed = true;
-    setPlaying(true);
-    return;
-  }
-  fallbackLook = true;
-  setPlaying(true);
-}
+// ---------- Mouse capture ----------
+// One place decides when the game holds the mouse:
+//   Playing means the mouse is captured (or fallbackLook, on browsers with no pointer lock at all).
+//   Losing the capture while playing pauses the game.
+//   Menus opened while the mouse is still captured use the in-game cursor.
+//   After a pause that released the mouse, Resume quietly ignores clicks for a second,
+//   because browsers refuse to recapture right away. The button always looks normal.
+const RESUME_DELAY = 1000;
+let releasedAt = -1e9, lockPending = false;
+function isLocked(){ return document.pointerLockElement === canvas; }
+function resumeReady(){ return isLocked() || performance.now() - releasedAt >= RESUME_DELAY; }
 function requestLock(){
+  if (!canvas.requestPointerLock){ fallbackLook = true; setPlaying(true); return; }
+  if (isLocked() || lockPending || !resumeReady()) return;
+  lockPending = true;
   try {
-    const r = canvas.requestPointerLock && canvas.requestPointerLock();
-    if (r && typeof r.catch === "function") r.catch(enableFallback);
-    if (!canvas.requestPointerLock) enableFallback();
-  } catch (e){
-    enableFallback();
-  }
+    const r = canvas.requestPointerLock();
+    if (r && typeof r.catch === "function") r.catch(lockFailed);
+  } catch (e){ lockFailed(); }
+}
+// The browser said no: stay paused with a working Resume, never play with a loose mouse
+function lockFailed(){
+  lockPending = false;
+  if (isLocked()) return;
+  releasedAt = performance.now();
+  if (playing && !fallbackLook) setPlaying(false);
+  updateResumeButton();
 }
 function resume(){
   started = true;
-  // Still holding the mouse (Safari's first Esc only clears its banner): just close the menu
-  if (document.pointerLockElement === canvas){ fallbackLook = false; relockArmed = false; setPlaying(true); return; }
+  if (isLocked() || fallbackLook){ setPlaying(true); return; }
   requestLock();
 }
+function updateResumeButton(){ $("btnResume").disabled = false; }
 function freshStart(){
   if (olGame){ resume(); return; }
   if (mode === "game") newGame();
@@ -5327,6 +5336,8 @@ async function loadMyGames(){
       .or("host_id.eq." + me.id + ",guest_id.eq." + me.id).order("updated_at", {ascending:false}).limit(25);
     if (r.error) throw r.error;
     const games = (r.data || []).filter(g => !(g.opts && g.opts.test) && g.status !== "forfeit");
+    olLobbyRows = {};
+    games.forEach(g => { olLobbyRows[g.id] = g; });
     if (!games.length){ $("olGames").innerHTML = '<li><span class="who">No games yet<span class="sub">Create one, or join with a friend’s code.</span></span></li>'; return; }
     $("olGames").innerHTML = games.map(g => {
       const T = g.teams || [], host = g.host_id === me.id;
@@ -5506,7 +5517,21 @@ async function olFetch(id){
   if (r.error) throw r.error;
   return r.data;
 }
+// Why a game can't be opened yet, or null if it can
+function olBlocked(g, myId){
+  if (g.status === "forfeit") return "That game was forfeited.";
+  if (g.state) return null;
+  const home = (g.opts && g.opts.home) || 0, away = 1 - home;
+  const meIdx = g.host_id === myId ? 0 : 1, awayTeam = (g.teams || [])[away];
+  if (meIdx !== away) return "Waiting for " + (awayTeam ? awayTeam.name : "the away team") + " to call the coin toss. You can open the game once it’s done.";
+  if (g.turn !== myId) return "This game was set up before an update and can’t start. Cancel it and create a new one.";
+  return null;
+}
+let olLobbyRows = {};
 async function olOpen(id){
+  // Check what's already known first, so a blocked game never grabs the mouse
+  const known = olLobbyRows[id];
+  if (known && olUser){ const why = olBlocked(known, olUser.id); if (why){ $("olMsg").textContent = why; return; } }
   $("olMsg").textContent = "Loading the game…";
   olFromClick = true;
   // Capture the mouse now, while this still counts as your click
@@ -5514,10 +5539,12 @@ async function olOpen(id){
   try {
     const me = await olReady();
     const g = await olFetch(id);
-    if (g.status === "forfeit"){ $("olMsg").textContent = "That game was forfeited."; return; }
-    if (!g.state && g.turn !== me.id){
-      const away = (g.teams || [])[1 - ((g.opts && g.opts.home) || 0)];
-      $("olMsg").textContent = "Waiting for " + (away ? away.name : "the away team") + " to call the coin toss. You can open the game once it’s done.";
+    const why = olBlocked(g, me.id);
+    if (why){
+      if (isLocked()) document.exitPointerLock();
+      setPlaying(false);
+      openOnlineHome();
+      $("olMsg").textContent = why;
       return;
     }
     unwatchGame();
@@ -5783,16 +5810,18 @@ applySettings();
 applyAwayTeam(makeTeam(settings.opp));
 
 document.addEventListener("pointerlockchange", () => {
-  if (document.pointerLockElement === canvas){
+  lockPending = false;
+  if (isLocked()){
     fallbackLook = false;
-    relockArmed = false;
     setPlaying(true);
-  } else if (!fallbackLook && playing){
-    // The game never lets go of the mouse on its own, so losing the lock means you pressed Esc: pause
-    setPlaying(false);
+  } else {
+    // The game never lets go of the mouse on its own, so losing it means Esc: pause, and start the resume wait
+    releasedAt = performance.now();
+    if (!fallbackLook && playing) setPlaying(false);
+    updateResumeButton();
   }
 });
-document.addEventListener("pointerlockerror", enableFallback);
+document.addEventListener("pointerlockerror", lockFailed);
 document.addEventListener("mousemove", e => {
   if (vc.on){ moveVCursor(e.movementX || 0, e.movementY || 0); return; }
   if (!playing || state === "playcall" || breakOpen) return;
@@ -5803,7 +5832,6 @@ document.addEventListener("mousemove", e => {
   pitch = clamp(pitch - (e.movementY || 0) * s * (settings.invert ? -1 : 1), -1.35, 1.35);
 });
 canvas.addEventListener("mousedown", e => {
-  if (relockArmed && !document.pointerLockElement){ requestLock(); return; }
   if (vc.on){ if (e.button === 0) vClick(); return; }
   if (!playing){ requestLock(); return; }
   if (e.button !== 0) return;
