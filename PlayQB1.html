@@ -1231,7 +1231,13 @@ function hostColors(){
   return away ? {primary:settings.opp.p, secondary:settings.opp.s} : {primary:HOME.primary, secondary:HOME.secondary};
 }
 // The crowd reacts to what is good for the home team: your big plays at home, your mistakes on the road
-let warnDone = {}, warnPending = false;
+let warnDone = {}, warnPending = false, pendingWarnCard = 0;
+function warnCard(w){
+  clockRunning = false;
+  pclock = 25;
+  showBreak("notice", {kick:qLabel(quarter) + "   " + clockText(w), title:warnName(w),
+    note:"The clock stops at " + clockText(w) + ", just like a timeout. It starts again on the snap."});
+}
 function warnAt(){
   const w = gOpt("warn");
   return (quarter === 2 || quarter === 4) && w > 0 && !warnDone[quarter] ? w : 0;
@@ -1537,6 +1543,7 @@ function finishClock(note){
   if (warnPending){
     warnPending = false;
     clockRunning = false;
+    pendingWarnCard = gOpt("warn");
     note += ". " + warnName(gOpt("warn"));
   }
   if (mode === "game" && gameClock <= 0){
@@ -2324,8 +2331,8 @@ function confirmPlay(i){
       if (wa && gameClock > wa && gameClock - ro <= wa){
         warnDone[quarter] = true;
         pclock -= gameClock - wa;
-        gameClock = wa; clockRunning = false;
-        showMsg(warnName(wa), "Clock stopped at " + clockText(wa), "good", "", 2200);
+        gameClock = wa;
+        warnCard(wa);
       } else { gameClock -= ro; pclock -= ro; }
     }
   }
@@ -2354,6 +2361,15 @@ function placeQB(){
 function resetPlay(){
   $("introTitle").classList.remove("on");
   tdFocus = null;
+  if (pendingWarnCard && mode === "game" && !pendingDriveEnd){
+    const w = pendingWarnCard;
+    pendingWarnCard = 0;
+    showBreak("notice", {kick:qLabel(quarter) + "   " + clockText(gameClock), title:warnName(w),
+      note:"The clock is stopped, just like a timeout. It starts again on the snap."}, () => resetPlay());
+    pclock = 25;
+    return;
+  }
+  pendingWarnCard = 0;
   if (pendingTimeoutCard && mode === "game" && !pendingDriveEnd){
     pendingTimeoutCard = false;
     showBreak("timeout", {by:"opp"}, () => resetPlay());
@@ -3595,7 +3611,7 @@ function gauss(){ return (Math.random() + Math.random() + Math.random() - 1.5) *
 const yardsTxt = n => n === 1 ? "1 yard" : n === -1 ? "a loss of 1" : n < 0 ? "a loss of " + (-n) : n + " yards";
 // One simulated play for the opponent, shaped by down, distance, score, time, and difficulty
 function simPlay(){
-  if (opp.over || opp.view !== "drive") return;
+  if (opp.over || opp.view !== "drive" || mp) return;
   // Time between the last whistle and this snap comes off first, unless you stopped it
   if (opp.runoff > 0){
     const ro = opp.runoff, w0 = warnAt();
@@ -4782,6 +4798,7 @@ function mpTurnover(n){
   mpHandoff(other, () => mpReplay(recs, {user:n.opp, kick:n.kick, otTwo:n.otTwo}));
 }
 function mpReplay(recs, next){
+  if (olGame && recs.length) return olReplay(recs, next);
   opp.auto = false; opp.timer = 0;
   opp.replay = null;
   opp.over = next;
@@ -4797,7 +4814,19 @@ function startOppDriveView(yard, log){
   if (!opp.replay){ opp.down = 1; opp.toGo = Math.min(10, 100 - yard); }
   opp.log = log;
   showSideline("drive");
-  saveGame("sideline");
+  // Mid replay there's nothing new to save; a refresh just starts the replay over
+  if (!opp.replay) saveGame("sideline");
+}
+// Online: start from the first snap of their drive and sim it, scores and clock catching up as you go
+function olReplay(recs, next){
+  const r0 = recs[0];
+  opp.auto = false; opp.timer = 0; opp.title = "";
+  opp.replay = {recs, next};
+  opp.ri = 0;
+  opp.over = null;
+  replayView = {my:r0.preDef, opp:r0.preOff, clock:r0.preClock, q:r0.preQ};
+  opp.down = r0.downBefore; opp.toGo = r0.toGoBefore;
+  startOppDriveView(r0.yardBefore, [awayAbbr() + " ball at " + oppYardLabel(r0.yardBefore)]);
 }
 function replayStep(){
   const d = opp.replay, r = d.recs[opp.ri++];
@@ -5247,9 +5276,25 @@ function olErr(err){
   return m.charAt(0).toUpperCase() + m.slice(1) + ".";
 }
 async function olReady(){ if (!olUser) olUser = await sbSignIn(); return olUser; }
+let olLobbyWatch = null, olLobbyTimer = 0;
 function openOnlineHome(){
   showPane("pOnlineHome");
   loadMyGames();
+  watchLobby();
+}
+// Any change to one of your games reloads the list while it's on screen
+async function watchLobby(){
+  try {
+    await olReady();
+    if (olLobbyWatch) return;
+    olLobbyWatch = sb.channel("lobby")
+      .on("postgres_changes", {event:"*", schema:"public", table:"games"}, () => {
+        if ($("pOnlineHome").hidden) return;
+        clearTimeout(olLobbyTimer);
+        olLobbyTimer = setTimeout(loadMyGames, 300);
+      })
+      .subscribe();
+  } catch (err){}
 }
 function normCode(v){
   const c = String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
@@ -5437,6 +5482,9 @@ async function olFetch(id){
 }
 async function olOpen(id){
   $("olMsg").textContent = "Loading the game…";
+  olFromClick = true;
+  // Capture the mouse now, while this still counts as your click
+  requestLock();
   try {
     const me = await olReady();
     const g = await olFetch(id);
@@ -5456,6 +5504,11 @@ function olRestore(sv){
   restoreGame(sv, {noView:true});
 }
 // Decide what you see when a game loads: start it, your turn, waiting, or the final
+let olFromClick = false;
+// Only a click can capture the mouse, so updates that arrive on their own never force a resume
+function olGo(){
+  if (olFromClick || playing){ olFromClick = false; resume(); }
+}
 function olEnter(g){
   olGame.version = g.version;
   const me = olGame.me;
@@ -5465,7 +5518,7 @@ function olEnter(g){
     olGame.myTurn = true;
     if (mode !== "game") enterMode("game");
     newGame();
-    resume();
+    olGo();
     return;
   }
   const sv = g.state;
@@ -5475,7 +5528,7 @@ function olEnter(g){
     gameOver = true;
     showSideline("final");
     showBreak("final");
-    resume();
+    olGo();
     return;
   }
   if (g.turn === olUser.id){
@@ -5484,7 +5537,7 @@ function olEnter(g){
       olRestore(sv);
       const recs = mp.records.slice(mp.seen[me]).filter(r => r.off !== me);
       mpReplay(recs, sv.next);
-      resume();
+      olGo();
     } else {
       sv.mp.cur = me;
       restoreGame(sv);
@@ -5492,16 +5545,17 @@ function olEnter(g){
   } else {
     olGame.myTurn = false;
     olRestore(sv);
-    olShowWaiting(mp.records.filter(r => r.off === me).slice(-6));
-    resume();
+    olShowWaiting(mp.records.filter(r => r.off === me).slice(-6), sv.next);
+    olGo();
   }
 }
-function olShowWaiting(mine){
+function olShowWaiting(mine, next){
   opp.waiting = true;
   opp.over = null; opp.replay = null; opp.auto = false; opp.film = null;
   opp.title = "";
   opp.log = mine.length ? mine.slice(-6).reverse().map(r => clockTagOf(r) + "   " + r.ctx + ": " + r.text) : ["Your drive is in"];
-  opp.yard = 25; opp.down = 1; opp.toGo = 10;
+  opp.yard = next && next.user !== undefined ? next.user : 25;
+  opp.down = 1; opp.toGo = Math.min(10, 100 - opp.yard);
   showSideline("drive");
   opp.waiting = true;
   drawTablet();
@@ -5514,7 +5568,7 @@ async function olPassTurn(next){
   const snap = gameSnapshot("handoff");
   snap.next = next;
   olGame.myTurn = false;
-  olShowWaiting(recs);
+  olShowWaiting(recs, next);
   await olSave(snap, true, recs, false);
 }
 let olQueue = Promise.resolve();
@@ -5840,7 +5894,7 @@ function frame(now){
           warnDone[quarter] = true;
           // During a play the warning waits for the whistle; between plays it stops the clock right away
           if (live) warnPending = true;
-          else { gameClock = wa; clockRunning = false; showMsg(warnName(wa), "Clock stopped at " + clockText(wa), "good", "", 2200); }
+          else { gameClock = wa; warnCard(wa); }
         }
       }
       if (!live && !pendingDriveEnd && state !== "sideline"){
